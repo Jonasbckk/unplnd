@@ -6,8 +6,9 @@ import { generatePlan } from './generate';
 import type { GeneratedPlan, PlannerAnswers } from './types';
 
 // The real-places pipeline (Google Places → AI curation → photos) needs more room than a
-// plain AI call; past this we fall back rather than keep users waiting (18A).
-const TIMEOUT_MS = 20000;
+// plain AI call — especially on the Gemini free tier, which can be slow. Past this we fall
+// back rather than keep users waiting (18A). 20s was too tight and hit the mock often.
+const TIMEOUT_MS = 30000;
 
 interface EdgeResponse {
   plan?: GeneratedPlan;
@@ -65,10 +66,25 @@ export async function generateEvening(answers: PlannerAnswers, location: AppLoca
     );
 
     if (error || !data?.plan) {
+      if (__DEV__) {
+        // Dev-only: surface WHY we fell back so we can tell timeout vs Google/AI failure apart.
+        // Never shown to users (Constitution: no exposed errors).
+        console.warn(
+          '[UNPLND] Planner fiel auf Mock zurück:',
+          error?.message ?? data?.error?.message ?? 'Edge Function lieferte keinen Plan (kein data.plan)',
+        );
+      }
       return generatePlan(answers);
     }
     return data.plan;
-  } catch {
+  } catch (e) {
+    if (__DEV__) {
+      const msg = (e as Error)?.message;
+      console.warn(
+        '[UNPLND] Planner fiel auf Mock zurück:',
+        msg === 'timeout' ? `Zeitüberschreitung nach ${TIMEOUT_MS / 1000}s` : (msg ?? 'Netzwerk-/Serverfehler'),
+      );
+    }
     return generatePlan(answers);
   }
 }

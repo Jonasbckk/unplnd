@@ -86,8 +86,8 @@ const SEARCH_PLANS: Record<string, SearchGroup[]> = {
     { category: 'Shop', types: ['supermarket', 'convenience_store'] },
   ],
   Drinks: [
-    { category: 'Bar', types: ['bar', 'wine_bar', 'pub'] },
-    { category: 'Bar', types: ['bar', 'cocktail_lounge'] },
+    { category: 'Bar', types: ['bar', 'pub'] },
+    { category: 'Wine Bar', types: ['wine_bar', 'bar'] },
     { category: 'Dessert', types: ['dessert_shop', 'ice_cream_shop', 'cafe'] },
   ],
   Food: [
@@ -509,6 +509,15 @@ function planTool(withPlaceId: boolean) {
   };
 }
 
+/** Thrown when an AI provider returns 429 (rate limit). Callers fail fast instead of retrying,
+ * which would only burn more free-tier quota against the same cap and deepen the outage. */
+class RateLimitError extends Error {
+  constructor(provider: string) {
+    super(`${provider}_rate_limited`);
+    this.name = 'RateLimitError';
+  }
+}
+
 async function callAnthropic(system: string, user: string, tool: object, apiKey: string): Promise<RawPlan | null> {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -524,6 +533,7 @@ async function callAnthropic(system: string, user: string, tool: object, apiKey:
   });
   if (!res.ok) {
     console.error('anthropic_error', res.status, (await res.text()).slice(0, 300));
+    if (res.status === 429) throw new RateLimitError('anthropic');
     return null;
   }
   const json = await res.json();
@@ -575,6 +585,7 @@ async function callGemini(system: string, user: string, schema: object, apiKey: 
   });
   if (!res.ok) {
     console.error('gemini_error', res.status, (await res.text()).slice(0, 500));
+    if (res.status === 429) throw new RateLimitError('gemini');
     return null;
   }
   const json = await res.json();
@@ -706,10 +717,33 @@ Deno.serve(async (req) => {
   const geminiKey = Deno.env.get('GEMINI_API_KEY');
   const googleKey = Deno.env.get('GOOGLE_MAPS_API_KEY');
 
+  // Request-scoped so a reused isolate can never leak this between invocations.
+  let rateLimited = false;
+  const rateLimitedResponse = () =>
+    Response.json(
+      {
+        error: {
+          code: 'RATE_LIMITED',
+          message: 'The planner is very popular right now. Give it a moment and try again.',
+          retryable: true,
+        },
+      },
+      { status: 429, headers: CORS },
+    );
   const runAI = (system: string, user: string, withPlaceId: boolean): Promise<RawPlan | null> => {
-    if (anthropicKey) return callAnthropic(system, user, planTool(withPlaceId), anthropicKey);
-    if (geminiKey) return callGemini(system, user, geminiSchema(withPlaceId), geminiKey);
-    return Promise.resolve(null);
+    const call = anthropicKey
+      ? callAnthropic(system, user, planTool(withPlaceId), anthropicKey)
+      : geminiKey
+        ? callGemini(system, user, geminiSchema(withPlaceId), geminiKey)
+        : Promise.resolve<RawPlan | null>(null);
+    // On a rate limit, fail fast — retrying only burns more free-tier quota against the same cap.
+    return call.catch((e) => {
+      if (e instanceof RateLimitError) {
+        rateLimited = true;
+        return null;
+      }
+      throw e;
+    });
   };
 
   if (!anthropicKey && !geminiKey) {
@@ -750,16 +784,20 @@ Deno.serve(async (req) => {
         candidates = await findCandidates(body, googleKey, searchPlanFor(body.mood));
       }
     } catch (e) {
-      console.error('candidates_error', String(e).slice(0, 200));
+      if (e instanceof RateLimitError) rateLimited = true;
+      else console.error('candidates_error', String(e).slice(0, 200));
     }
   }
+
+  if (rateLimited) return rateLimitedResponse();
 
   if (candidates.length >= 3) {
     const byId = new Map(candidates.map((c) => [c.id, c]));
     let plan = await runAI(curationSystemPrompt(language), curationUserPrompt(body, candidates), true);
-    if (!validate(plan)) {
+    if (!validate(plan) && !rateLimited) {
       plan = await runAI(curationSystemPrompt(language), curationUserPrompt(body, candidates), true);
     }
+    if (rateLimited) return rateLimitedResponse();
     if (validate(plan)) {
       const usedIds = new Set<string>();
       const stops: StopOut[] = [];
@@ -814,7 +852,8 @@ Deno.serve(async (req) => {
 
   // ---- Fallback: generic AI plan (no invented business names) ----
   let plan = await runAI(genericSystemPrompt(language), genericUserPrompt(body), false);
-  if (!validate(plan)) plan = await runAI(genericSystemPrompt(language), genericUserPrompt(body), false);
+  if (!validate(plan) && !rateLimited) plan = await runAI(genericSystemPrompt(language), genericUserPrompt(body), false);
+  if (rateLimited) return rateLimitedResponse();
   if (!validate(plan)) {
     return Response.json(
       { error: { code: 'PLAN_GENERATION_FAILED', message: 'We couldn’t craft this one. Try again?', retryable: true } },
