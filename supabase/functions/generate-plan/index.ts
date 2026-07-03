@@ -1,0 +1,846 @@
+// UNPLND — plan generation Edge Function (Deno).
+// Two-phase engine (14_TECH_STACK + 19_ROUTE):
+//   Phase A: Google Places (New) finds REAL, well-rated venues near the user, per mood.
+//   Phase B: the AI (Claude or Gemini) curates them into a story-arc evening.
+// All keys live server-side only (31_SECURITY). Falls back to a generic AI plan when
+// Google/location are unavailable, so the user is never left without an evening (18A).
+// Secrets: GOOGLE_MAPS_API_KEY (+ ANTHROPIC_API_KEY or GEMINI_API_KEY).
+
+interface PlanRequest {
+  mood?: string;
+  group?: string;
+  budget?: string;
+  transport?: string;
+  time?: string;
+  preferences?: string[];
+  /** Free-text request — when set, the AI first works out what to search for, then curates. */
+  request?: string;
+  city?: string;
+  language?: 'de' | 'en';
+  latitude?: number;
+  longitude?: number;
+  weather?: { condition: string; temperature: number; sunset?: string };
+}
+
+// One search: either Google place types (Nearby) or a free-text query (Text Search).
+interface SearchGroup {
+  category: string;
+  types?: string[];
+  textQuery?: string;
+}
+
+interface StopOut {
+  time: string;
+  category: string;
+  title: string;
+  reason: string;
+  memoryMoment?: boolean;
+  placeId?: string;
+  rating?: number;
+  ratingCount?: number;
+  priceLevel?: string; // "€" … "€€€€"
+  openNow?: boolean;
+  hours?: string;
+  address?: string;
+  lat?: number;
+  lng?: number;
+  photoUrl?: string;
+}
+
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+const ANTHROPIC_MODEL = Deno.env.get('UNPLND_AI_MODEL') ?? 'claude-sonnet-5';
+const GEMINI_MODEL = Deno.env.get('UNPLND_GEMINI_MODEL') ?? 'gemini-2.5-flash';
+const PLACES_BASE = 'https://places.googleapis.com/v1';
+
+// ---------------- Google Places (Phase A) ----------------
+
+interface Candidate {
+  id: string;
+  name: string;
+  category: string; // internal search-group label (NOT sent to the AI — Google's real type is)
+  typeName?: string; // Google's human-readable type, e.g. "Hookah Lounge", "Night Club"
+  types?: string[];
+  rating: number;
+  ratingCount: number;
+  priceLevel: string;
+  openNow?: boolean;
+  hours?: string;
+  address?: string;
+  lat: number;
+  lng: number;
+  photoName?: string;
+  summary?: string;
+  distanceM: number;
+}
+
+// Mood → the kinds of stops that make up that evening. The AI picks & sequences from the pool.
+const SEARCH_PLANS: Record<string, SearchGroup[]> = {
+  Party: [
+    { category: 'Dinner', types: ['restaurant'] },
+    { category: 'Bar', types: ['bar', 'pub'] },
+    { category: 'Club', types: ['night_club'] },
+    { category: 'Shop', types: ['supermarket', 'convenience_store'] },
+  ],
+  Drinks: [
+    { category: 'Bar', types: ['bar', 'wine_bar', 'pub'] },
+    { category: 'Bar', types: ['bar', 'cocktail_lounge'] },
+    { category: 'Dessert', types: ['dessert_shop', 'ice_cream_shop', 'cafe'] },
+  ],
+  Food: [
+    { category: 'Dinner', types: ['restaurant'] },
+    { category: 'Dessert', types: ['dessert_shop', 'bakery', 'cafe'] },
+    { category: 'Walk', types: ['park', 'tourist_attraction'] },
+  ],
+  Romantic: [
+    { category: 'Dinner', types: ['fine_dining_restaurant', 'restaurant'] },
+    { category: 'Memory', types: ['tourist_attraction', 'park'] },
+    { category: 'Drinks', types: ['wine_bar', 'bar'] },
+  ],
+  Nature: [
+    { category: 'Walk', types: ['park', 'hiking_area', 'tourist_attraction'] },
+    { category: 'Memory', types: ['tourist_attraction'] },
+    { category: 'Café', types: ['cafe', 'coffee_shop'] },
+  ],
+  Culture: [
+    { category: 'Culture', types: ['museum', 'art_gallery'] },
+    { category: 'Dinner', types: ['restaurant'] },
+    { category: 'Show', types: ['movie_theater', 'performing_arts_theater'] },
+  ],
+  Relaxed: [
+    { category: 'Café', types: ['cafe', 'coffee_shop'] },
+    { category: 'Dinner', types: ['restaurant'] },
+    { category: 'Walk', types: ['park', 'tourist_attraction'] },
+  ],
+  Activities: [
+    { category: 'Activity', types: ['tourist_attraction', 'bowling_alley', 'amusement_center'] },
+    { category: 'Dinner', types: ['restaurant'] },
+    { category: 'Drinks', types: ['bar', 'pub'] },
+  ],
+};
+
+const DEFAULT_PLAN: SearchGroup[] = [
+  { category: 'Dinner', types: ['restaurant'] },
+  { category: 'Drinks', types: ['bar', 'pub'] },
+  { category: 'Memory', types: ['tourist_attraction', 'park'] },
+];
+
+function searchPlanFor(mood?: string): SearchGroup[] {
+  return (mood && SEARCH_PLANS[mood]) || DEFAULT_PLAN;
+}
+
+// How far to SEARCH for options around the user.
+function radiusFor(transport?: string): number {
+  switch (transport) {
+    case 'Walking':
+      return 1500;
+    case 'Bike':
+      return 3500;
+    case 'Public Transport':
+      return 5000;
+    case 'Car':
+      return 8000;
+    case 'Uber / Taxi':
+      return 6500;
+    default:
+      return 3500;
+  }
+}
+
+// How spread out the whole evening may be — keeps every stop in one area (no 13km detours).
+function clusterRadiusFor(transport?: string): number {
+  switch (transport) {
+    case 'Walking':
+      return 1800;
+    case 'Bike':
+      return 3500;
+    case 'Public Transport':
+      return 4500;
+    case 'Car':
+      return 6000;
+    case 'Uber / Taxi':
+      return 5000;
+    default:
+      return 3000;
+  }
+}
+
+// Never belongs in a curated evening — fast-food primary types (excluded at the Places query).
+const JUNK_TYPES = ['fast_food_restaurant', 'meal_takeaway', 'meal_delivery'];
+// …and chains/takeaways that slip through typed as plain "restaurant" (filtered by name).
+const CHAIN_BLOCKLIST =
+  /\b(kfc|kentucky fried|mcdonald|burger king|subway|domino|pizza hut|call a pizza|starbucks|dunkin|five guys|popeyes|nordsee|fried chicken|chicken king)\b/i;
+
+const PRICE_MAP: Record<string, string> = {
+  PRICE_LEVEL_FREE: '€0',
+  PRICE_LEVEL_INEXPENSIVE: '€',
+  PRICE_LEVEL_MODERATE: '€€',
+  PRICE_LEVEL_EXPENSIVE: '€€€',
+  PRICE_LEVEL_VERY_EXPENSIVE: '€€€€',
+};
+
+function haversine(aLat: number, aLng: number, bLat: number, bLng: number): number {
+  const R = 6371000;
+  const dLat = ((bLat - aLat) * Math.PI) / 180;
+  const dLng = ((bLng - aLng) * Math.PI) / 180;
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((aLat * Math.PI) / 180) * Math.cos((bLat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+async function searchNearby(
+  types: string[],
+  lat: number,
+  lng: number,
+  radius: number,
+  key: string,
+  language: string,
+): Promise<any[]> {
+  const res = await fetch(`${PLACES_BASE}/places:searchNearby`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': key,
+      'X-Goog-FieldMask':
+        'places.id,places.displayName,places.primaryType,places.primaryTypeDisplayName,places.rating,places.userRatingCount,places.currentOpeningHours,places.location,places.priceLevel,places.photos,places.editorialSummary,places.formattedAddress,places.types',
+    },
+    body: JSON.stringify({
+      includedTypes: types,
+      excludedPrimaryTypes: JUNK_TYPES,
+      maxResultCount: 15,
+      rankPreference: 'POPULARITY',
+      languageCode: language,
+      regionCode: 'DE',
+      locationRestriction: { circle: { center: { latitude: lat, longitude: lng }, radius } },
+    }),
+  });
+  if (!res.ok) {
+    console.error('places_error', res.status, (await res.text()).slice(0, 300));
+    return [];
+  }
+  const json = await res.json();
+  return json?.places ?? [];
+}
+
+/** Google Places Text Search — for specific free-text wishes ("all you can eat buffet", "rooftop bar"). */
+async function searchText(
+  textQuery: string,
+  lat: number,
+  lng: number,
+  radius: number,
+  key: string,
+  language: string,
+): Promise<any[]> {
+  const res = await fetch(`${PLACES_BASE}/places:searchText`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': key,
+      'X-Goog-FieldMask':
+        'places.id,places.displayName,places.primaryType,places.primaryTypeDisplayName,places.rating,places.userRatingCount,places.currentOpeningHours,places.location,places.priceLevel,places.photos,places.editorialSummary,places.formattedAddress,places.types',
+    },
+    body: JSON.stringify({
+      textQuery,
+      maxResultCount: 15,
+      languageCode: language,
+      regionCode: 'DE',
+      locationBias: { circle: { center: { latitude: lat, longitude: lng }, radius } },
+    }),
+  });
+  if (!res.ok) {
+    console.error('places_text_error', res.status, (await res.text()).slice(0, 300));
+    return [];
+  }
+  const json = await res.json();
+  return json?.places ?? [];
+}
+
+/** Runs each search group (by place-type or free-text query), pools the best real venues near the user. */
+async function findCandidates(req: PlanRequest, key: string, plan: SearchGroup[]): Promise<Candidate[]> {
+  const lat = req.latitude!;
+  const lng = req.longitude!;
+  const radius = radiusFor(req.transport);
+  const language = req.language ?? 'de';
+
+  const groups = await Promise.all(
+    plan.map((g) => {
+      const places = g.textQuery
+        ? searchText(g.textQuery, lat, lng, radius, key, language)
+        : searchNearby(g.types ?? [], lat, lng, radius, key, language);
+      return places.then((p) => ({ category: g.category, places: p }));
+    }),
+  );
+
+  const seen = new Set<string>();
+  const candidates: Candidate[] = [];
+  for (const group of groups) {
+    const mapped: Candidate[] = group.places
+      .filter(
+        (p: any) =>
+          p?.id &&
+          p?.location &&
+          (p.rating ?? 0) >= 3.9 &&
+          (p.userRatingCount ?? 0) >= 15 &&
+          !CHAIN_BLOCKLIST.test(p.displayName?.text ?? ''),
+      )
+      .map((p: any) => {
+        const today = p.currentOpeningHours?.weekdayDescriptions?.[(new Date().getUTCDay() + 6) % 7];
+        return {
+          id: p.id,
+          name: p.displayName?.text ?? 'Unbekannt',
+          category: group.category,
+          typeName: p.primaryTypeDisplayName?.text,
+          types: Array.isArray(p.types) ? p.types.slice(0, 4) : undefined,
+          rating: p.rating ?? 0,
+          ratingCount: p.userRatingCount ?? 0,
+          priceLevel: PRICE_MAP[p.priceLevel] ?? '',
+          openNow: p.currentOpeningHours?.openNow,
+          hours: typeof today === 'string' ? today.replace(/^[A-Za-zäöü]+:\s*/, '') : undefined,
+          address: p.formattedAddress,
+          lat: p.location.latitude,
+          lng: p.location.longitude,
+          photoName: p.photos?.[0]?.name,
+          summary: p.editorialSummary?.text,
+          distanceM: Math.round(haversine(lat, lng, p.location.latitude, p.location.longitude)),
+        } as Candidate;
+      });
+    // Keep the top few per category by a rating × popularity score.
+    mapped.sort((a, b) => b.rating * Math.log10(b.ratingCount + 10) - a.rating * Math.log10(a.ratingCount + 10));
+    for (const c of mapped.slice(0, 7)) {
+      if (!seen.has(c.id)) {
+        seen.add(c.id);
+        candidates.push(c);
+      }
+    }
+  }
+  // Keep the whole evening in one area — anchor on the strongest venue, drop far outliers
+  // (fixes "Kloster Arnsburg 13km away sitting next to an in-town stop").
+  const clustered = clusterCandidates(candidates, req.transport);
+
+  // Shuffle so the AI sees a fresh order every call — plans stay varied (founder: "immer unterschiedlich").
+  for (let i = clustered.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [clustered[i], clustered[j]] = [clustered[j], clustered[i]];
+  }
+  return clustered;
+}
+
+function clusterCandidates(candidates: Candidate[], transport?: string): Candidate[] {
+  if (candidates.length <= 3) return candidates;
+  const clusterR = clusterRadiusFor(transport);
+  const ranked = [...candidates].sort(
+    (a, b) => b.rating * Math.log10(b.ratingCount + 10) - a.rating * Math.log10(a.ratingCount + 10),
+  );
+  const anchor = ranked.find((c) => c.category !== 'Shop') ?? ranked[0];
+  const near = candidates.filter((c) => haversine(anchor.lat, anchor.lng, c.lat, c.lng) <= clusterR);
+  const categories = new Set(near.map((c) => c.category));
+  // Only tighten if we still have enough variety to build a full evening.
+  return near.length >= 3 && categories.size >= 2 ? near : candidates;
+}
+
+/** Resolves one displayable photo URL per place (keyless googleusercontent link). */
+async function resolvePhoto(photoName: string, key: string): Promise<string | undefined> {
+  try {
+    const res = await fetch(
+      `${PLACES_BASE}/${photoName}/media?maxHeightPx=400&maxWidthPx=600&skipHttpRedirect=true`,
+      { headers: { 'X-Goog-Api-Key': key } },
+    );
+    if (!res.ok) return undefined;
+    const json = await res.json();
+    return json?.photoUri as string | undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+// ---------------- Prompts ----------------
+
+function baseRules(language: 'de' | 'en'): string[] {
+  const lang =
+    language === 'de'
+      ? '- Write ALL user-facing text (title, summary, reasons) in natural, punchy GERMAN using the informal "du".'
+      : '- Write all user-facing text in English.';
+  return [
+    'You are the planning engine behind UNPLND, a premium app that plans unforgettable evenings.',
+    'You write like a sharp, funny local friend who actually knows the city — never like an assistant or a travel brochure.',
+    lang,
+    '- Build a realistic evening of 3 to 5 stops that tells a story: comfort → exploration → peak moment → warm ending.',
+    '- Exactly ONE stop is the memorable highlight — mark it memory_moment=true.',
+    '- Respect the budget strictly (target 80–95%, never exceed). Respect available time and transport (keep legs realistic).',
+    '- Adapt to the weather: rain → indoor-first; a clear evening → make the most of the golden hour.',
+    '- VOICE: witty, a little cheeky and provocative, Gen-Z energy — but sharp, tasteful and professional; never cringe, try-hard, or vulgar. Roast the boring option, hype the great one.',
+    '- Each stop\'s "reason" is ONE punchy line that sells the spot with real personality and a concrete detail — not a numb description. The title and summary carry the same voice: a headline that makes you grin.',
+    '- BANNED clichés — never use these or anything like them: "das Tanzbein schwingen", "genieße den Sonnenuntergang", "die Seele baumeln lassen", "unvergesslicher Abend", "wir tanzen bis in die Nacht", "dance the night away", "enjoy the sunset before…", "unforgettable evening". Be specific and bold instead.',
+    '- Never mention AI, algorithms, or ratings-as-numbers inside the reason.',
+  ];
+}
+
+function curationSystemPrompt(language: 'de' | 'en'): string {
+  return [
+    ...baseRules(language),
+    '- You are given a list of REAL nearby venues (id, name, type, rating, price, hours, distance).',
+    "- EVERY stop MUST use a place_id copied EXACTLY from the list, and its title MUST be that venue's exact name. Never output an empty, partial, or made-up place_id, and never add a venue from your own knowledge.",
+    '- If you cannot back a stop with a venue from the list, leave it out — 3 real stops beat 4 with a guess.',
+    '- Describe and categorize each venue by what it ACTUALLY is, using its "type" and name — never claim it is something it is not (e.g. a hookah/shisha lounge is NOT a dance club; do not write about dancing there). Set each stop\'s category from its real type.',
+    '- Use each venue AT MOST ONCE — never repeat a place in the same evening.',
+    '- Skip generic fast-food chains and takeaways — a fried-chicken counter is not an evening destination; prefer places with character. A supermarket works ONLY as a quick pre-party drinks run, never as a real stop.',
+    '- The arc should feel like a real night out: a proper sit-down dinner or nice drinks early, the highlight in the middle/peak, a relaxed close — not junk food dropped in the middle.',
+    '- OPENING HOURS ARE A HARD CONSTRAINT: each venue has "hours_today" (its open–close today). Only schedule a stop at a time when that venue is OPEN. A place that closes early (e.g. a garden closing at 19:00) MUST be placed earlier in the evening — never schedule anything at or after its closing time. If a venue does not fit any sensible slot, drop it.',
+    '- Sequence for a tight route: keep consecutive stops close together (use the distances), and order them so the arc makes geographic and opening-hours sense — no long detours back and forth.',
+    '- Be clever and money-smart when it fits the mood: e.g. for a budget party, a quick stop at a supermarket to grab drinks before the club is a great move.',
+    '- VARIETY: make each plan fresh. Do not just pick the single highest-rated options — curate a characterful, non-obvious mix, and choose differently each time you are asked.',
+    '- Before finalizing, RE-READ the plan and verify: no venue repeats, no fast-food chains, every description matches the venue\'s real type, the stops flow geographically and by opening hours, and there are zero clichés. Fix anything that fails.',
+  ].join('\n');
+}
+
+function curationUserPrompt(req: PlanRequest, candidates: Candidate[]): string {
+  const compact = candidates.map((c) => ({
+    id: c.id,
+    name: c.name,
+    type: c.typeName ?? c.types?.[0] ?? c.category, // Google's real classification
+    rating: c.rating,
+    reviews: c.ratingCount,
+    price: c.priceLevel || '?',
+    hours_today: c.hours ?? 'unknown', // today's open–close — a HARD constraint on stop times
+    distance_m: c.distanceM,
+    about: c.summary ?? undefined,
+  }));
+  const parts: string[] = [];
+  if (req.request) {
+    parts.push(`The user asked, in their own words: "${req.request}" — honor this request above everything else.`);
+  }
+  parts.push(`City: ${req.city ?? ''}`);
+  if (req.mood) parts.push(`Mood: ${req.mood}`);
+  parts.push(`Group: ${req.group ?? '2'}`);
+  parts.push(`Budget: ${req.budget ?? '€50'}`);
+  parts.push(`Transport: ${req.transport ?? 'Walking'}`);
+  parts.push(`Available time: ${req.time ?? 'Whole evening'}`);
+  if (req.preferences?.length) parts.push(`Preferences: ${req.preferences.join(', ')}`);
+  if (req.weather) {
+    parts.push(
+      `Weather: ${req.weather.condition}, ${req.weather.temperature}°C${req.weather.sunset ? `, sunset ${req.weather.sunset}` : ''}`,
+    );
+  }
+  parts.push('');
+  parts.push('Real nearby venues to choose from (JSON):');
+  parts.push(JSON.stringify(compact));
+  parts.push('');
+  parts.push('Plan this evening now using these venues.');
+  return parts.join('\n');
+}
+
+// Fallback (no Places): generic, no invented business names.
+function genericSystemPrompt(language: 'de' | 'en'): string {
+  return [
+    ...baseRules(language),
+    '- NEVER invent specific business names, addresses, or opening hours. Describe the KIND of place instead (e.g. "a tiny family-run trattoria in the old town").',
+  ].join('\n');
+}
+
+function genericUserPrompt(req: PlanRequest): string {
+  const parts = [
+    `City: ${req.city ?? 'your city'}`,
+    `Mood: ${req.mood ?? 'Surprise me'}`,
+    `Group: ${req.group ?? '2'}`,
+    `Budget: ${req.budget ?? '€50'}`,
+    `Transport: ${req.transport ?? 'Walking'}`,
+    `Available time: ${req.time ?? 'Whole evening'}`,
+  ];
+  if (req.preferences?.length) parts.push(`Preferences: ${req.preferences.join(', ')}`);
+  if (req.weather) parts.push(`Weather: ${req.weather.condition}, ${req.weather.temperature}°C`);
+  parts.push('Plan this evening now.');
+  return parts.join('\n');
+}
+
+// ---------------- AI callers ----------------
+
+interface RawStop {
+  place_id?: string;
+  time: string;
+  category: string;
+  title: string;
+  reason: string;
+  memory_moment?: boolean;
+}
+interface RawPlan {
+  title: string;
+  summary: string;
+  estimated_cost: string;
+  duration: string;
+  stops: RawStop[];
+}
+
+function planTool(withPlaceId: boolean) {
+  const stopProps: Record<string, unknown> = {
+    time: { type: 'string', description: 'HH:MM' },
+    category: { type: 'string' },
+    title: { type: 'string' },
+    reason: { type: 'string' },
+    memory_moment: { type: 'boolean' },
+  };
+  const required = ['time', 'category', 'title', 'reason'];
+  if (withPlaceId) {
+    stopProps.place_id = { type: 'string', description: 'The exact id of the chosen venue from the list.' };
+    required.unshift('place_id');
+  }
+  return {
+    name: 'evening_plan',
+    description: 'Return the finished evening plan.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string' },
+        summary: { type: 'string' },
+        estimated_cost: { type: 'string' },
+        duration: { type: 'string' },
+        stops: {
+          type: 'array',
+          minItems: 3,
+          maxItems: 5,
+          items: { type: 'object', properties: stopProps, required },
+        },
+      },
+      required: ['title', 'summary', 'estimated_cost', 'duration', 'stops'],
+    },
+  };
+}
+
+async function callAnthropic(system: string, user: string, tool: object, apiKey: string): Promise<RawPlan | null> {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+    body: JSON.stringify({
+      model: ANTHROPIC_MODEL,
+      max_tokens: 1500,
+      system,
+      messages: [{ role: 'user', content: user }],
+      tools: [tool],
+      tool_choice: { type: 'tool', name: (tool as { name: string }).name },
+    }),
+  });
+  if (!res.ok) {
+    console.error('anthropic_error', res.status, (await res.text()).slice(0, 300));
+    return null;
+  }
+  const json = await res.json();
+  const toolUse = json?.content?.find((c: { type: string }) => c.type === 'tool_use');
+  return (toolUse?.input as RawPlan) ?? null;
+}
+
+function geminiSchema(withPlaceId: boolean) {
+  const props: Record<string, unknown> = {
+    time: { type: 'STRING' },
+    category: { type: 'STRING' },
+    title: { type: 'STRING' },
+    reason: { type: 'STRING' },
+    memory_moment: { type: 'BOOLEAN' },
+  };
+  const required = ['time', 'category', 'title', 'reason'];
+  if (withPlaceId) {
+    props.place_id = { type: 'STRING' };
+    required.unshift('place_id');
+  }
+  return {
+    type: 'OBJECT',
+    properties: {
+      title: { type: 'STRING' },
+      summary: { type: 'STRING' },
+      estimated_cost: { type: 'STRING' },
+      duration: { type: 'STRING' },
+      stops: { type: 'ARRAY', items: { type: 'OBJECT', properties: props, required } },
+    },
+    required: ['title', 'summary', 'estimated_cost', 'duration', 'stops'],
+  };
+}
+
+async function callGemini(system: string, user: string, schema: object, apiKey: string): Promise<RawPlan | null> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: system }] },
+      contents: [{ role: 'user', parts: [{ text: user }] }],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        responseSchema: schema,
+        maxOutputTokens: 4096,
+        thinkingConfig: { thinkingBudget: 0 },
+      },
+    }),
+  });
+  if (!res.ok) {
+    console.error('gemini_error', res.status, (await res.text()).slice(0, 500));
+    return null;
+  }
+  const json = await res.json();
+  const parts = json?.candidates?.[0]?.content?.parts;
+  const text = Array.isArray(parts) ? parts.map((p: { text?: string }) => p.text ?? '').join('') : undefined;
+  if (!text) return null;
+  try {
+    return JSON.parse(text) as RawPlan;
+  } catch {
+    return null;
+  }
+}
+
+function validate(plan: RawPlan | null): plan is RawPlan {
+  if (!plan?.title || !plan.summary || !Array.isArray(plan.stops)) return false;
+  if (plan.stops.length < 3 || plan.stops.length > 5) return false;
+  return plan.stops.every((s) => s.time && s.title && s.reason && s.category);
+}
+
+// ---------------- Free-text intent extraction ----------------
+
+interface IntentSearch {
+  category: string;
+  types?: string[];
+  text_query?: string;
+}
+interface Intent {
+  searches?: IntentSearch[];
+  group?: string;
+  budget?: string;
+  transport?: string;
+  time?: string;
+}
+
+function extractSystemPrompt(city?: string): string {
+  return [
+    `You turn a user's free-text request into a search plan for a maps-based evening planner${city ? ` in ${city}` : ''}.`,
+    'Return 2–4 searches, in the order the evening should flow. For each search give EITHER "types" (Google Place types) OR a "text_query" for specific wishes.',
+    'Common place types: cafe, coffee_shop, restaurant, bar, pub, wine_bar, night_club, bakery, dessert_shop, ice_cream_shop, park, tourist_attraction, museum, art_gallery, movie_theater, bowling_alley, amusement_center, supermarket.',
+    'Use text_query for specific things that are not a clean type — e.g. "all you can eat buffet", "rooftop bar", "escape room", "sushi", "vegan brunch".',
+    'If the user names specific kinds of stops or an order (e.g. cafés first, then all-you-can-eat), make ONE search per stop, in that order.',
+    'If the user is vague (e.g. "we are bored, two of us"), infer a fun, varied evening: an activity, food, and drinks.',
+    'Fill group, budget, transport, time ONLY if the user clearly stated them; otherwise leave them empty.',
+  ].join('\n');
+}
+
+function extractUserPrompt(req: PlanRequest): string {
+  const parts = [`User request: "${req.request ?? ''}"`];
+  if (req.city) parts.push(`City: ${req.city}`);
+  parts.push('Return the search plan now.');
+  return parts.join('\n');
+}
+
+const EXTRACT_TOOL = {
+  name: 'search_plan',
+  description: 'Turn the user request into a venue search plan.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      searches: {
+        type: 'array',
+        minItems: 2,
+        maxItems: 4,
+        items: {
+          type: 'object',
+          properties: {
+            category: { type: 'string', description: 'Short label, e.g. "Café", "Dinner", "Bar", "Activity".' },
+            types: { type: 'array', items: { type: 'string' } },
+            text_query: { type: 'string' },
+          },
+          required: ['category'],
+        },
+      },
+      group: { type: 'string' },
+      budget: { type: 'string' },
+      transport: { type: 'string' },
+      time: { type: 'string' },
+    },
+    required: ['searches'],
+  },
+};
+
+const EXTRACT_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    searches: {
+      type: 'ARRAY',
+      items: {
+        type: 'OBJECT',
+        properties: {
+          category: { type: 'STRING' },
+          types: { type: 'ARRAY', items: { type: 'STRING' } },
+          text_query: { type: 'STRING' },
+        },
+        required: ['category'],
+      },
+    },
+    group: { type: 'STRING' },
+    budget: { type: 'STRING' },
+    transport: { type: 'STRING' },
+    time: { type: 'STRING' },
+  },
+  required: ['searches'],
+};
+
+async function extractIntent(req: PlanRequest, anthropicKey?: string, geminiKey?: string): Promise<Intent | null> {
+  const sys = extractSystemPrompt(req.city);
+  const usr = extractUserPrompt(req);
+  const raw = anthropicKey
+    ? await callAnthropic(sys, usr, EXTRACT_TOOL, anthropicKey)
+    : geminiKey
+      ? await callGemini(sys, usr, EXTRACT_SCHEMA, geminiKey)
+      : null;
+  return (raw as unknown as Intent) ?? null;
+}
+
+function toSearchGroups(intent: Intent): SearchGroup[] {
+  return (intent.searches ?? [])
+    .filter((s) => s && s.category && ((s.types && s.types.length > 0) || s.text_query))
+    .map((s) => ({ category: s.category, types: s.types, textQuery: s.text_query }));
+}
+
+// ---------------- Handler ----------------
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
+
+  const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
+  const geminiKey = Deno.env.get('GEMINI_API_KEY');
+  const googleKey = Deno.env.get('GOOGLE_MAPS_API_KEY');
+
+  const runAI = (system: string, user: string, withPlaceId: boolean): Promise<RawPlan | null> => {
+    if (anthropicKey) return callAnthropic(system, user, planTool(withPlaceId), anthropicKey);
+    if (geminiKey) return callGemini(system, user, geminiSchema(withPlaceId), geminiKey);
+    return Promise.resolve(null);
+  };
+
+  if (!anthropicKey && !geminiKey) {
+    return Response.json(
+      { error: { code: 'SERVER_ERROR', message: 'Something went wrong. Let’s try that again.', retryable: true } },
+      { status: 500, headers: CORS },
+    );
+  }
+
+  let body: PlanRequest;
+  try {
+    body = (await req.json()) as PlanRequest;
+  } catch {
+    return Response.json(
+      { error: { code: 'VALIDATION_FAILED', message: 'Something went wrong.', retryable: true } },
+      { status: 400, headers: CORS },
+    );
+  }
+  const language = body.language ?? 'de';
+
+  // ---- Phase A + B: real places, when we have Google + a location ----
+  let candidates: Candidate[] = [];
+  if (googleKey && typeof body.latitude === 'number' && typeof body.longitude === 'number') {
+    try {
+      if (body.request && body.request.trim()) {
+        // Free-text path: the AI works out WHAT to search for, then we search it.
+        const intent = await extractIntent(body, anthropicKey, geminiKey);
+        const groups = intent ? toSearchGroups(intent) : [];
+        if (groups.length >= 2) {
+          // Adopt any constraints the user stated in their own words (don't override explicit ones).
+          body.group = body.group ?? intent?.group;
+          body.budget = body.budget ?? intent?.budget;
+          body.transport = body.transport ?? intent?.transport;
+          body.time = body.time ?? intent?.time;
+          candidates = await findCandidates(body, googleKey, groups);
+        }
+      } else {
+        candidates = await findCandidates(body, googleKey, searchPlanFor(body.mood));
+      }
+    } catch (e) {
+      console.error('candidates_error', String(e).slice(0, 200));
+    }
+  }
+
+  if (candidates.length >= 3) {
+    const byId = new Map(candidates.map((c) => [c.id, c]));
+    let plan = await runAI(curationSystemPrompt(language), curationUserPrompt(body, candidates), true);
+    if (!validate(plan)) {
+      plan = await runAI(curationSystemPrompt(language), curationUserPrompt(body, candidates), true);
+    }
+    if (validate(plan)) {
+      const usedIds = new Set<string>();
+      const stops: StopOut[] = [];
+      for (const s of plan.stops) {
+        const c = s.place_id ? byId.get(s.place_id) : undefined;
+        // Never repeat the same venue in one evening.
+        if (c && usedIds.has(c.id)) continue;
+        if (c) usedIds.add(c.id);
+        stops.push({
+          time: s.time,
+          category: s.category,
+          title: c?.name ?? s.title,
+          reason: s.reason,
+          memoryMoment: Boolean(s.memory_moment),
+          placeId: c?.id,
+          rating: c?.rating,
+          ratingCount: c?.ratingCount,
+          priceLevel: c?.priceLevel || undefined,
+          openNow: c?.openNow,
+          hours: c?.hours,
+          address: c?.address,
+          lat: c?.lat,
+          lng: c?.lng,
+        });
+      }
+      if (!stops.some((s) => s.memoryMoment) && stops.length > 1) stops[stops.length - 2].memoryMoment = true;
+
+      // Resolve photos for the chosen venues in parallel (best effort).
+      await Promise.all(
+        stops.map(async (s) => {
+          const c = s.placeId ? byId.get(s.placeId) : undefined;
+          if (c?.photoName) s.photoUrl = await resolvePhoto(c.photoName, googleKey!);
+        }),
+      );
+
+      const score = Math.min(97, 82 + (stops.some((s) => s.memoryMoment) ? 6 : 0) + stops.length * 2);
+      return Response.json(
+        {
+          plan: {
+            title: plan.title,
+            summary: plan.summary,
+            stops,
+            estimatedCost: plan.estimated_cost,
+            duration: plan.duration,
+            score,
+          },
+        },
+        { headers: CORS },
+      );
+    }
+  }
+
+  // ---- Fallback: generic AI plan (no invented business names) ----
+  let plan = await runAI(genericSystemPrompt(language), genericUserPrompt(body), false);
+  if (!validate(plan)) plan = await runAI(genericSystemPrompt(language), genericUserPrompt(body), false);
+  if (!validate(plan)) {
+    return Response.json(
+      { error: { code: 'PLAN_GENERATION_FAILED', message: 'We couldn’t craft this one. Try again?', retryable: true } },
+      { status: 502, headers: CORS },
+    );
+  }
+  const stops: StopOut[] = plan.stops.map((s) => ({
+    time: s.time,
+    category: s.category,
+    title: s.title,
+    reason: s.reason,
+    memoryMoment: Boolean(s.memory_moment),
+  }));
+  if (!stops.some((s) => s.memoryMoment) && stops.length > 1) stops[stops.length - 2].memoryMoment = true;
+  const score = Math.min(94, 80 + (stops.some((s) => s.memoryMoment) ? 6 : 0) + stops.length * 2);
+  return Response.json(
+    {
+      plan: {
+        title: plan.title,
+        summary: plan.summary,
+        stops,
+        estimatedCost: plan.estimated_cost,
+        duration: plan.duration,
+        score,
+      },
+    },
+    { headers: CORS },
+  );
+});

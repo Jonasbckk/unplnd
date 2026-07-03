@@ -1,0 +1,218 @@
+import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
+import { useCallback, useEffect, useState, type ComponentProps } from 'react';
+import { Pressable, ScrollView, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+
+import { Button, Card, Chip, Logo, Screen, Text } from '@/components/ui';
+import { useAlbumsStore } from '@/features/albums/albums-store';
+import { useEveningStore } from '@/features/evening/evening-store';
+import { getGreetingSegment } from '@/features/home/greeting';
+import { QUICK_CATEGORIES, startPlannerWithMood } from '@/features/planner/presets';
+import { getDiscoverPlaces, type DiscoverPlace } from '@/lib/discover';
+import { optionLabel, useT } from '@/lib/i18n';
+import { getCurrentLocation } from '@/lib/location';
+import { openInMaps } from '@/lib/maps';
+import { getWeather, type Weather } from '@/lib/weather';
+import { useTheme } from '@/theme';
+
+type IoniconName = ComponentProps<typeof Ionicons>['name'];
+
+/** Home — the emotional center. One question: "What do I want to do today?" (17_HOME) */
+export default function HomeScreen() {
+  const t = useTheme();
+  const { t: tr } = useT();
+  const router = useRouter();
+  const segment = getGreetingSegment();
+  const albums = useAlbumsStore((s) => s.albums);
+  const loadAlbums = useAlbumsStore((s) => s.loadAlbums);
+  const evening = useEveningStore((s) => s.evening);
+  const [weather, setWeather] = useState<Weather | null>(null);
+  const [nearby, setNearby] = useState<DiscoverPlace[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadData = useCallback(
+    async (force = false) => {
+      await Promise.all([
+        loadAlbums(),
+        // Weather for the real position; no location → no card (never a wrong-city forecast).
+        getCurrentLocation()
+          .then((loc) => (loc ? getWeather(loc.latitude, loc.longitude) : null))
+          .then(setWeather),
+        // Real recommended places nearby; loads independently, hidden until ready (17_HOME).
+        getDiscoverPlaces(undefined, force).then((r) => setNearby(r.places.slice(0, 6))),
+      ]);
+    },
+    [loadAlbums],
+  );
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadData(true);
+    setRefreshing(false);
+  }, [loadData]);
+
+  const currentStop = evening?.stops.find((s) => s.status === 'current');
+
+  return (
+    <Screen scroll onRefresh={onRefresh} refreshing={refreshing}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: t.spacing.sm,
+          marginBottom: t.spacing.lg,
+        }}
+      >
+        <Logo size={26} />
+        <Text variant="h3" color="textHeading" style={{ letterSpacing: 1.5, fontWeight: '700' }}>
+          UNPLND
+        </Text>
+      </View>
+
+      <Animated.View entering={FadeInDown.duration(350).delay(40)}>
+        <Text variant="small" color="textSecondary">
+          {tr(`home.greetings.${segment}.hello`)}
+        </Text>
+        <Text variant="displayMedium" style={{ marginTop: t.spacing.xs }}>
+          {tr(`home.greetings.${segment}.headline`)}
+        </Text>
+      </Animated.View>
+
+      {/* Real weather via Open-Meteo; hidden until loaded, never an error state (17_HOME). */}
+      {weather && (
+        <Animated.View entering={FadeInDown.duration(350).delay(110)}>
+          <Card
+            onPress={() => startPlannerWithMood(weather.mood)}
+            style={{ marginTop: t.spacing.lg, backgroundColor: t.colors.surfaceSecondary }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.base }}>
+              <Ionicons name={weather.icon as IoniconName} size={28} color={t.colors.accentOrange} />
+              <View style={{ flex: 1 }}>
+                <Text variant="h3">
+                  {weather.temperature}°C · {tr(`weather.conditions.${weather.key}`)}
+                </Text>
+                <Text variant="small" color="textSecondary" style={{ marginTop: 2 }}>
+                  {tr(`weather.suggestions.${weather.key}`)}
+                  {weather.sunset ? `  ·  ${tr('home.sunset', { time: weather.sunset })}` : ''}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={t.colors.textSecondary} />
+            </View>
+          </Card>
+        </Animated.View>
+      )}
+
+      {/* One primary action: continue the active evening, or plan a new one. */}
+      <Animated.View entering={FadeInDown.duration(350).delay(180)} style={{ marginTop: t.spacing.lg }}>
+        {evening ? (
+          <Card onPress={() => router.push('/evening')} style={{ backgroundColor: t.colors.primary }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.base }}>
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text variant="small" color="onPrimary" style={{ opacity: 0.85 }}>
+                  {tr('home.eveningLive')}
+                </Text>
+                <Text variant="h3" color="onPrimary">
+                  {currentStop ? tr('home.next', { title: currentStop.title }) : evening.plan.title}
+                </Text>
+              </View>
+              <Ionicons name="arrow-forward" size={22} color="#FFFFFF" />
+            </View>
+          </Card>
+        ) : (
+          <Button title={tr('home.planMyEvening')} onPress={() => router.navigate('/planner')} />
+        )}
+      </Animated.View>
+
+      <Animated.View entering={FadeInDown.duration(350).delay(250)}>
+        <Text variant="h3" style={{ marginTop: t.spacing.xl, marginBottom: t.spacing.md }}>
+          {tr('home.quickIdeas')}
+        </Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: t.spacing.sm }}>
+          {QUICK_CATEGORIES.map((category) => (
+            <Chip
+              key={category.label}
+              label={optionLabel(category.label)}
+              onPress={() => startPlannerWithMood(category.mood)}
+            />
+          ))}
+        </View>
+      </Animated.View>
+
+      {nearby.length > 0 && (
+        <Animated.View entering={FadeInDown.duration(350).delay(300)} style={{ marginTop: t.spacing.xl, gap: t.spacing.md }}>
+          <Text variant="h3">{tr('discover.nearby')}</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: t.spacing.base }}>
+            {nearby.map((place) => (
+              <Pressable key={place.id} onPress={() => openInMaps(place.name, place.id)} style={{ width: 160 }}>
+                <View style={{ borderRadius: t.radius.md, overflow: 'hidden', backgroundColor: t.colors.surfaceSecondary }}>
+                  {place.photoUrl ? (
+                    <Image source={{ uri: place.photoUrl }} style={{ width: '100%', height: 96 }} contentFit="cover" transition={200} />
+                  ) : (
+                    <View style={{ width: '100%', height: 96, alignItems: 'center', justifyContent: 'center' }}>
+                      <Ionicons name="image-outline" size={22} color={t.colors.textSecondary} />
+                    </View>
+                  )}
+                  <View style={{ padding: t.spacing.sm, gap: 3 }}>
+                    <Text variant="small" style={{ fontWeight: '600' }} numberOfLines={1}>
+                      {place.name}
+                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                      <Ionicons name="star" size={11} color={t.colors.accentOrange} />
+                      <Text variant="caption" color="textSecondary">
+                        {place.rating.toFixed(1)}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </Animated.View>
+      )}
+
+      {albums.length > 0 && (
+        <View style={{ marginTop: t.spacing.xl, gap: t.spacing.md }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text variant="h3">{tr('home.recentMemories')}</Text>
+            <Text variant="small" color="textSecondary" onPress={() => router.navigate('/albums')}>
+              {tr('common.seeAll')}
+            </Text>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: t.spacing.base }}
+          >
+            {albums.slice(0, 5).map((album) => (
+              <Pressable
+                key={album.id}
+                onPress={() => router.push({ pathname: '/album/[id]', params: { id: album.id } })}
+                style={{ width: 150 }}
+              >
+                <View
+                  style={{
+                    height: 100,
+                    borderRadius: t.radius.md,
+                    backgroundColor: album.coverColor,
+                    justifyContent: 'flex-end',
+                    padding: t.spacing.sm,
+                  }}
+                >
+                  <Text variant="small" color="onPrimary" style={{ fontWeight: '600' }} numberOfLines={2}>
+                    {album.title}
+                  </Text>
+                </View>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+    </Screen>
+  );
+}

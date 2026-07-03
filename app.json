@@ -1,0 +1,59 @@
+{
+  "expo": {
+    "name": "UNPLND",
+    "slug": "unplnd",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "unplnd",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#F9F4EF",
+        "foregroundImage": "./assets/images/android-icon-foreground.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "single",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#F9F4EF",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 160,
+          "dark": {
+            "backgroundColor": "#171412",
+            "image": "./assets/images/splash-icon.png",
+            "imageWidth": 160
+          }
+        }
+      ],
+      "expo-localization",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "UNPLND nutzt deinen Standort, um großartige Orte in deiner Nähe zu finden."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "UNPLND braucht Zugriff auf deine Fotos, damit du Erinnerungen zu deinen Alben hinzufügen kannst."
+        }
+      ],
+      "expo-notifications"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}
