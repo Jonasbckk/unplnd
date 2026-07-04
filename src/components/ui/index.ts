@@ -9,3 +9,4 @@ export { Input, type InputProps } from './input';
 export { SegmentedControl, type SegmentedControlProps, type SegmentedOption } from './segmented-control';
 export { NetworkBanner } from './network-banner';
 export { Toast } from './toast';
+export { StarRating, type StarRatingProps } from './star-rating';

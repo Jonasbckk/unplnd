@@ -185,6 +185,8 @@ export const en = {
     stopMany: '%{count} stops',
     createAlbum: 'Create memory album',
     maybeLater: 'Maybe later',
+    rateTitle: 'How was your evening?',
+    rateStops: 'And the individual spots?',
   },
   albums: {
     title: 'Memories',

@@ -3,13 +3,14 @@ import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 
-import { Button, Logo, Screen, Text } from '@/components/ui';
+import { Button, Card, Logo, Screen, StarRating, Text } from '@/components/ui';
 import { useAlbumsStore } from '@/features/albums/albums-store';
 import { useEveningStore } from '@/features/evening/evening-store';
 import { haptics } from '@/lib/haptics';
 import { useT } from '@/lib/i18n';
 import { getCurrentLocation } from '@/lib/location';
 import { notifyAlbumReady } from '@/lib/notifications';
+import { savePlaceRatings, savePlanRating } from '@/lib/ratings';
 import { useAppStore } from '@/store/app-store';
 import { useTheme } from '@/theme';
 
@@ -22,6 +23,8 @@ export default function EveningComplete() {
   const finishEvening = useEveningStore((s) => s.finishEvening);
   const createFromPlan = useAlbumsStore((s) => s.createFromPlan);
   const [saving, setSaving] = useState(false);
+  const [planRating, setPlanRating] = useState(0);
+  const [stopRatings, setStopRatings] = useState<Record<string, number>>({});
 
   useEffect(() => {
     haptics.success();
@@ -34,9 +37,23 @@ export default function EveningComplete() {
   const completed = evening.stops.filter((s) => s.status === 'completed').length;
   const durationMin = Math.max(1, Math.round((Date.now() - new Date(evening.startedAt).getTime()) / 60000));
   const durationLabel = durationMin >= 60 ? `${Math.round(durationMin / 60)}h ${durationMin % 60}min` : `${durationMin}min`;
+  const ratableStops = evening.plan.stops.filter((s) => s.placeId);
+
+  const persistRatings = async () => {
+    await Promise.all([
+      savePlanRating(evening.planRowId, planRating),
+      savePlaceRatings(
+        Object.entries(stopRatings).map(([placeId, rating]) => ({
+          placeId,
+          placeName: evening.plan.stops.find((s) => s.placeId === placeId)?.title,
+          rating,
+        })),
+      ),
+    ]);
+  };
 
   return (
-    <Screen contentStyle={{ flex: 1, justifyContent: 'center', gap: t.spacing.lg }}>
+    <Screen scroll contentStyle={{ gap: t.spacing.xl, paddingTop: t.spacing.xxl, paddingBottom: t.spacing.lg }}>
       <Animated.View entering={FadeInUp.duration(450)} style={{ alignItems: 'center', gap: t.spacing.lg }}>
         <Logo size={64} />
         <View style={{ alignItems: 'center', gap: t.spacing.sm }}>
@@ -52,12 +69,46 @@ export default function EveningComplete() {
         </View>
       </Animated.View>
 
-      <Animated.View entering={FadeInDown.duration(400).delay(200)} style={{ gap: t.spacing.md, marginTop: t.spacing.lg }}>
+      <Animated.View entering={FadeInDown.duration(400).delay(150)}>
+        <Card>
+          <View style={{ gap: t.spacing.md }}>
+            <View style={{ alignItems: 'center', gap: t.spacing.sm }}>
+              <Text variant="h3" center>
+                {tr('complete.rateTitle')}
+              </Text>
+              <StarRating value={planRating} onChange={setPlanRating} />
+            </View>
+            {ratableStops.length > 0 && (
+              <>
+                <View style={{ height: 1, backgroundColor: t.colors.divider, marginVertical: t.spacing.xs }} />
+                <Text variant="small" color="textSecondary">
+                  {tr('complete.rateStops')}
+                </Text>
+                {ratableStops.map((s) => (
+                  <View key={s.placeId} style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.md }}>
+                    <Text variant="body" style={{ flex: 1 }} numberOfLines={1}>
+                      {s.title}
+                    </Text>
+                    <StarRating
+                      value={stopRatings[s.placeId as string] ?? 0}
+                      onChange={(v) => setStopRatings((prev) => ({ ...prev, [s.placeId as string]: v }))}
+                      size={20}
+                    />
+                  </View>
+                ))}
+              </>
+            )}
+          </View>
+        </Card>
+      </Animated.View>
+
+      <Animated.View entering={FadeInDown.duration(400).delay(250)} style={{ gap: t.spacing.md }}>
         <Button
           title={tr('complete.createAlbum')}
           loading={saving}
           onPress={async () => {
             setSaving(true);
+            await persistRatings();
             const location = await getCurrentLocation();
             const id = await createFromPlan(evening.plan, evening.mood, location?.city ?? '');
             await finishEvening();
@@ -76,6 +127,7 @@ export default function EveningComplete() {
           title={tr('complete.maybeLater')}
           variant="secondary"
           onPress={async () => {
+            await persistRatings();
             await finishEvening();
             router.replace('/');
           }}

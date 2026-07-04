@@ -401,7 +401,7 @@ function curationSystemPrompt(language: 'de' | 'en'): string {
     '- Use each venue AT MOST ONCE — never repeat a place in the same evening.',
     '- Skip generic fast-food chains and takeaways — a fried-chicken counter is not an evening destination; prefer places with character. A supermarket works ONLY as a quick pre-party drinks run, never as a real stop.',
     '- The arc should feel like a real night out: a proper sit-down dinner or nice drinks early, the highlight in the middle/peak, a relaxed close — not junk food dropped in the middle.',
-    '- OPENING HOURS ARE A HARD CONSTRAINT: each venue has "hours_today" (its open–close today). Only schedule a stop at a time when that venue is OPEN. A place that closes early (e.g. a garden closing at 19:00) MUST be placed earlier in the evening — never schedule anything at or after its closing time. If a venue does not fit any sensible slot, drop it.',
+    '- OPENING HOURS ARE A HARD CONSTRAINT: each venue has "hours_today" (open–close today) and "open_now" (true = open at the CURRENT time, Google-accurate). Only schedule a stop when the venue is actually open at that stop\'s time. If the plan starts around NOW (evening/night), every venue MUST be open_now=true. NEVER schedule a venue that is closed at the stop\'s time — e.g. at 03:00 a restaurant with hours 11:00–22:00 is CLOSED; drop it. If fewer than 3 venues are genuinely open, return no_options instead of scheduling closed ones.',
     "- START TIME — anchor the plan to the user's current local time (given below): if it is still daytime (before ~17:00), plan for THIS EVENING and start around 18:00–19:00; if it is already evening or night (17:00 onward, incl. after midnight), the user wants to head out soon — start the first stop within ~30–45 min of NOW. NEVER place a stop in the past. If it is very late and little is open, make a shorter, honest plan with only what is genuinely open at that hour.",
     '- Sequence for a tight route: keep consecutive stops close together (use the distances), and order them so the arc makes geographic and opening-hours sense — no long detours back and forth.',
     '- Be clever and money-smart when it fits the mood: e.g. for a budget party, a quick stop at a supermarket to grab drinks before the club is a great move.',
@@ -420,6 +420,7 @@ function curationUserPrompt(req: PlanRequest, candidates: Candidate[]): string {
     reviews: c.ratingCount,
     price: c.priceLevel || '?',
     hours_today: c.hours ?? 'unknown', // today's open–close — a HARD constraint on stop times
+    open_now: c.openNow, // true = open at the CURRENT time (Google-accurate)
     distance_m: c.distanceM,
     about: c.summary ?? undefined,
   }));

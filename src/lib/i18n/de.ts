@@ -221,6 +221,8 @@ export const de = {
     stopMany: '%{count} Stopps',
     createAlbum: 'Erinnerungs-Album erstellen',
     maybeLater: 'Vielleicht später',
+    rateTitle: 'Wie war dein Abend?',
+    rateStops: 'Und die einzelnen Orte?',
   },
   albums: {
     title: 'Erinnerungen',
