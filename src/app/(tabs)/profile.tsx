@@ -8,6 +8,8 @@ import { Button, Card, Screen, Text } from '@/components/ui';
 import { useAlbumsStore } from '@/features/albums/albums-store';
 import { useAuthStore } from '@/features/auth/auth-store';
 import { useFavoritesStore } from '@/features/favorites/favorites-store';
+import { ProfileBanner } from '@/features/profile/ProfileBanner';
+import { useProfileStyle } from '@/features/profile/profile-styles';
 import { haptics } from '@/lib/haptics';
 import { optionLabel, useT } from '@/lib/i18n';
 import { useTheme } from '@/theme';
@@ -31,7 +33,17 @@ function mostCommon(items: string[]): string | undefined {
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
-function Stat({ icon, value, label }: { icon: IoniconName; value: string | number; label: string }) {
+function Stat({
+  icon,
+  value,
+  label,
+  accent,
+}: {
+  icon: IoniconName;
+  value: string | number;
+  label: string;
+  accent: string;
+}) {
   const t = useTheme();
   return (
     <View style={{ alignItems: 'center', gap: 4, flex: 1 }}>
@@ -45,7 +57,7 @@ function Stat({ icon, value, label }: { icon: IoniconName; value: string | numbe
           justifyContent: 'center',
         }}
       >
-        <Ionicons name={icon} size={20} color={t.colors.primary} />
+        <Ionicons name={icon} size={20} color={accent} />
       </View>
       <Text variant="h2" color="textHeading" numberOfLines={1}>
         {value}
@@ -68,6 +80,8 @@ export default function ProfileScreen() {
   const favorites = useFavoritesStore((s) => s.places);
   const toggleFavorite = useFavoritesStore((s) => s.toggleFavorite);
   const loadFavorites = useFavoritesStore((s) => s.loadFavorites);
+  const style = useProfileStyle();
+  const accent = style.accent;
 
   useEffect(() => {
     void loadAlbums();
@@ -85,67 +99,73 @@ export default function ProfileScreen() {
 
   return (
     <Screen scroll contentStyle={{ gap: t.spacing.lg }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.base }}>
-        <Pressable
-          onPress={() => router.push('/profile-edit' as Href)}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.base, flex: 1 }}
-        >
-          <View style={{ width: 64, height: 64 }}>
-            <View
-              style={{
-                width: 64,
-                height: 64,
-                borderRadius: t.radius.pill,
-                backgroundColor: t.colors.primary,
-                alignItems: 'center',
-                justifyContent: 'center',
-                overflow: 'hidden',
-              }}
-            >
-              {avatarUrl ? (
-                <Image source={{ uri: avatarUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
-              ) : (
-                <Text variant="h1" color="onPrimary">
-                  {name.charAt(0).toUpperCase()}
-                </Text>
-              )}
+      <ProfileBanner style={style}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.base }}>
+          <Pressable
+            onPress={() => router.push('/profile-edit' as Href)}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.base, flex: 1 }}
+          >
+            <View style={{ width: 64, height: 64 }}>
+              <View
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: t.radius.pill,
+                  backgroundColor: accent,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden',
+                  borderWidth: 2,
+                  borderColor: style.onGradient,
+                }}
+              >
+                {avatarUrl ? (
+                  <Image source={{ uri: avatarUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                ) : (
+                  <Text variant="h1" color="onPrimary">
+                    {name.charAt(0).toUpperCase()}
+                  </Text>
+                )}
+              </View>
+              <View
+                style={{
+                  position: 'absolute',
+                  bottom: -2,
+                  right: -2,
+                  width: 24,
+                  height: 24,
+                  borderRadius: t.radius.pill,
+                  backgroundColor: accent,
+                  borderWidth: 2,
+                  borderColor: style.onGradient,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Ionicons name="pencil" size={11} color={t.colors.onPrimary} />
+              </View>
             </View>
-            <View
-              style={{
-                position: 'absolute',
-                bottom: -2,
-                right: -2,
-                width: 24,
-                height: 24,
-                borderRadius: t.radius.pill,
-                backgroundColor: t.colors.surface,
-                borderWidth: 2,
-                borderColor: t.colors.background,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Ionicons name="pencil" size={11} color={t.colors.primary} />
+            <View style={{ flex: 1 }}>
+              <Text variant="h1" style={{ color: style.onGradient }}>
+                {name}
+              </Text>
+              <Text variant="small" style={{ color: style.onGradient, opacity: 0.85 }}>
+                {tr('profile.memberSince', { year: memberSince })}
+              </Text>
             </View>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text variant="h1">{name}</Text>
-            <Text variant="small" color="textSecondary">
-              {tr('profile.memberSince', { year: memberSince })}
-            </Text>
-          </View>
-        </Pressable>
-        <Pressable onPress={() => router.push('/settings')} hitSlop={8}>
-          <Ionicons name="settings-outline" size={24} color={t.colors.textSecondary} />
-        </Pressable>
-      </View>
+          </Pressable>
+          <Pressable onPress={() => router.push('/settings')} hitSlop={8}>
+            <Ionicons name="settings-outline" size={24} color={style.onGradient} />
+          </Pressable>
+        </View>
+      </ProfileBanner>
 
       <Card style={{ backgroundColor: t.colors.surfaceSecondary }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-around', gap: t.spacing.xs }}>
-          <Stat icon="images-outline" value={memories} label={tr('profile.memories')} />
-          <Stat icon="navigate-outline" value={cities} label={tr('profile.cities')} />
-          <Stat icon="heart-outline" value={favorites.length} label={tr('profile.saved')} />
-          <Stat icon="sparkles-outline" value={favoriteMood} label={tr('profile.topMood')} />
+          <Stat icon="images-outline" value={memories} label={tr('profile.memories')} accent={accent} />
+          <Stat icon="navigate-outline" value={cities} label={tr('profile.cities')} accent={accent} />
+          <Stat icon="heart-outline" value={favorites.length} label={tr('profile.saved')} accent={accent} />
+          <Stat icon="sparkles-outline" value={favoriteMood} label={tr('profile.topMood')} accent={accent} />
         </View>
       </Card>
 
@@ -198,7 +218,7 @@ export default function ProfileScreen() {
                   borderTopColor: t.colors.divider,
                 }}
               >
-                <Ionicons name="location-outline" size={18} color={t.colors.primary} />
+                <Ionicons name="location-outline" size={18} color={accent} />
                 <Text variant="body" style={{ flex: 1 }} numberOfLines={1}>
                   {place}
                 </Text>
@@ -209,7 +229,7 @@ export default function ProfileScreen() {
                     void toggleFavorite(place);
                   }}
                 >
-                  <Ionicons name="heart" size={18} color={t.colors.primary} />
+                  <Ionicons name="heart" size={18} color={accent} />
                 </Pressable>
               </View>
             ))}
@@ -218,6 +238,11 @@ export default function ProfileScreen() {
       )}
 
       <View style={{ gap: t.spacing.md, marginTop: t.spacing.sm }}>
+        <Button
+          title={tr('profile.style')}
+          variant="secondary"
+          onPress={() => router.push('/profile-style' as Href)}
+        />
         {albums.length > 0 && (
           <Button
             title={tr('profile.statistics')}

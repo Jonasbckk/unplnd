@@ -297,6 +297,7 @@ export const de = {
     topMood: 'Top-Stimmung',
     recentMemories: 'Letzte Erinnerungen',
     savedPlaces: 'Gespeicherte Orte',
+    style: 'Profil-Stil',
     settings: 'Einstellungen',
     statistics: 'Deine Abende in Zahlen',
     emptyStory: 'Deine Geschichte beginnt heute Abend. Plane deinen ersten Abend.',
@@ -309,6 +310,24 @@ export const de = {
     saved: 'Profil aktualisiert',
     avatarUpdated: 'Profilbild aktualisiert',
     failed: 'Hat nicht geklappt. Versuch es nochmal.',
+  },
+  profileStyle: {
+    title: 'Profil-Stil',
+    subtitle: 'Gib deinem Profil deinen eigenen Look.',
+    premiumBadge: 'Premium',
+    applied: 'Stil übernommen',
+    names: {
+      terracotta: 'Terracotta',
+      espresso: 'Espresso',
+      ocean: 'Ozean',
+      olive: 'Olive',
+      sunset: 'Sonnenuntergang',
+      midnight: 'Mitternacht',
+    },
+    premiumTitle: 'UNPLND Premium',
+    premiumBody:
+      'Besondere Profil-Stile mit Farben und Animationen gehören zu UNPLND Premium — damit wird dein Profil unverwechselbar.',
+    premiumDismiss: 'Verstanden',
   },
   stats: {
     title: 'Deine Abende',

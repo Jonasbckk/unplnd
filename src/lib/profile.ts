@@ -27,6 +27,12 @@ export async function updateProfileName(name: string): Promise<boolean> {
   return true;
 }
 
+/** Set the profile style (accent + banner). Stored on the auth user → reactive app-wide. */
+export async function updateProfileStyle(styleId: string): Promise<boolean> {
+  const { error } = await supabase.auth.updateUser({ data: { profile_style: styleId } });
+  return !error;
+}
+
 /** Upload a new avatar → public URL, stored on the auth user + the profiles row. Returns the URL. */
 export async function updateProfileAvatar(asset: ImagePicker.ImagePickerAsset): Promise<string | null> {
   const userId = useAuthStore.getState().user?.id;
