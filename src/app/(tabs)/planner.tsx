@@ -1,8 +1,14 @@
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 
-import { Button, Input, Screen, Text } from '@/components/ui';
+import { Button, FadeInUp, Input, Screen, Text } from '@/components/ui';
 import { LocationChip } from '@/features/location/LocationChip';
 import { AnswerRow } from '@/features/planner/AnswerRow';
 import { QuestionCard } from '@/features/planner/QuestionCard';
@@ -10,6 +16,24 @@ import { QUESTIONS, type Question } from '@/features/planner/questions';
 import { isPlanReady, usePlannerStore } from '@/features/planner/planner-store';
 import { optionLabel, useT } from '@/lib/i18n';
 import { useTheme } from '@/theme';
+
+/** A progress bar that springs smoothly to each new fraction (Reduce-Motion → jumps). */
+function AnimatedProgress({ fraction }: { fraction: number }) {
+  const t = useTheme();
+  const reduced = useReducedMotion();
+  const w = useSharedValue(fraction);
+  useEffect(() => {
+    w.value = reduced ? fraction : withSpring(fraction, { damping: 18, stiffness: 140 });
+  }, [fraction, reduced, w]);
+  const style = useAnimatedStyle(() => ({ width: `${w.value * 100}%` }));
+  return (
+    <View style={{ height: 6, borderRadius: t.radius.pill, backgroundColor: t.colors.border, overflow: 'hidden' }}>
+      <Animated.View
+        style={[{ height: '100%', backgroundColor: t.colors.primary, borderRadius: t.radius.pill }, style]}
+      />
+    </View>
+  );
+}
 
 /** The Planner — a conversation, not a form (Constitution Rule 12). One question at a time. */
 export default function PlannerScreen() {
@@ -65,31 +89,28 @@ export default function PlannerScreen() {
 
       <Text variant="displayMedium">{tr('planner.title')}</Text>
 
-      <View style={{ height: 4, borderRadius: t.radius.pill, backgroundColor: t.colors.border, overflow: 'hidden' }}>
-        <View
-          style={{
-            width: `${(requiredAnswered / 5) * 100}%`,
-            height: '100%',
-            backgroundColor: t.colors.primary,
-            borderRadius: t.radius.pill,
-          }}
-        />
+      <View style={{ gap: t.spacing.sm }}>
+        <Text variant="caption" color="textSecondary" style={{ alignSelf: 'flex-end' }}>
+          {`${requiredAnswered}/5`}
+        </Text>
+        <AnimatedProgress fraction={requiredAnswered / 5} />
       </View>
 
       {QUESTIONS.slice(0, revealed + 1).map((q, i) => {
         if (i === activeIndex) {
           const selected = q.key === 'preferences' ? answers.preferences : answers[q.key];
-          return <QuestionCard key={q.key} question={q} selected={selected} onSelect={(v) => onSelect(i, v)} />;
+          return (
+            <FadeInUp key={q.key}>
+              <QuestionCard question={q} selected={selected} onSelect={(v) => onSelect(i, v)} />
+            </FadeInUp>
+          );
         }
         const answered = q.key === 'preferences' ? answers.preferences.length > 0 : Boolean(answers[q.key]);
         if (!answered) return null;
         return (
-          <AnswerRow
-            key={q.key}
-            label={tr(`planner.shorts.${q.key}`)}
-            value={displayValue(q)}
-            onEdit={() => setEditing(i)}
-          />
+          <FadeInUp key={q.key}>
+            <AnswerRow label={tr(`planner.shorts.${q.key}`)} value={displayValue(q)} onEdit={() => setEditing(i)} />
+          </FadeInUp>
         );
       })}
 
