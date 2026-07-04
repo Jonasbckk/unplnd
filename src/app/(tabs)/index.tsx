@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { useCallback, useEffect, useState, type ComponentProps } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -10,6 +10,7 @@ import { useAlbumsStore } from '@/features/albums/albums-store';
 import { useEveningStore } from '@/features/evening/evening-store';
 import { getGreetingSegment } from '@/features/home/greeting';
 import { QUICK_CATEGORIES, startPlannerWithMood } from '@/features/planner/presets';
+import { getCommunityPlans, type CommunityPlan } from '@/lib/community';
 import { getDiscoverPlaces, type DiscoverPlace } from '@/lib/discover';
 import { optionLabel, useT } from '@/lib/i18n';
 import { getCurrentLocation } from '@/lib/location';
@@ -30,6 +31,7 @@ export default function HomeScreen() {
   const evening = useEveningStore((s) => s.evening);
   const [weather, setWeather] = useState<Weather | null>(null);
   const [nearby, setNearby] = useState<DiscoverPlace[]>([]);
+  const [community, setCommunity] = useState<CommunityPlan[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
   const loadData = useCallback(
@@ -42,6 +44,8 @@ export default function HomeScreen() {
           .then(setWeather),
         // Real recommended places nearby; loads independently, hidden until ready (17_HOME).
         getDiscoverPlaces(undefined, force).then((r) => setNearby(r.places.slice(0, 6))),
+        // Community evenings people published near you (Feature D) — surfaces the feed on Home.
+        getCommunityPlans().then((r) => setCommunity(r.plans.slice(0, 6))),
       ]);
     },
     [loadAlbums],
@@ -167,6 +171,54 @@ export default function HomeScreen() {
                       <Text variant="caption" color="textSecondary">
                         {place.rating.toFixed(1)}
                       </Text>
+                    </View>
+                  </View>
+                </View>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </Animated.View>
+      )}
+
+      {community.length > 0 && (
+        <Animated.View entering={FadeInDown.duration(350).delay(340)} style={{ marginTop: t.spacing.xl, gap: t.spacing.md }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text variant="h3">{tr('discover.communityTitle')}</Text>
+            <Text variant="small" color="textSecondary" onPress={() => router.push('/community' as Href)}>
+              {tr('common.seeAll')}
+            </Text>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: t.spacing.base }}>
+            {community.map((plan) => (
+              <Pressable
+                key={plan.id}
+                onPress={() => router.push({ pathname: '/community/[id]', params: { id: plan.id } })}
+                style={{ width: 200 }}
+              >
+                <View style={{ borderRadius: t.radius.md, overflow: 'hidden', backgroundColor: t.colors.surfaceSecondary }}>
+                  {plan.photos[0] ? (
+                    <Image source={{ uri: plan.photos[0] }} style={{ width: '100%', height: 110 }} contentFit="cover" transition={200} />
+                  ) : (
+                    <View style={{ width: '100%', height: 110, alignItems: 'center', justifyContent: 'center' }}>
+                      <Ionicons name="image-outline" size={22} color={t.colors.textSecondary} />
+                    </View>
+                  )}
+                  <View style={{ padding: t.spacing.sm, gap: 3 }}>
+                    <Text variant="small" style={{ fontWeight: '600' }} numberOfLines={1}>
+                      {plan.title}
+                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text variant="caption" color="textSecondary" numberOfLines={1} style={{ flex: 1 }}>
+                        {tr('community.by', { name: plan.authorName ?? tr('community.someone') })}
+                      </Text>
+                      {plan.starCount > 0 && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                          <Ionicons name="star" size={11} color={t.colors.accentOrange} />
+                          <Text variant="caption" color="textSecondary">
+                            {plan.starCount}
+                          </Text>
+                        </View>
+                      )}
                     </View>
                   </View>
                 </View>
