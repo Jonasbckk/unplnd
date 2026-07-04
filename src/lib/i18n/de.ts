@@ -183,6 +183,14 @@ export const de = {
       'Plane die perfekte Route…',
       'Fast fertig…',
     ],
+    noOptionsTitle: 'Gerade ist nichts Passendes offen',
+    noOptionsBody:
+      'Um diese Uhrzeit finden wir mit deinen Einstellungen nichts Offenes. Ändere Budget, Transport oder Vibe — oder versuch es später nochmal.',
+    failedTitle: 'Das hat gerade nicht geklappt',
+    failedBody:
+      'Bei uns ist kurz etwas schiefgelaufen. Versuch es gleich nochmal — wenn es weiter hakt, schreib uns an Info@unplnd.com.',
+    retry: 'Nochmal versuchen',
+    back: 'Einstellungen ändern',
   },
   route: {
     experience: 'Erlebnis %{score}',
@@ -313,29 +321,5 @@ export const de = {
       cafes: { title: 'Kleine Cafés', sub: 'Ruhige Ecken, die Locals lieben.' },
       food: { title: 'Essen abseits der Wege', sub: 'Die Orte ohne Schilder.' },
     },
-  },
-  mock: {
-    title: 'Dein Abend: %{mood}',
-    summary: 'Abendessen, ein kleines Abenteuer und ein Ausblick zum Erinnern.',
-    dinners: [
-      { title: 'Abendessen in einer gemütlichen Trattoria', reason: 'Bekannt für hausgemachte Pasta.' },
-      { title: 'Abendessen im Kerzenschein-Bistro', reason: 'Warm und persönlich.' },
-      { title: 'Streetfood auf dem Abendmarkt', reason: 'Ein Dutzend Aromen an einem Ort.' },
-    ],
-    activities: [
-      { title: 'Minigolf unter Lichterketten', reason: 'Verspielt — und man kommt ins Reden.' },
-      { title: 'Ein Spaziergang durch die Altstadt', reason: 'Ruhige Gassen, gute Gespräche.' },
-      { title: 'Ein langsamer Weg am Fluss entlang', reason: 'Wie gemacht für Gespräche.' },
-    ],
-    moments: [
-      { title: 'Golden Hour am Aussichtspunkt', reason: 'Der beste Blick über die Stadt.' },
-      { title: 'Sonnenuntergang am See', reason: 'Die perfekte Pause.' },
-      { title: 'Skyline von der alten Brücke', reason: 'Den kleinen Umweg wert.' },
-    ],
-    drinks: [
-      { title: 'Cocktails in der Rooftop-Bar', reason: 'Gute Drinks, bessere Aussicht.' },
-      { title: 'Naturwein in einer winzigen Bar', reason: 'Ein lokaler Liebling.' },
-      { title: 'Später Nachtisch & Kaffee', reason: 'Ein süßer Abschluss.' },
-    ],
   },
 } as const;

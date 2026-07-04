@@ -2,7 +2,6 @@ import { i18n } from '@/lib/i18n';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import type { AppLocation } from '@/lib/location';
 import { getWeather } from '@/lib/weather';
-import { generatePlan } from './generate';
 import type { GeneratedPlan, PlannerAnswers } from './types';
 
 // The real-places pipeline (Google Places → AI curation → photos) needs more room than a
@@ -36,13 +35,23 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
  * Location is REQUIRED — callers gate on it (no default-city plans). Falls back to the local
  * generator only on AI/service failure, never on missing location (18A).
  */
-export async function generateEvening(answers: PlannerAnswers, location: AppLocation): Promise<GeneratedPlan> {
+/** A plan, or an honest failure the UI turns into a message — we never show a mock (founder decision). */
+export type GenerateResult =
+  | { ok: true; plan: GeneratedPlan }
+  | { ok: false; kind: 'no_options' | 'failed' };
+
+export async function generateEvening(answers: PlannerAnswers, location: AppLocation): Promise<GenerateResult> {
   if (!isSupabaseConfigured) {
-    return generatePlan(answers);
+    if (__DEV__) console.warn('[UNPLND] Supabase not configured — cannot generate a plan.');
+    return { ok: false, kind: 'failed' };
   }
 
   try {
     const weather = await getWeather(location.latitude, location.longitude).catch(() => null);
+    // The user's real local time, so the plan starts from "now" — not a hardcoded 19:00.
+    const nowDate = new Date();
+    const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const localNow = `${weekdays[nowDate.getDay()]} ${String(nowDate.getHours()).padStart(2, '0')}:${String(nowDate.getMinutes()).padStart(2, '0')}`;
     const { data, error } = await withTimeout(
       supabase.functions.invoke<EdgeResponse>('generate-plan', {
         body: {
@@ -57,6 +66,7 @@ export async function generateEvening(answers: PlannerAnswers, location: AppLoca
           latitude: location.latitude,
           longitude: location.longitude,
           language: i18n.locale,
+          now: localNow,
           weather: weather
             ? { condition: weather.conditionEn, temperature: weather.temperature, sunset: weather.sunset }
             : undefined,
@@ -65,26 +75,21 @@ export async function generateEvening(answers: PlannerAnswers, location: AppLoca
       TIMEOUT_MS,
     );
 
-    if (error || !data?.plan) {
-      if (__DEV__) {
-        // Dev-only: surface WHY we fell back so we can tell timeout vs Google/AI failure apart.
-        // Never shown to users (Constitution: no exposed errors).
-        console.warn(
-          '[UNPLND] Planner fiel auf Mock zurück:',
-          error?.message ?? data?.error?.message ?? 'Edge Function lieferte keinen Plan (kein data.plan)',
-        );
-      }
-      return generatePlan(answers);
+    if (data?.plan) return { ok: true, plan: data.plan };
+    // NO_OPTIONS comes back at HTTP 200 so we can tell "nothing open" apart from a real failure.
+    if (data?.error?.code === 'NO_OPTIONS') return { ok: false, kind: 'no_options' };
+    if (__DEV__) {
+      console.warn('[UNPLND] Plan fehlgeschlagen:', error?.message ?? data?.error?.code ?? 'unbekannt');
     }
-    return data.plan;
+    return { ok: false, kind: 'failed' };
   } catch (e) {
     if (__DEV__) {
       const msg = (e as Error)?.message;
       console.warn(
-        '[UNPLND] Planner fiel auf Mock zurück:',
+        '[UNPLND] Plan fehlgeschlagen:',
         msg === 'timeout' ? `Zeitüberschreitung nach ${TIMEOUT_MS / 1000}s` : (msg ?? 'Netzwerk-/Serverfehler'),
       );
     }
-    return generatePlan(answers);
+    return { ok: false, kind: 'failed' };
   }
 }

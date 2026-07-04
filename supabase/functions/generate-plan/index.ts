@@ -17,6 +17,8 @@ interface PlanRequest {
   request?: string;
   city?: string;
   language?: 'de' | 'en';
+  /** User's current LOCAL time as "Weekday HH:MM" (e.g. "Saturday 01:40"). Anchors the schedule to now. */
+  now?: string;
   latitude?: number;
   longitude?: number;
   weather?: { condition: string; temperature: number; sunset?: string };
@@ -390,10 +392,12 @@ function curationSystemPrompt(language: 'de' | 'en'): string {
     '- Skip generic fast-food chains and takeaways — a fried-chicken counter is not an evening destination; prefer places with character. A supermarket works ONLY as a quick pre-party drinks run, never as a real stop.',
     '- The arc should feel like a real night out: a proper sit-down dinner or nice drinks early, the highlight in the middle/peak, a relaxed close — not junk food dropped in the middle.',
     '- OPENING HOURS ARE A HARD CONSTRAINT: each venue has "hours_today" (its open–close today). Only schedule a stop at a time when that venue is OPEN. A place that closes early (e.g. a garden closing at 19:00) MUST be placed earlier in the evening — never schedule anything at or after its closing time. If a venue does not fit any sensible slot, drop it.',
+    "- START TIME — anchor the plan to the user's current local time (given below): if it is still daytime (before ~17:00), plan for THIS EVENING and start around 18:00–19:00; if it is already evening or night (17:00 onward, incl. after midnight), the user wants to head out soon — start the first stop within ~30–45 min of NOW. NEVER place a stop in the past. If it is very late and little is open, make a shorter, honest plan with only what is genuinely open at that hour.",
     '- Sequence for a tight route: keep consecutive stops close together (use the distances), and order them so the arc makes geographic and opening-hours sense — no long detours back and forth.',
     '- Be clever and money-smart when it fits the mood: e.g. for a budget party, a quick stop at a supermarket to grab drinks before the club is a great move.',
     '- VARIETY: make each plan fresh. Do not just pick the single highest-rated options — curate a characterful, non-obvious mix, and choose differently each time you are asked.',
     '- Before finalizing, RE-READ the plan and verify: no venue repeats, no fast-food chains, every description matches the venue\'s real type, the stops flow geographically and by opening hours, and there are zero clichés. Fix anything that fails.',
+    '- NO FILLER: if — after honestly checking the current time and every venue\'s hours_today — you cannot assemble at least 3 stops that are genuinely OPEN and make sense together, do NOT invent or force anything. Instead return {"no_options": true} with an empty "stops" array. But check for real first: depending on the area, late-night bars, clubs and eateries may well be open — if enough are, build the plan as normal.',
   ].join('\n');
 }
 
@@ -413,6 +417,7 @@ function curationUserPrompt(req: PlanRequest, candidates: Candidate[]): string {
   if (req.request) {
     parts.push(`The user asked, in their own words: "${req.request}" — honor this request above everything else.`);
   }
+  parts.push(`Current local time: ${req.now ?? 'unknown'} — schedule from here; never put a stop in the past.`);
   parts.push(`City: ${req.city ?? ''}`);
   if (req.mood) parts.push(`Mood: ${req.mood}`);
   parts.push(`Group: ${req.group ?? '2'}`);
@@ -433,29 +438,6 @@ function curationUserPrompt(req: PlanRequest, candidates: Candidate[]): string {
   return parts.join('\n');
 }
 
-// Fallback (no Places): generic, no invented business names.
-function genericSystemPrompt(language: 'de' | 'en'): string {
-  return [
-    ...baseRules(language),
-    '- NEVER invent specific business names, addresses, or opening hours. Describe the KIND of place instead (e.g. "a tiny family-run trattoria in the old town").',
-  ].join('\n');
-}
-
-function genericUserPrompt(req: PlanRequest): string {
-  const parts = [
-    `City: ${req.city ?? 'your city'}`,
-    `Mood: ${req.mood ?? 'Surprise me'}`,
-    `Group: ${req.group ?? '2'}`,
-    `Budget: ${req.budget ?? '€50'}`,
-    `Transport: ${req.transport ?? 'Walking'}`,
-    `Available time: ${req.time ?? 'Whole evening'}`,
-  ];
-  if (req.preferences?.length) parts.push(`Preferences: ${req.preferences.join(', ')}`);
-  if (req.weather) parts.push(`Weather: ${req.weather.condition}, ${req.weather.temperature}°C`);
-  parts.push('Plan this evening now.');
-  return parts.join('\n');
-}
-
 // ---------------- AI callers ----------------
 
 interface RawStop {
@@ -472,6 +454,8 @@ interface RawPlan {
   estimated_cost: string;
   duration: string;
   stops: RawStop[];
+  /** The AI sets this when nothing suitable is open at the requested time — then stops is empty. */
+  no_options?: boolean;
 }
 
 function planTool(withPlaceId: boolean) {
@@ -497,9 +481,10 @@ function planTool(withPlaceId: boolean) {
         summary: { type: 'string' },
         estimated_cost: { type: 'string' },
         duration: { type: 'string' },
+        no_options: { type: 'boolean', description: 'True if nothing suitable is open now — then stops is empty.' },
         stops: {
           type: 'array',
-          minItems: 3,
+          minItems: 0,
           maxItems: 5,
           items: { type: 'object', properties: stopProps, required },
         },
@@ -561,6 +546,7 @@ function geminiSchema(withPlaceId: boolean) {
       summary: { type: 'STRING' },
       estimated_cost: { type: 'STRING' },
       duration: { type: 'STRING' },
+      no_options: { type: 'BOOLEAN' },
       stops: { type: 'ARRAY', items: { type: 'OBJECT', properties: props, required } },
     },
     required: ['title', 'summary', 'estimated_cost', 'duration', 'stops'],
@@ -730,6 +716,18 @@ Deno.serve(async (req) => {
       },
       { status: 429, headers: CORS },
     );
+  // Honest outcome, not a crash — returned at HTTP 200 so the client can read the code and show
+  // "nothing suitable is open right now" instead of a generic error. We never return a mock plan.
+  const noOptionsResponse = () =>
+    Response.json(
+      { error: { code: 'NO_OPTIONS', message: 'Nothing suitable is open right now.', retryable: false } },
+      { headers: CORS },
+    );
+  const generationFailedResponse = () =>
+    Response.json(
+      { error: { code: 'PLAN_GENERATION_FAILED', message: 'We couldn’t craft this one. Try again?', retryable: true } },
+      { status: 502, headers: CORS },
+    );
   const runAI = (system: string, user: string, withPlaceId: boolean): Promise<RawPlan | null> => {
     const call = anthropicKey
       ? callAnthropic(system, user, planTool(withPlaceId), anthropicKey)
@@ -765,8 +763,9 @@ Deno.serve(async (req) => {
   const language = body.language ?? 'de';
 
   // ---- Phase A + B: real places, when we have Google + a location ----
+  const canSearchReal = Boolean(googleKey) && typeof body.latitude === 'number' && typeof body.longitude === 'number';
   let candidates: Candidate[] = [];
-  if (googleKey && typeof body.latitude === 'number' && typeof body.longitude === 'number') {
+  if (canSearchReal) {
     try {
       if (body.request && body.request.trim()) {
         // Free-text path: the AI works out WHAT to search for, then we search it.
@@ -798,6 +797,7 @@ Deno.serve(async (req) => {
       plan = await runAI(curationSystemPrompt(language), curationUserPrompt(body, candidates), true);
     }
     if (rateLimited) return rateLimitedResponse();
+    if (plan?.no_options) return noOptionsResponse();
     if (validate(plan)) {
       const usedIds = new Set<string>();
       const stops: StopOut[] = [];
@@ -850,36 +850,8 @@ Deno.serve(async (req) => {
     }
   }
 
-  // ---- Fallback: generic AI plan (no invented business names) ----
-  let plan = await runAI(genericSystemPrompt(language), genericUserPrompt(body), false);
-  if (!validate(plan) && !rateLimited) plan = await runAI(genericSystemPrompt(language), genericUserPrompt(body), false);
-  if (rateLimited) return rateLimitedResponse();
-  if (!validate(plan)) {
-    return Response.json(
-      { error: { code: 'PLAN_GENERATION_FAILED', message: 'We couldn’t craft this one. Try again?', retryable: true } },
-      { status: 502, headers: CORS },
-    );
-  }
-  const stops: StopOut[] = plan.stops.map((s) => ({
-    time: s.time,
-    category: s.category,
-    title: s.title,
-    reason: s.reason,
-    memoryMoment: Boolean(s.memory_moment),
-  }));
-  if (!stops.some((s) => s.memoryMoment) && stops.length > 1) stops[stops.length - 2].memoryMoment = true;
-  const score = Math.min(94, 80 + (stops.some((s) => s.memoryMoment) ? 6 : 0) + stops.length * 2);
-  return Response.json(
-    {
-      plan: {
-        title: plan.title,
-        summary: plan.summary,
-        stops,
-        estimatedCost: plan.estimated_cost,
-        duration: plan.duration,
-        score,
-      },
-    },
-    { headers: CORS },
-  );
+  // No real plan could be built. Be honest — we NEVER return a mock or a generic no-names plan
+  // (founder decision). If we searched real venues but nothing fit, that's "no options"; if we
+  // couldn't search at all (misconfig / no location), that's a technical failure.
+  return canSearchReal ? noOptionsResponse() : generationFailedResponse();
 });

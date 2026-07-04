@@ -92,7 +92,7 @@ function RouteDraw({ width }: { width: number }) {
   );
 }
 
-type Phase = 'generating' | 'locationNeeded';
+type Phase = 'generating' | 'locationNeeded' | 'noOptions' | 'failed';
 
 export default function GeneratingScreen() {
   const t = useTheme();
@@ -118,9 +118,14 @@ export default function GeneratingScreen() {
     }
 
     const minDelay = new Promise((resolve) => setTimeout(resolve, 3200));
-    const [plan] = await Promise.all([generateEvening(answers, location), minDelay]);
+    const [result] = await Promise.all([generateEvening(answers, location), minDelay]);
     if (cancelled.current) return;
-    setPlan(plan);
+    if (!result.ok) {
+      // Never a mock: show an honest state (nothing open vs. something went wrong).
+      setPhase(result.kind === 'no_options' ? 'noOptions' : 'failed');
+      return;
+    }
+    setPlan(result.plan);
     router.replace('/plan/route');
     // Answers are stable for this screen's lifetime.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -186,6 +191,47 @@ export default function GeneratingScreen() {
         <Animated.View entering={FadeInDown.duration(350).delay(120)} style={{ alignSelf: 'stretch', gap: t.spacing.md }}>
           <Button title={askedAgain ? tr('location.openSettings') : tr('location.allow')} onPress={onAllowLocation} />
           <Button title={tr('location.back')} variant="secondary" onPress={() => router.back()} />
+        </Animated.View>
+      </View>
+    );
+  }
+
+  if (phase === 'noOptions' || phase === 'failed') {
+    const noOptions = phase === 'noOptions';
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: t.colors.background,
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: t.spacing.lg,
+          padding: t.spacing.lg,
+        }}
+      >
+        <Animated.View entering={FadeInDown.duration(350)} style={{ alignItems: 'center', gap: t.spacing.lg }}>
+          <View
+            style={{
+              width: 72,
+              height: 72,
+              borderRadius: t.radius.pill,
+              backgroundColor: t.colors.surfaceSecondary,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Ionicons name={noOptions ? 'moon-outline' : 'sad-outline'} size={32} color={t.colors.primary} />
+          </View>
+          <Text variant="h1" center>
+            {tr(noOptions ? 'generating.noOptionsTitle' : 'generating.failedTitle')}
+          </Text>
+          <Text variant="bodyLarge" color="textSecondary" center>
+            {tr(noOptions ? 'generating.noOptionsBody' : 'generating.failedBody')}
+          </Text>
+        </Animated.View>
+        <Animated.View entering={FadeInDown.duration(350).delay(120)} style={{ alignSelf: 'stretch', gap: t.spacing.md }}>
+          <Button title={tr('generating.retry')} onPress={() => void run()} />
+          <Button title={tr('generating.back')} variant="secondary" onPress={() => router.back()} />
         </Animated.View>
       </View>
     );

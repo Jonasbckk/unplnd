@@ -147,6 +147,14 @@ export const en = {
       'Planning the perfect route…',
       'Almost ready…',
     ],
+    noOptionsTitle: 'Nothing good is open right now',
+    noOptionsBody:
+      'At this hour, nothing fits your settings. Try a different budget, transport or vibe — or give it another go later.',
+    failedTitle: 'That didn’t work just now',
+    failedBody:
+      'Something hiccuped on our side. Try again in a moment — if it keeps happening, drop us a line at Info@unplnd.com.',
+    retry: 'Try again',
+    back: 'Change settings',
   },
   route: {
     experience: 'Experience %{score}',
@@ -277,29 +285,5 @@ export const en = {
       cafes: { title: 'Tiny Cafés', sub: 'Quiet corners locals love.' },
       food: { title: 'Backstreet Food', sub: 'The places without signs.' },
     },
-  },
-  mock: {
-    title: 'Your %{mood} evening',
-    summary: 'Dinner, a little adventure, and a view worth remembering.',
-    dinners: [
-      { title: 'Dinner at a cozy trattoria', reason: 'Known for homemade pasta.' },
-      { title: 'Dinner at a candle-lit bistro', reason: 'Warm, intimate atmosphere.' },
-      { title: 'Street food at the night market', reason: 'A dozen flavors in one place.' },
-    ],
-    activities: [
-      { title: 'Mini golf under the lights', reason: 'Playful and easy to talk over.' },
-      { title: 'A stroll through the old town', reason: 'Quiet streets, good conversation.' },
-      { title: 'A slow walk along the river', reason: 'Made for conversation.' },
-    ],
-    moments: [
-      { title: 'Golden hour at the rooftop viewpoint', reason: 'The best view in the city.' },
-      { title: 'Sunset by the lake', reason: 'A perfect pause.' },
-      { title: 'City skyline from the old bridge', reason: 'Worth the short detour.' },
-    ],
-    drinks: [
-      { title: 'Cocktails at a rooftop bar', reason: 'Great drinks, better views.' },
-      { title: 'Natural wine at a tiny bar', reason: 'A local favorite.' },
-      { title: 'Late-night dessert & coffee', reason: 'A sweet way to end the night.' },
-    ],
   },
 } as const;
