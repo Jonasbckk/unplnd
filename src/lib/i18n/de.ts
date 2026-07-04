@@ -239,6 +239,7 @@ export const de = {
     success: 'Dein Abend ist jetzt in der Community. ✨',
     already: 'Dieser Abend ist schon veröffentlicht.',
     needPhotos: 'Füge erst eigene Fotos vom Abend hinzu.',
+    needPhotosHint: 'Mit eigenen Fotos kannst du den Abend danach veröffentlichen.',
     failed: 'Hat gerade nicht geklappt. Versuch es später nochmal.',
   },
   community: {

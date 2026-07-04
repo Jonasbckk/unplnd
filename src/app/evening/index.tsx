@@ -18,10 +18,11 @@ function TimelineRow({ stop }: { stop: EveningStop }) {
   const t = useTheme();
   const done = stop.status === 'completed';
   const skipped = stop.status === 'skipped';
+  const current = stop.status === 'current';
   const muted = done || skipped;
 
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.md, opacity: muted ? 0.55 : 1 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.md, opacity: muted ? 0.5 : 1 }}>
       <View
         style={{
           width: 26,
@@ -29,7 +30,13 @@ function TimelineRow({ stop }: { stop: EveningStop }) {
           borderRadius: t.radius.pill,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: done ? t.colors.success : skipped ? t.colors.border : t.colors.surfaceSecondary,
+          backgroundColor: done
+            ? t.colors.success
+            : skipped
+              ? t.colors.border
+              : current
+                ? t.colors.primary
+                : t.colors.surfaceSecondary,
         }}
       >
         {done ? (
@@ -37,15 +44,19 @@ function TimelineRow({ stop }: { stop: EveningStop }) {
         ) : skipped ? (
           <Ionicons name="remove" size={15} color={t.colors.textSecondary} />
         ) : (
-          <Text variant="caption" color="textSecondary">
-            {stop.time}
-          </Text>
+          <View
+            style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: current ? '#FFFFFF' : t.colors.textSecondary }}
+          />
         )}
       </View>
+      <Text variant="small" color={current ? 'primary' : 'textSecondary'} style={{ width: 48, fontWeight: '700' }}>
+        {stop.time}
+      </Text>
       <Text
         variant="body"
         color={muted ? 'textSecondary' : 'textPrimary'}
-        style={skipped ? { textDecorationLine: 'line-through' } : undefined}
+        numberOfLines={1}
+        style={[{ flex: 1, fontWeight: current ? '600' : '400' }, skipped ? { textDecorationLine: 'line-through' } : undefined]}
       >
         {stop.title}
       </Text>
@@ -150,29 +161,26 @@ export default function EveningScreen() {
                   openInMaps(loc?.city ? `${current.title}, ${loc.city}` : current.title);
                 }}
               />
-              <View style={{ flexDirection: 'row', gap: t.spacing.md }}>
-                <View style={{ flex: 1 }}>
-                  <Button
-                    title={tr('evening.doneNext')}
-                    variant="secondary"
-                    onPress={() => {
-                      haptics.success();
-                      completeCurrentStop();
-                    }}
-                  />
-                </View>
-                <Pressable
-                  onPress={() => {
-                    haptics.selection();
-                    skipCurrentStop();
-                  }}
-                  style={{ justifyContent: 'center', paddingHorizontal: t.spacing.base }}
-                >
-                  <Text variant="small" color="textSecondary">
-                    {tr('common.skip')}
-                  </Text>
-                </Pressable>
-              </View>
+              <Button
+                title={tr('evening.doneNext')}
+                variant="secondary"
+                onPress={() => {
+                  haptics.success();
+                  completeCurrentStop();
+                }}
+              />
+              <Pressable
+                onPress={() => {
+                  haptics.selection();
+                  skipCurrentStop();
+                }}
+                hitSlop={6}
+                style={{ alignSelf: 'center', paddingVertical: t.spacing.xs }}
+              >
+                <Text variant="small" color="textSecondary">
+                  {tr('common.skip')}
+                </Text>
+              </Pressable>
             </View>
           </Card>
         </Animated.View>

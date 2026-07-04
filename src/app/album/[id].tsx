@@ -307,21 +307,38 @@ export default function AlbumDetail() {
                 })}
               </View>
             ) : (
-              <Text variant="small" color="textSecondary">
-                {tr('albums.noPhotosYet')}
-              </Text>
+              <View style={{ gap: 4 }}>
+                <Text variant="small" color="textSecondary">
+                  {tr('albums.noPhotosYet')}
+                </Text>
+                <Text variant="small" color="textSecondary">
+                  {tr('publish.needPhotosHint')}
+                </Text>
+              </View>
             )}
             <Button title={tr('albums.addPhotos')} variant="secondary" loading={uploading} onPress={addPhotos} />
           </View>
 
-          <Button
-            title={published ? tr('publish.done') : tr('publish.button')}
-            loading={publishing}
-            disabled={published}
-            onPress={publish}
-          />
-          <Button title={tr('albums.share')} variant="secondary" onPress={shareAlbum} />
-          <Button title={tr('albums.done')} variant="secondary" onPress={() => router.replace('/')} />
+          {published ? (
+            <>
+              <Button title={tr('albums.share')} onPress={shareAlbum} />
+              <Button title={tr('albums.done')} variant="secondary" onPress={() => router.replace('/')} />
+            </>
+          ) : photos.length > 0 ? (
+            <>
+              <Button title={tr('publish.button')} loading={publishing} onPress={publish} />
+              <View style={{ flexDirection: 'row', gap: t.spacing.md }}>
+                <View style={{ flex: 1 }}>
+                  <Button title={tr('albums.share')} variant="secondary" onPress={shareAlbum} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Button title={tr('albums.done')} variant="secondary" onPress={() => router.replace('/')} />
+                </View>
+              </View>
+            </>
+          ) : (
+            <Button title={tr('albums.done')} onPress={() => router.replace('/')} />
+          )}
         </FadeInUp>
       </ScrollView>
     </View>

@@ -203,6 +203,7 @@ export const en = {
     success: 'Your evening is live in the community. ✨',
     already: 'This evening is already published.',
     needPhotos: 'Add your own photos of the evening first.',
+    needPhotosHint: 'With your own photos you can publish the evening afterwards.',
     failed: 'That didn’t work just now. Try again later.',
   },
   community: {
