@@ -1,5 +1,5 @@
 import { i18n } from '@/lib/i18n';
-import { getCurrentLocation } from '@/lib/location';
+import { getPlanningLocation } from '@/store/location-store';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
 export interface DiscoverPlace {
@@ -35,12 +35,12 @@ const CACHE_TTL_MS = 10 * 60 * 1000;
  */
 export async function getDiscoverPlaces(category?: string, force = false, query?: string): Promise<DiscoverResult> {
   const q = query?.trim();
-  const key = q ? `q:${q.toLowerCase()}` : (category ?? 'all');
+  const location = await getPlanningLocation();
+  if (!location) return { places: [], needsLocation: true };
+  // Cache key includes the location so switching to another city never shows stale results.
+  const key = `${q ? 'q:' + q.toLowerCase() : (category ?? 'all')}@${location.latitude.toFixed(2)},${location.longitude.toFixed(2)}`;
   const cached = cache.get(key);
   if (!force && cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.result;
-
-  const location = await getCurrentLocation();
-  if (!location) return { places: [], needsLocation: true };
   if (!isSupabaseConfigured) return { places: [], needsLocation: false };
 
   try {

@@ -1,6 +1,6 @@
 import { useAuthStore } from '@/features/auth/auth-store';
 import type { PlanStop } from '@/features/planner/types';
-import { getCurrentLocation } from '@/lib/location';
+import { getPlanningLocation } from '@/store/location-store';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
 export interface CommunityPlan {
@@ -42,7 +42,7 @@ const NEARBY_M = 40000; // 40 km counts as "in deiner Nähe"
  * published_plans is client-readable (RLS: non-hidden); the Google key isn't involved here.
  */
 export async function getCommunityPlans(): Promise<CommunityResult> {
-  const location = await getCurrentLocation();
+  const location = await getPlanningLocation();
   if (!isSupabaseConfigured) return { plans: [], needsLocation: false };
 
   const { data, error } = await supabase

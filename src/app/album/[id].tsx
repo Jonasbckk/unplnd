@@ -255,6 +255,7 @@ export default function AlbumDetail() {
             onPress={publish}
           />
           <Button title={tr('albums.share')} variant="secondary" onPress={shareAlbum} />
+          <Button title={tr('albums.done')} variant="secondary" onPress={() => router.replace('/')} />
         </View>
       </ScrollView>
     </View>

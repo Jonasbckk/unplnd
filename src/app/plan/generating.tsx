@@ -19,7 +19,8 @@ import { Button, Logo, Text } from '@/components/ui';
 import { generateEvening } from '@/features/planner/generate-service';
 import { usePlannerStore } from '@/features/planner/planner-store';
 import { useT } from '@/lib/i18n';
-import { getCurrentLocation, openLocationSettings, requestLocationPermission } from '@/lib/location';
+import { openLocationSettings, requestLocationPermission } from '@/lib/location';
+import { getPlanningLocation } from '@/store/location-store';
 import { useTheme } from '@/theme';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
@@ -110,7 +111,8 @@ export default function GeneratingScreen() {
     setMessageIndex(0);
 
     // No location → no plan. Never fall back to a default city (Constitution Rule 5: trust).
-    const location = await getCurrentLocation();
+    // Uses the user's chosen location if they picked one, else their GPS.
+    const location = await getPlanningLocation();
     if (cancelled.current) return;
     if (!location) {
       setPhase('locationNeeded');

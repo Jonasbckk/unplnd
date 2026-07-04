@@ -108,8 +108,8 @@ export const en = {
     create: 'Create my evening',
     none: 'None',
     or: 'or pick below',
-    freeTitle: 'Just tell us what you feel like',
-    freePlaceholder: 'e.g. “two of us, we’re bored — what’s good?” or “cafés first, then all-you-can-eat”',
+    freeTitle: 'Let’s plan your evening',
+    freePlaceholder: 'Just tell us what you feel like … e.g. “we’re bored, what’s good?” or “cafés first, then all-you-can-eat”',
     freeGo: 'Plan my evening',
     questions: {
       mood: 'What are you in the mood for?',
@@ -137,6 +137,10 @@ export const en = {
     allow: 'Allow location',
     openSettings: 'Open settings',
     back: 'Back',
+    yourLocation: 'Your location',
+    pickerTitle: 'Where to?',
+    searchPlaceholder: 'City or address …',
+    useMyLocation: 'Use my location',
   },
   generating: {
     title: 'Crafting your evening',
@@ -168,6 +172,7 @@ export const en = {
     planAnother: 'Plan another',
     openNow: 'Open now',
     closed: 'Closed',
+    opensAt: 'Opens at %{time}',
     error: 'Something went wrong. Let’s try that again.',
   },
   evening: {
@@ -231,6 +236,7 @@ export const en = {
     addPhotos: 'Add photos',
     noPhotosYet: 'No photos yet — add your favorite moments.',
     share: 'Share album',
+    done: 'Done',
     deleteTitle: 'Delete this album?',
     deleteBody: 'You can’t undo this action.',
     delete: 'Delete',

@@ -108,8 +108,8 @@ export const de = {
     create: 'Erstell meinen Abend',
     none: 'Keine',
     or: 'oder wähl unten aus',
-    freeTitle: 'Sag einfach, worauf ihr Lust habt',
-    freePlaceholder: 'z. B. „zu zweit, uns ist langweilig – was geht?“ oder „erst Cafés testen, dann All-you-can-eat“',
+    freeTitle: 'Lass uns deinen Abend planen',
+    freePlaceholder: 'Sag einfach, worauf ihr Lust habt … z. B. „uns ist langweilig, was geht?“ oder „erst Cafés, dann All-you-can-eat“',
     freeGo: 'Abend planen',
     questions: {
       mood: 'Worauf hast du Lust?',
@@ -173,6 +173,10 @@ export const de = {
     allow: 'Standort erlauben',
     openSettings: 'Einstellungen öffnen',
     back: 'Zurück',
+    yourLocation: 'Dein Standort',
+    pickerTitle: 'Wo soll’s sein?',
+    searchPlaceholder: 'Stadt oder Adresse …',
+    useMyLocation: 'Meinen Standort verwenden',
   },
   generating: {
     title: 'Dein Abend entsteht',
@@ -204,6 +208,7 @@ export const de = {
     planAnother: 'Neu planen',
     openNow: 'Jetzt geöffnet',
     closed: 'Geschlossen',
+    opensAt: 'Öffnet um %{time}',
     error: 'Etwas ist schiefgelaufen. Versuchen wir’s nochmal.',
   },
   evening: {
@@ -267,6 +272,7 @@ export const de = {
     addPhotos: 'Fotos hinzufügen',
     noPhotosYet: 'Noch keine Fotos — füg eure schönsten Momente hinzu.',
     share: 'Album teilen',
+    done: 'Fertig',
     deleteTitle: 'Album löschen?',
     deleteBody: 'Das kannst du nicht rückgängig machen.',
     delete: 'Löschen',

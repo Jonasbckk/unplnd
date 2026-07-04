@@ -13,6 +13,9 @@ export function StopMeta({ stop }: { stop: PlanStop }) {
   const hasRating = typeof stop.rating === 'number' && stop.rating > 0;
   const hasPrice = Boolean(stop.priceLevel);
   const hasOpen = typeof stop.openNow === 'boolean';
+  // Closed right now but we know today's hours → reassure with the opening time. A plan is for
+  // later, so a bare "closed now" is misleading. Grabs the first HH:MM (24h) or "5:00 PM" token.
+  const opensAt = hasOpen && !stop.openNow ? stop.hours?.match(/\d{1,2}:\d{2}(?:\s?[AP]M)?/i)?.[0] : undefined;
   if (!hasRating && !hasPrice && !hasOpen) return null;
 
   return (
@@ -35,11 +38,20 @@ export function StopMeta({ stop }: { stop: PlanStop }) {
           {stop.priceLevel}
         </Text>
       )}
-      {hasOpen && (
-        <Text variant="small" style={{ color: stop.openNow ? t.colors.success : t.colors.error, fontWeight: '600' }}>
-          {stop.openNow ? tr('route.openNow') : tr('route.closed')}
-        </Text>
-      )}
+      {hasOpen &&
+        (stop.openNow ? (
+          <Text variant="small" style={{ color: t.colors.success, fontWeight: '600' }}>
+            {tr('route.openNow')}
+          </Text>
+        ) : opensAt ? (
+          <Text variant="small" color="textSecondary" style={{ fontWeight: '600' }}>
+            {tr('route.opensAt', { time: opensAt })}
+          </Text>
+        ) : (
+          <Text variant="small" style={{ color: t.colors.error, fontWeight: '600' }}>
+            {tr('route.closed')}
+          </Text>
+        ))}
     </View>
   );
 }

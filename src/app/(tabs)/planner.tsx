@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
 import { Button, Input, Screen, Text } from '@/components/ui';
+import { LocationChip } from '@/features/location/LocationChip';
 import { AnswerRow } from '@/features/planner/AnswerRow';
 import { QuestionCard } from '@/features/planner/QuestionCard';
 import { QUESTIONS, type Question } from '@/features/planner/questions';
@@ -60,6 +61,7 @@ export default function PlannerScreen() {
 
   return (
     <Screen scroll contentStyle={{ gap: t.spacing.lg }}>
+      <LocationChip />
       {/* Just tell us — the Planner is a conversation, not a form (Constitution Rule 12). */}
       <View style={{ gap: t.spacing.md }}>
         <Text variant="h2">{tr('planner.freeTitle')}</Text>

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState, type ComponentProps } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 
 import { Button, Card, Input, Screen, Text } from '@/components/ui';
+import { LocationChip } from '@/features/location/LocationChip';
 import { useFavoritesStore } from '@/features/favorites/favorites-store';
 import { getDiscoverPlaces, type DiscoverPlace } from '@/lib/discover';
 import { haptics } from '@/lib/haptics';
@@ -176,6 +177,8 @@ export default function DiscoverScreen() {
           {tr('discover.sub')}
         </Text>
       </View>
+
+      <LocationChip />
 
       {/* Community feed entry (Feature D). */}
       <Card
