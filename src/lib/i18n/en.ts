@@ -200,6 +200,14 @@ export const en = {
     needPhotos: 'Add your own photos of the evening first.',
     failed: 'That didn’t work just now. Try again later.',
   },
+  community: {
+    title: 'Community',
+    sub: 'Evenings from others — nearby first.',
+    empty: 'No published evenings near you yet. Be the first!',
+    needLocation: 'Turn on location to see evenings near you.',
+    by: 'by %{name}',
+    someone: 'someone',
+  },
   albums: {
     title: 'Memories',
     emptyTitle: 'Your memories are waiting.',
@@ -282,6 +290,8 @@ export const en = {
     empty: 'Nothing here right now — try another category.',
     searchPlaceholder: 'What are you after? e.g. sushi, rooftop bar…',
     searchEmpty: 'Couldn’t find anything good for that nearby. Try something else.',
+    communityTitle: 'Community evenings',
+    communitySub: 'Real evenings people published near you.',
     needLocation: 'Turn on location to discover places near you.',
     categories: {
       all: 'For you',

@@ -236,6 +236,14 @@ export const de = {
     needPhotos: 'Füge erst eigene Fotos vom Abend hinzu.',
     failed: 'Hat gerade nicht geklappt. Versuch es später nochmal.',
   },
+  community: {
+    title: 'Community',
+    sub: 'Abende von anderen — in deiner Nähe zuerst.',
+    empty: 'Noch keine veröffentlichten Abende in deiner Nähe. Sei der Erste!',
+    needLocation: 'Aktiviere den Standort, um Abende in deiner Nähe zu sehen.',
+    by: 'von %{name}',
+    someone: 'jemandem',
+  },
   albums: {
     title: 'Erinnerungen',
     emptyTitle: 'Deine Erinnerungen warten.',
@@ -318,6 +326,8 @@ export const de = {
     empty: 'Gerade nichts Passendes — probier eine andere Kategorie.',
     searchPlaceholder: 'Wonach ist dir? z. B. Sushi, Rooftop-Bar…',
     searchEmpty: 'Dazu haben wir gerade nichts Gutes in der Nähe gefunden. Versuch was anderes.',
+    communityTitle: 'Community-Abende',
+    communitySub: 'Echte Abende, die andere in deiner Nähe veröffentlicht haben.',
     needLocation: 'Aktiviere den Standort, um Orte in deiner Nähe zu entdecken.',
     categories: {
       all: 'Für dich',

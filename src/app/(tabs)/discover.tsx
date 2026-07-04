@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { useRouter, type Href } from 'expo-router';
 import { useCallback, useEffect, useState, type ComponentProps } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 
@@ -115,6 +116,7 @@ function DiscoverCard({ place }: { place: DiscoverPlace }) {
 export default function DiscoverScreen() {
   const t = useTheme();
   const { t: tr } = useT();
+  const router = useRouter();
   const [category, setCategory] = useState<string | undefined>(undefined);
   const [query, setQuery] = useState('');
   const [activeQuery, setActiveQuery] = useState<string | undefined>(undefined);
@@ -174,6 +176,23 @@ export default function DiscoverScreen() {
           {tr('discover.sub')}
         </Text>
       </View>
+
+      {/* Community feed entry (Feature D). */}
+      <Card
+        onPress={() => router.push('/community' as Href)}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.md, backgroundColor: t.colors.surfaceSecondary }}
+      >
+        <Ionicons name="people-outline" size={22} color={t.colors.primary} />
+        <View style={{ flex: 1 }}>
+          <Text variant="body" style={{ fontWeight: '600' }}>
+            {tr('discover.communityTitle')}
+          </Text>
+          <Text variant="small" color="textSecondary">
+            {tr('discover.communitySub')}
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={t.colors.textSecondary} />
+      </Card>
 
       {/* Free-text search — "I want a great sushi place" (21_DISCOVER). */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}>

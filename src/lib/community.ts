@@ -1,0 +1,109 @@
+import { useAuthStore } from '@/features/auth/auth-store';
+import type { PlanStop } from '@/features/planner/types';
+import { getCurrentLocation } from '@/lib/location';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+
+export interface CommunityPlan {
+  id: string;
+  authorName: string | null;
+  authorAvatar: string | null;
+  title: string;
+  city: string | null;
+  photos: string[];
+  starCount: number;
+  selfRating: number | null;
+  route: PlanStop[];
+  createdAt: string;
+  starred: boolean;
+  distanceM: number | null;
+}
+
+export interface CommunityResult {
+  plans: CommunityPlan[];
+  needsLocation: boolean;
+}
+
+function haversine(aLat: number, aLng: number, bLat: number, bLng: number): number {
+  const R = 6371000;
+  const dLat = ((bLat - aLat) * Math.PI) / 180;
+  const dLng = ((bLng - aLng) * Math.PI) / 180;
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((aLat * Math.PI) / 180) * Math.cos((bLat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+const NEARBY_M = 40000; // 40 km counts as "in deiner Nähe"
+
+/**
+ * Community feed — published evenings, ranked **proximity → stars → recency** (founder decision).
+ * published_plans is client-readable (RLS: non-hidden); the Google key isn't involved here.
+ */
+export async function getCommunityPlans(): Promise<CommunityResult> {
+  const location = await getCurrentLocation();
+  if (!isSupabaseConfigured) return { plans: [], needsLocation: false };
+
+  const { data, error } = await supabase
+    .from('published_plans')
+    .select('id, author_name, author_avatar, title, city, lat, lng, photos, star_count, self_rating, route, created_at')
+    .eq('hidden', false)
+    .order('created_at', { ascending: false })
+    .limit(60);
+  if (error || !data) return { plans: [], needsLocation: !location };
+
+  const userId = useAuthStore.getState().user?.id;
+  let starred = new Set<string>();
+  if (userId) {
+    const { data: mine } = await supabase.from('plan_stars').select('published_plan_id').eq('user_id', userId);
+    starred = new Set((mine ?? []).map((s) => s.published_plan_id as string));
+  }
+
+  const plans: CommunityPlan[] = data.map((p: Record<string, unknown>) => {
+    const lat = p.lat as number | null;
+    const lng = p.lng as number | null;
+    const distanceM =
+      location && typeof lat === 'number' && typeof lng === 'number'
+        ? Math.round(haversine(location.latitude, location.longitude, lat, lng))
+        : null;
+    return {
+      id: p.id as string,
+      authorName: (p.author_name as string | null) ?? null,
+      authorAvatar: (p.author_avatar as string | null) ?? null,
+      title: p.title as string,
+      city: (p.city as string | null) ?? null,
+      photos: Array.isArray(p.photos) ? (p.photos as string[]) : [],
+      starCount: (p.star_count as number) ?? 0,
+      selfRating: (p.self_rating as number | null) ?? null,
+      route: Array.isArray(p.route) ? (p.route as PlanStop[]) : [],
+      createdAt: p.created_at as string,
+      starred: starred.has(p.id as string),
+      distanceM,
+    };
+  });
+
+  // Nearby first, then more stars, then more recent.
+  plans.sort((a, b) => {
+    const aNear = a.distanceM !== null && a.distanceM <= NEARBY_M;
+    const bNear = b.distanceM !== null && b.distanceM <= NEARBY_M;
+    if (aNear !== bNear) return aNear ? -1 : 1;
+    if (b.starCount !== a.starCount) return b.starCount - a.starCount;
+    return b.createdAt.localeCompare(a.createdAt);
+  });
+
+  return { plans, needsLocation: false };
+}
+
+/** Star / unstar a published plan (the star_count trigger keeps the total in sync). */
+export async function toggleStar(planId: string, currentlyStarred: boolean): Promise<void> {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return;
+  try {
+    if (currentlyStarred) {
+      await supabase.from('plan_stars').delete().eq('published_plan_id', planId).eq('user_id', userId);
+    } else {
+      await supabase.from('plan_stars').insert({ published_plan_id: planId, user_id: userId });
+    }
+  } catch {
+    // Best effort — the optimistic UI already updated; a failed toggle self-corrects on refresh.
+  }
+}
