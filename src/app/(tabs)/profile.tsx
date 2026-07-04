@@ -9,6 +9,7 @@ import { MemoryCard } from '@/features/albums/MemoryCard';
 import { useAlbumsStore } from '@/features/albums/albums-store';
 import { useAuthStore } from '@/features/auth/auth-store';
 import { useFavoritesStore } from '@/features/favorites/favorites-store';
+import { EveningDNA } from '@/features/profile/EveningDNA';
 import { ProfileBanner } from '@/features/profile/ProfileBanner';
 import { ProfileExtras } from '@/features/profile/ProfileExtras';
 import { useProfileStyle } from '@/features/profile/profile-styles';
@@ -368,6 +369,8 @@ export default function ProfileScreen() {
           />
         )}
       </View>
+
+      <EveningDNA albums={albums} accent={accent} />
 
       {albums.length > 0 ? (
         <View style={{ gap: t.spacing.md }}>
