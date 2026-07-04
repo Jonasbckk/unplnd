@@ -46,6 +46,24 @@ export async function updateProfileBio(bio: string): Promise<boolean> {
   return true;
 }
 
+/** Update the home city ("aus Gießen") — on the auth user (reactive) + the profiles row (public). */
+export async function updateProfileHomeCity(city: string): Promise<boolean> {
+  const trimmed = city.trim().slice(0, 60);
+  const { error } = await supabase.auth.updateUser({ data: { home_city: trimmed } });
+  if (error) return false;
+  const userId = useAuthStore.getState().user?.id;
+  if (userId) await supabase.from('profiles').update({ home_city: trimmed || null }).eq('id', userId);
+  return true;
+}
+
+/** Set the publicly pinned favorite places (shown on your public profile). Canonical list wins. */
+export async function setPinnedPlaces(names: string[]): Promise<void> {
+  const next = names.slice(0, 6);
+  await supabase.auth.updateUser({ data: { pinned_places: next } });
+  const userId = useAuthStore.getState().user?.id;
+  if (userId) await supabase.from('profiles').update({ pinned_places: next }).eq('id', userId);
+}
+
 /** Upload a new avatar → public URL, stored on the auth user + the profiles row. Returns the URL. */
 export async function updateProfileAvatar(asset: ImagePicker.ImagePickerAsset): Promise<string | null> {
   const userId = useAuthStore.getState().user?.id;

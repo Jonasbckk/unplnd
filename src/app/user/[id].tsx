@@ -159,6 +159,14 @@ export default function PublicProfileScreen() {
               <Text variant="h1" style={{ color: style.onGradient }} center>
                 {name}
               </Text>
+              {profile.homeCity ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                  <Ionicons name="location" size={12} color={style.onGradient} />
+                  <Text variant="small" style={{ color: style.onGradient, opacity: 0.9 }}>
+                    {tr('profile.fromCity', { city: profile.homeCity })}
+                  </Text>
+                </View>
+              ) : null}
               {profile.bio ? (
                 <Text variant="small" style={{ color: style.onGradient, opacity: 0.9 }} center numberOfLines={3}>
                   {profile.bio}
@@ -173,6 +181,35 @@ export default function PublicProfileScreen() {
               <Stat icon="star" value={totalStars} label={tr('publicProfile.starsReceived')} accent={accent} />
             </View>
           </Card>
+
+          {profile.pinnedPlaces.length > 0 && (
+            <View style={{ gap: t.spacing.md }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}>
+                <View style={{ width: 4, height: 18, borderRadius: 2, backgroundColor: accent }} />
+                <Text variant="h3">{tr('publicProfile.favorites')}</Text>
+              </View>
+              <Card padded={false} style={{ paddingHorizontal: t.spacing.base, backgroundColor: accent + '14' }}>
+                {profile.pinnedPlaces.map((place, i) => (
+                  <View
+                    key={place}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: t.spacing.md,
+                      paddingVertical: t.spacing.md,
+                      borderTopWidth: i === 0 ? 0 : 1,
+                      borderTopColor: t.colors.divider,
+                    }}
+                  >
+                    <Ionicons name="pin" size={18} color={accent} />
+                    <Text variant="body" style={{ flex: 1 }} numberOfLines={1}>
+                      {place}
+                    </Text>
+                  </View>
+                ))}
+              </Card>
+            </View>
+          )}
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}>
             <View style={{ width: 4, height: 18, borderRadius: 2, backgroundColor: accent }} />

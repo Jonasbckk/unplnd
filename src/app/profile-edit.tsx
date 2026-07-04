@@ -9,7 +9,7 @@ import { Button, Input, Text } from '@/components/ui';
 import { useAuthStore } from '@/features/auth/auth-store';
 import { haptics } from '@/lib/haptics';
 import { useT } from '@/lib/i18n';
-import { pickAvatar, updateProfileAvatar, updateProfileBio, updateProfileName } from '@/lib/profile';
+import { pickAvatar, updateProfileAvatar, updateProfileBio, updateProfileHomeCity, updateProfileName } from '@/lib/profile';
 import { toast } from '@/store/toast-store';
 import { useTheme } from '@/theme';
 
@@ -18,9 +18,12 @@ export default function EditProfile() {
   const { t: tr } = useT();
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
-  const meta = user?.user_metadata as { display_name?: string; avatar_url?: string; bio?: string } | undefined;
+  const meta = user?.user_metadata as
+    | { display_name?: string; avatar_url?: string; bio?: string; home_city?: string }
+    | undefined;
   const [name, setName] = useState(meta?.display_name ?? '');
   const [bio, setBio] = useState(meta?.bio ?? '');
+  const [homeCity, setHomeCity] = useState(meta?.home_city ?? '');
   const [avatar, setAvatar] = useState(meta?.avatar_url ?? '');
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -45,8 +48,9 @@ export default function EditProfile() {
     setSaving(true);
     const okName = await updateProfileName(name);
     const okBio = await updateProfileBio(bio);
+    const okCity = await updateProfileHomeCity(homeCity);
     setSaving(false);
-    if (okName && okBio) {
+    if (okName && okBio && okCity) {
       haptics.success();
       toast(tr('editProfile.saved'));
       router.back();
@@ -139,6 +143,19 @@ export default function EditProfile() {
             onChangeText={setName}
             placeholder={tr('editProfile.namePlaceholder')}
             autoCapitalize="words"
+          />
+        </View>
+
+        <View style={{ alignSelf: 'stretch', gap: t.spacing.sm }}>
+          <Text variant="small" color="textSecondary">
+            {tr('editProfile.cityLabel')}
+          </Text>
+          <Input
+            value={homeCity}
+            onChangeText={setHomeCity}
+            placeholder={tr('editProfile.cityPlaceholder')}
+            autoCapitalize="words"
+            maxLength={60}
           />
         </View>
 

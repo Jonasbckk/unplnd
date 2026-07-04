@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter, type Href } from 'expo-router';
-import { useEffect, type ComponentProps } from 'react';
+import { useEffect, useState, type ComponentProps } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { Button, Card, Screen, Text } from '@/components/ui';
@@ -11,6 +11,7 @@ import { useFavoritesStore } from '@/features/favorites/favorites-store';
 import { ProfileBanner } from '@/features/profile/ProfileBanner';
 import { useProfileStyle } from '@/features/profile/profile-styles';
 import { haptics } from '@/lib/haptics';
+import { setPinnedPlaces } from '@/lib/profile';
 import { optionLabel, useT } from '@/lib/i18n';
 import { useTheme } from '@/theme';
 
@@ -99,10 +100,24 @@ export default function ProfileScreen() {
     void loadFavorites();
   }, [loadAlbums, loadFavorites]);
 
-  const meta = user?.user_metadata as { display_name?: string; avatar_url?: string; bio?: string } | undefined;
+  const meta = user?.user_metadata as
+    | { display_name?: string; avatar_url?: string; bio?: string; home_city?: string; pinned_places?: string[] }
+    | undefined;
   const name = meta?.display_name ?? user?.email?.split('@')[0] ?? 'You';
   const avatarUrl = meta?.avatar_url;
   const bio = meta?.bio;
+  const homeCity = meta?.home_city;
+  const [pinned, setPinned] = useState<string[]>(() => meta?.pinned_places ?? []);
+
+  const onTogglePin = (place: string) => {
+    haptics.light();
+    setPinned((cur) => {
+      const next = cur.includes(place) ? cur.filter((p) => p !== place) : [place, ...cur].slice(0, 6);
+      void setPinnedPlaces(next);
+      return next;
+    });
+  };
+
   const memberSince = user?.created_at ? new Date(user.created_at).getFullYear() : new Date().getFullYear();
   const memories = albums.length;
   const cities = new Set(albums.map((a) => a.city).filter(Boolean)).size;
@@ -161,6 +176,14 @@ export default function ProfileScreen() {
               <Text variant="h1" style={{ color: style.onGradient }}>
                 {name}
               </Text>
+              {homeCity ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 1 }}>
+                  <Ionicons name="location" size={12} color={style.onGradient} />
+                  <Text variant="small" style={{ color: style.onGradient, opacity: 0.9 }} numberOfLines={1}>
+                    {tr('profile.fromCity', { city: homeCity })}
+                  </Text>
+                </View>
+              ) : null}
               <Text variant="small" style={{ color: style.onGradient, opacity: 0.85 }}>
                 {tr('profile.memberSince', { year: memberSince })}
               </Text>
@@ -222,6 +245,9 @@ export default function ProfileScreen() {
       {favorites.length > 0 && (
         <View style={{ gap: t.spacing.md }}>
           <SectionHeading title={tr('profile.savedPlaces')} accent={accent} />
+          <Text variant="caption" color="textSecondary">
+            {tr('profile.pinHint')}
+          </Text>
           <Card padded={false} style={{ paddingHorizontal: t.spacing.base, backgroundColor: accent + '14' }}>
             {favorites.map((place, i) => (
               <View
@@ -239,6 +265,13 @@ export default function ProfileScreen() {
                 <Text variant="body" style={{ flex: 1 }} numberOfLines={1}>
                   {place}
                 </Text>
+                <Pressable hitSlop={8} onPress={() => onTogglePin(place)}>
+                  <Ionicons
+                    name={pinned.includes(place) ? 'pin' : 'pin-outline'}
+                    size={18}
+                    color={pinned.includes(place) ? accent : t.colors.textSecondary}
+                  />
+                </Pressable>
                 <Pressable
                   hitSlop={8}
                   onPress={() => {

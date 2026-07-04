@@ -31,6 +31,8 @@ export interface PublicProfile {
   avatar: string | null;
   bio: string | null;
   styleId: string | null;
+  homeCity: string | null;
+  pinnedPlaces: string[];
   memberSince: string | null;
 }
 
@@ -169,6 +171,8 @@ export async function getPublicProfile(userId: string): Promise<PublicProfile | 
       avatar: (row.photo_url as string | null) ?? null,
       bio: (row.bio as string | null) ?? null,
       styleId: (row.profile_style as string | null) ?? null,
+      homeCity: (row.home_city as string | null) ?? null,
+      pinnedPlaces: Array.isArray(row.pinned_places) ? (row.pinned_places as string[]) : [],
       memberSince: (row.member_since as string | null) ?? null,
     };
   }
@@ -188,6 +192,8 @@ export async function getPublicProfile(userId: string): Promise<PublicProfile | 
       avatar: (pp.author_avatar as string | null) ?? null,
       bio: null,
       styleId: null,
+      homeCity: null,
+      pinnedPlaces: [],
       memberSince: null,
     };
   }
