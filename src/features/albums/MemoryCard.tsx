@@ -24,28 +24,34 @@ interface MemoryCardProps {
   width?: number;
 }
 
-/** A memory as a card — its real cover photo (or a dimensional tonal cover), title, date. */
+/** A memory as a card — its cover: your photo, else a spot photo, else a tonal gradient. */
 export function MemoryCard({ album, onPress, compact = false, width }: MemoryCardProps) {
   const t = useTheme();
   const scale = useSharedValue(1);
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   const cover = album.coverColor;
   const coverHeight = compact ? 108 : 150;
-  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [userCover, setUserCover] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     if ((album.photoCount ?? 0) === 0) {
-      setCoverUrl(null);
+      setUserCover(null);
       return;
     }
     let active = true;
     void getAlbumCoverUrl(album.id).then((url) => {
-      if (active) setCoverUrl(url);
+      if (active) setUserCover(url);
     });
     return () => {
       active = false;
     };
   }, [album.id, album.photoCount]);
+
+  // Your uploaded cover wins; otherwise the first spot's venue photo.
+  const spotPhoto = album.timeline?.find((s) => s.photoUrl)?.photoUrl ?? null;
+  const imageUrl = userCover ?? spotPhoto;
+  const showImage = !!imageUrl && !failed;
 
   return (
     <Animated.View style={[animatedStyle, width ? { width } : undefined]}>
@@ -60,27 +66,29 @@ export function MemoryCard({ album, onPress, compact = false, width }: MemoryCar
         style={{ borderRadius: t.radius.card, overflow: 'hidden', backgroundColor: t.colors.card, ...t.shadows.md }}
       >
         <View style={{ height: coverHeight, justifyContent: 'space-between', padding: t.spacing.base }}>
-          {coverUrl ? (
+          {/* Base: tonal gradient (always there, so a failed image degrades gracefully). */}
+          <LinearGradient
+            colors={[shade(cover, 0.16), cover, shade(cover, -0.22)]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+          <LinearGradient
+            colors={['rgba(255,255,255,0.18)', 'rgba(255,255,255,0)']}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, height: coverHeight * 0.55 }}
+          />
+          {showImage && (
             <>
-              <Image source={{ uri: coverUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={220} />
-              {/* Scrim so the title always reads over the photo. */}
+              <Image
+                source={{ uri: imageUrl! }}
+                style={StyleSheet.absoluteFill}
+                contentFit="cover"
+                transition={220}
+                onError={() => setFailed(true)}
+              />
               <LinearGradient
                 colors={['rgba(0,0,0,0.05)', 'rgba(0,0,0,0.15)', 'rgba(0,0,0,0.6)']}
                 style={StyleSheet.absoluteFill}
-              />
-            </>
-          ) : (
-            <>
-              {/* Tonal cover — a lit top-left falling to a deeper bottom-right gives real depth. */}
-              <LinearGradient
-                colors={[shade(cover, 0.16), cover, shade(cover, -0.22)]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={StyleSheet.absoluteFill}
-              />
-              <LinearGradient
-                colors={['rgba(255,255,255,0.18)', 'rgba(255,255,255,0)']}
-                style={{ position: 'absolute', top: 0, left: 0, right: 0, height: coverHeight * 0.55 }}
               />
             </>
           )}
@@ -91,7 +99,7 @@ export function MemoryCard({ album, onPress, compact = false, width }: MemoryCar
             variant={compact ? 'h3' : 'h2'}
             color="onPrimary"
             numberOfLines={2}
-            style={{ textShadowColor: 'rgba(0,0,0,0.35)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 8 }}
+            style={{ textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 8 }}
           >
             {album.title}
           </Text>

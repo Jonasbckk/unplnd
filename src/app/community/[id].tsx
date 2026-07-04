@@ -209,7 +209,10 @@ export default function CommunityPlanDetail() {
 
               <View style={{ gap: t.spacing.sm, marginTop: t.spacing.sm }}>
                 {plan.route.map((stop, i) => (
-                  <View key={i} style={{ flexDirection: 'row', gap: t.spacing.base, paddingVertical: t.spacing.sm }}>
+                  <View
+                    key={i}
+                    style={{ flexDirection: 'row', gap: t.spacing.base, paddingVertical: t.spacing.sm, alignItems: 'center' }}
+                  >
                     <Text variant="body" color="primary" style={{ width: 52, fontWeight: '600' }}>
                       {stop.time}
                     </Text>
@@ -221,6 +224,14 @@ export default function CommunityPlanDetail() {
                         {stop.reason}
                       </Text>
                     </View>
+                    {stop.photoUrl ? (
+                      <Image
+                        source={{ uri: stop.photoUrl }}
+                        style={{ width: 56, height: 56, borderRadius: t.radius.md }}
+                        contentFit="cover"
+                        transition={200}
+                      />
+                    ) : null}
                   </View>
                 ))}
               </View>

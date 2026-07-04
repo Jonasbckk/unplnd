@@ -30,6 +30,7 @@ export default function AlbumDetail() {
   const updateNote = useAlbumsStore((s) => s.updateNote);
   const deleteAlbum = useAlbumsStore((s) => s.deleteAlbum);
   const [photos, setPhotos] = useState<AlbumPhoto[]>([]);
+  const [heroFailed, setHeroFailed] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [editingNote, setEditingNote] = useState(false);
   const [noteDraft, setNoteDraft] = useState('');
@@ -116,32 +117,39 @@ export default function AlbumDetail() {
     );
   }
 
+  // Hero: your uploaded photo, else the first spot's venue photo.
+  const heroPhoto = photos[0]?.url ?? album.timeline.find((s) => s.photoUrl)?.photoUrl ?? null;
+
   return (
     <View style={{ flex: 1, backgroundColor: t.colors.background }}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: t.spacing.xxl }}>
         <View style={{ overflow: 'hidden' }}>
-          {photos[0]?.url ? (
+          {/* Base tonal gradient — always present, so a failed image degrades gracefully. */}
+          <LinearGradient
+            colors={[shade(album.coverColor, 0.16), album.coverColor, shade(album.coverColor, -0.24)]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+          {heroPhoto && !heroFailed ? (
             <>
-              <Image source={{ uri: photos[0].url }} style={StyleSheet.absoluteFill} contentFit="cover" transition={220} />
+              <Image
+                source={{ uri: heroPhoto }}
+                style={StyleSheet.absoluteFill}
+                contentFit="cover"
+                transition={220}
+                onError={() => setHeroFailed(true)}
+              />
               <LinearGradient
                 colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.1)', 'rgba(0,0,0,0.6)']}
                 style={StyleSheet.absoluteFill}
               />
             </>
           ) : (
-            <>
-              <LinearGradient
-                colors={[shade(album.coverColor, 0.16), album.coverColor, shade(album.coverColor, -0.24)]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={StyleSheet.absoluteFill}
-              />
-              {/* Bottom scrim so the title always reads on light covers. */}
-              <LinearGradient
-                colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.22)']}
-                style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 130 }}
-              />
-            </>
+            <LinearGradient
+              colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.22)']}
+              style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 130 }}
+            />
           )}
           <SafeAreaView edges={['top']}>
             <View style={{ padding: t.spacing.lg, minHeight: 224, justifyContent: 'space-between' }}>
@@ -252,19 +260,29 @@ export default function AlbumDetail() {
                       <View style={{ flex: 1, width: 2, backgroundColor: t.colors.divider, marginVertical: 2 }} />
                     )}
                   </View>
-                  <View style={{ flex: 1, paddingBottom: t.spacing.lg }}>
-                    <Text variant="small" color="primary" style={{ fontWeight: '700' }}>
-                      {stop.time}
-                    </Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm, marginTop: 2 }}>
-                      <Text variant="body" style={{ flex: 1, fontWeight: '600' }}>
-                        {stop.title}
+                  <View style={{ flex: 1, paddingBottom: t.spacing.lg, flexDirection: 'row', gap: t.spacing.md }}>
+                    <View style={{ flex: 1 }}>
+                      <Text variant="small" color="primary" style={{ fontWeight: '700' }}>
+                        {stop.time}
                       </Text>
-                      {stop.memoryMoment && <Ionicons name="sparkles" size={15} color={t.colors.accentOrange} />}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm, marginTop: 2 }}>
+                        <Text variant="body" style={{ flex: 1, fontWeight: '600' }}>
+                          {stop.title}
+                        </Text>
+                        {stop.memoryMoment && <Ionicons name="sparkles" size={15} color={t.colors.accentOrange} />}
+                      </View>
+                      <Text variant="small" color="textSecondary" style={{ marginTop: 2 }}>
+                        {stop.reason}
+                      </Text>
                     </View>
-                    <Text variant="small" color="textSecondary" style={{ marginTop: 2 }}>
-                      {stop.reason}
-                    </Text>
+                    {stop.photoUrl ? (
+                      <Image
+                        source={{ uri: stop.photoUrl }}
+                        style={{ width: 62, height: 62, borderRadius: t.radius.md, marginTop: 2 }}
+                        contentFit="cover"
+                        transition={200}
+                      />
+                    ) : null}
                   </View>
                 </View>
               ))}
