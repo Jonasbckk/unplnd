@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useRouter, type Href } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, type ComponentProps } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { Button, Card, Screen, Text } from '@/components/ui';
@@ -28,14 +29,28 @@ function mostCommon(items: string[]): string | undefined {
   return best;
 }
 
-function Stat({ value, label }: { value: string | number; label: string }) {
+type IoniconName = ComponentProps<typeof Ionicons>['name'];
+
+function Stat({ icon, value, label }: { icon: IoniconName; value: string | number; label: string }) {
   const t = useTheme();
   return (
-    <View style={{ alignItems: 'center', gap: 2 }}>
-      <Text variant="h1" color="textHeading">
+    <View style={{ alignItems: 'center', gap: 4, flex: 1 }}>
+      <View
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: t.radius.pill,
+          backgroundColor: t.colors.background,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Ionicons name={icon} size={20} color={t.colors.primary} />
+      </View>
+      <Text variant="h2" color="textHeading" numberOfLines={1}>
         {value}
       </Text>
-      <Text variant="small" color="textSecondary">
+      <Text variant="caption" color="textSecondary" numberOfLines={1}>
         {label}
       </Text>
     </View>
@@ -59,8 +74,9 @@ export default function ProfileScreen() {
     void loadFavorites();
   }, [loadAlbums, loadFavorites]);
 
-  const meta = user?.user_metadata as { display_name?: string } | undefined;
+  const meta = user?.user_metadata as { display_name?: string; avatar_url?: string } | undefined;
   const name = meta?.display_name ?? user?.email?.split('@')[0] ?? 'You';
+  const avatarUrl = meta?.avatar_url;
   const memberSince = user?.created_at ? new Date(user.created_at).getFullYear() : new Date().getFullYear();
   const memories = albums.length;
   const cities = new Set(albums.map((a) => a.city).filter(Boolean)).size;
@@ -70,36 +86,66 @@ export default function ProfileScreen() {
   return (
     <Screen scroll contentStyle={{ gap: t.spacing.lg }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.base }}>
-        <View
-          style={{
-            width: 64,
-            height: 64,
-            borderRadius: t.radius.pill,
-            backgroundColor: t.colors.primary,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
+        <Pressable
+          onPress={() => router.push('/profile-edit' as Href)}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.base, flex: 1 }}
         >
-          <Text variant="h1" color="onPrimary">
-            {name.charAt(0).toUpperCase()}
-          </Text>
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text variant="h1">{name}</Text>
-          <Text variant="small" color="textSecondary">
-            {tr('profile.memberSince', { year: memberSince })}
-          </Text>
-        </View>
+          <View style={{ width: 64, height: 64 }}>
+            <View
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: t.radius.pill,
+                backgroundColor: t.colors.primary,
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+              }}
+            >
+              {avatarUrl ? (
+                <Image source={{ uri: avatarUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+              ) : (
+                <Text variant="h1" color="onPrimary">
+                  {name.charAt(0).toUpperCase()}
+                </Text>
+              )}
+            </View>
+            <View
+              style={{
+                position: 'absolute',
+                bottom: -2,
+                right: -2,
+                width: 24,
+                height: 24,
+                borderRadius: t.radius.pill,
+                backgroundColor: t.colors.surface,
+                borderWidth: 2,
+                borderColor: t.colors.background,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Ionicons name="pencil" size={11} color={t.colors.primary} />
+            </View>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text variant="h1">{name}</Text>
+            <Text variant="small" color="textSecondary">
+              {tr('profile.memberSince', { year: memberSince })}
+            </Text>
+          </View>
+        </Pressable>
         <Pressable onPress={() => router.push('/settings')} hitSlop={8}>
           <Ionicons name="settings-outline" size={24} color={t.colors.textSecondary} />
         </Pressable>
       </View>
 
       <Card style={{ backgroundColor: t.colors.surfaceSecondary }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
-          <Stat value={memories} label={tr('profile.memories')} />
-          <Stat value={cities} label={tr('profile.cities')} />
-          <Stat value={favoriteMood} label={tr('profile.topMood')} />
+        <View style={{ flexDirection: 'row', justifyContent: 'space-around', gap: t.spacing.xs }}>
+          <Stat icon="images-outline" value={memories} label={tr('profile.memories')} />
+          <Stat icon="navigate-outline" value={cities} label={tr('profile.cities')} />
+          <Stat icon="heart-outline" value={favorites.length} label={tr('profile.saved')} />
+          <Stat icon="sparkles-outline" value={favoriteMood} label={tr('profile.topMood')} />
         </View>
       </Card>
 

@@ -1,0 +1,151 @@
+import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { ActivityIndicator, Pressable, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { Button, Input, Text } from '@/components/ui';
+import { useAuthStore } from '@/features/auth/auth-store';
+import { haptics } from '@/lib/haptics';
+import { useT } from '@/lib/i18n';
+import { pickAvatar, updateProfileAvatar, updateProfileName } from '@/lib/profile';
+import { toast } from '@/store/toast-store';
+import { useTheme } from '@/theme';
+
+export default function EditProfile() {
+  const t = useTheme();
+  const { t: tr } = useT();
+  const router = useRouter();
+  const user = useAuthStore((s) => s.user);
+  const meta = user?.user_metadata as { display_name?: string; avatar_url?: string } | undefined;
+  const [name, setName] = useState(meta?.display_name ?? '');
+  const [avatar, setAvatar] = useState(meta?.avatar_url ?? '');
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const onPickAvatar = async () => {
+    const asset = await pickAvatar();
+    if (!asset) return;
+    setUploading(true);
+    const url = await updateProfileAvatar(asset);
+    setUploading(false);
+    if (url) {
+      setAvatar(url);
+      haptics.success();
+      toast(tr('editProfile.avatarUpdated'));
+    } else {
+      toast(tr('editProfile.failed'));
+    }
+  };
+
+  const onSave = async () => {
+    if (!name.trim()) return;
+    setSaving(true);
+    const ok = await updateProfileName(name);
+    setSaving(false);
+    if (ok) {
+      haptics.success();
+      toast(tr('editProfile.saved'));
+      router.back();
+    } else {
+      toast(tr('editProfile.failed'));
+    }
+  };
+
+  return (
+    <View style={{ flex: 1, backgroundColor: t.colors.background }}>
+      <SafeAreaView edges={['top']}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: t.spacing.sm,
+            paddingHorizontal: t.spacing.lg,
+            paddingVertical: t.spacing.md,
+          }}
+        >
+          <Pressable onPress={() => router.back()} hitSlop={8}>
+            <Ionicons name="chevron-back" size={26} color={t.colors.textPrimary} />
+          </Pressable>
+          <Text variant="h2">{tr('editProfile.title')}</Text>
+        </View>
+      </SafeAreaView>
+
+      <View style={{ padding: t.spacing.lg, gap: t.spacing.xl, alignItems: 'center' }}>
+        <Pressable onPress={onPickAvatar} disabled={uploading}>
+          <View
+            style={{
+              width: 108,
+              height: 108,
+              borderRadius: t.radius.pill,
+              backgroundColor: t.colors.primary,
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+            }}
+          >
+            {avatar ? (
+              <Image source={{ uri: avatar }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+            ) : (
+              <Text variant="displayMedium" color="onPrimary">
+                {(name || 'U').charAt(0).toUpperCase()}
+              </Text>
+            )}
+            {uploading && (
+              <View
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: 'rgba(0,0,0,0.4)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <ActivityIndicator color="#FFFFFF" />
+              </View>
+            )}
+          </View>
+          <View
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              right: 0,
+              width: 34,
+              height: 34,
+              borderRadius: t.radius.pill,
+              backgroundColor: t.colors.surface,
+              borderWidth: 2,
+              borderColor: t.colors.background,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Ionicons name="camera" size={17} color={t.colors.primary} />
+          </View>
+        </Pressable>
+
+        <View style={{ alignSelf: 'stretch', gap: t.spacing.sm }}>
+          <Text variant="small" color="textSecondary">
+            {tr('editProfile.nameLabel')}
+          </Text>
+          <Input
+            value={name}
+            onChangeText={setName}
+            placeholder={tr('editProfile.namePlaceholder')}
+            autoCapitalize="words"
+            returnKeyType="done"
+            onSubmitEditing={onSave}
+          />
+        </View>
+
+        <View style={{ alignSelf: 'stretch' }}>
+          <Button title={tr('editProfile.save')} loading={saving} disabled={!name.trim()} onPress={onSave} />
+        </View>
+      </View>
+    </View>
+  );
+}

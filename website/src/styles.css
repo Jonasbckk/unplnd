@@ -1,0 +1,146 @@
+@import '@fontsource-variable/inter/index.css';
+@import 'tailwindcss';
+
+/*
+ * UNPLND semantic tokens.
+ * Source of truth: src/theme/colors.ts (app) / docs/06_COLORS.md.
+ * One page theme, auto light/dark via prefers-color-scheme; dark is the
+ * app's warm dark palette, never an inversion.
+ */
+:root {
+  --bg: #f9f4ef; /* Warm Cream */
+  --surface: #fffdfc; /* Warm White */
+  --surface-2: #f1e7de; /* soft section tint (between cream & beige) */
+  --beige: #e7d3c8; /* Soft Beige */
+  --ink: #3a2f2a; /* body text, never pure black */
+  --ink-2: #6f645d; /* secondary text (AA on cream) */
+  --heading: #6d4c41; /* Coffee Brown */
+  --line: #ece5de;
+  --btn: #4a362e; /* solid CTA surface (warm espresso, AA with white) */
+  --btn-text: #fffdfc;
+  --terra-ink: #a0523d; /* terracotta dark enough for small text on cream (AA) */
+  --shadow-tint: 109 76 65; /* Coffee Brown rgb for warm shadows */
+  --glow: rgba(233, 140, 90, 0.16);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #171412;
+    --surface: #211d1a;
+    --surface-2: #1d1916;
+    --beige: #2a2522;
+    --ink: #f8f3ef;
+    --ink-2: #bdb2aa;
+    --heading: #f8f3ef;
+    --line: #403833;
+    --btn: #f8f3ef;
+    --btn-text: #33241e;
+    --terra-ink: #e89a78; /* lighter terracotta for small text on warm dark */
+    --shadow-tint: 0 0 0;
+    --glow: rgba(233, 140, 90, 0.1);
+  }
+}
+
+@theme inline {
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* semantic (theme-aware) */
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-beige: var(--beige);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-heading: var(--heading);
+  --color-line: var(--line);
+  --color-btn: var(--btn);
+  --color-btn-text: var(--btn-text);
+  --color-terra-ink: var(--terra-ink);
+
+  /* brand constants (same in both modes) */
+  --color-terra: #c97b63; /* Terracotta */
+  --color-terra-deep: #b96a52;
+  --color-sunset: #e88c5a; /* Sunset Orange */
+  --color-coral: #ff6b5a; /* logo gradient start */
+  --color-honey: #f2b84b; /* logo gradient end */
+  --color-olive: #7a8f63;
+  --color-ocean: #6d9dc5;
+
+  /* radii from app tokens (08_COMPONENTS): card 28, sheet 32, button 20 */
+  --radius-btn: 20px;
+  --radius-card: 28px;
+  --radius-sheet: 32px;
+
+  /* motion (09_ANIMATIONS): strong ease-out, ceiling 600ms */
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family:
+    'Inter Variable',
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+  font-feature-settings: 'cv11';
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+
+::selection {
+  background: rgba(201, 123, 99, 0.28);
+}
+
+/* Warm-tinted shadow utilities (never black on light) */
+@utility shadow-warm-sm {
+  box-shadow: 0 2px 8px rgb(var(--shadow-tint) / 0.06);
+}
+@utility shadow-warm {
+  box-shadow: 0 6px 16px rgb(var(--shadow-tint) / 0.09);
+}
+@utility shadow-warm-lg {
+  box-shadow: 0 12px 28px rgb(var(--shadow-tint) / 0.12);
+}
+@utility shadow-warm-xl {
+  box-shadow: 0 24px 64px rgb(var(--shadow-tint) / 0.16);
+}
+
+/* Press feedback: physical push, 160ms strong ease-out (tokens: tap 120–180ms) */
+@utility pressable {
+  transition:
+    transform 160ms var(--ease-out-strong),
+    box-shadow 160ms var(--ease-out-strong);
+  &:active {
+    transform: scale(0.97);
+  }
+}
+
+/* Focus ring for keyboard users, brand-tinted */
+:where(a, button, input, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-terra);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
+/* Hide scrollbar on snap rows but keep scrollability */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
