@@ -51,6 +51,8 @@ interface StopOut {
   lat?: number;
   lng?: number;
   photoUrl?: string;
+  /** Unresolved Google photo names for on-demand gallery resolution (resolve-photos fn). */
+  photoNames?: string[];
 }
 
 const CORS = {
@@ -80,7 +82,7 @@ interface Candidate {
   address?: string;
   lat: number;
   lng: number;
-  photoName?: string;
+  photoNames?: string[];
   summary?: string;
   distanceM: number;
 }
@@ -311,7 +313,9 @@ async function findCandidates(req: PlanRequest, key: string, plan: SearchGroup[]
           address: p.formattedAddress,
           lat: p.location.latitude,
           lng: p.location.longitude,
-          photoName: p.photos?.[0]?.name,
+          photoNames: Array.isArray(p.photos)
+            ? p.photos.slice(0, 8).map((ph: any) => ph.name).filter(Boolean)
+            : undefined,
           summary: p.editorialSummary?.text,
           distanceM: Math.round(haversine(lat, lng, p.location.latitude, p.location.longitude)),
         } as Candidate;
@@ -351,10 +355,10 @@ function clusterCandidates(candidates: Candidate[], transport?: string): Candida
 }
 
 /** Resolves one displayable photo URL per place (keyless googleusercontent link). */
-async function resolvePhoto(photoName: string, key: string): Promise<string | undefined> {
+async function resolvePhoto(photoName: string, key: string, maxPx = 600): Promise<string | undefined> {
   try {
     const res = await fetch(
-      `${PLACES_BASE}/${photoName}/media?maxHeightPx=400&maxWidthPx=600&skipHttpRedirect=true`,
+      `${PLACES_BASE}/${photoName}/media?maxHeightPx=${maxPx}&maxWidthPx=${maxPx}&skipHttpRedirect=true`,
       { headers: { 'X-Goog-Api-Key': key } },
     );
     if (!res.ok) return undefined;
@@ -872,7 +876,12 @@ Deno.serve(async (req) => {
       await Promise.all(
         stops.map(async (s) => {
           const c = s.placeId ? byId.get(s.placeId) : undefined;
-          if (c?.photoName) s.photoUrl = await resolvePhoto(c.photoName, googleKey!);
+          // Resolve only the MAIN photo now (shown on the card); the rest resolve on demand when
+          // the user opens the gallery (resolve-photos fn) — so we only pay for photos people view.
+          if (c?.photoNames?.length) {
+            s.photoUrl = await resolvePhoto(c.photoNames[0], googleKey!, 800);
+            s.photoNames = c.photoNames;
+          }
         }),
       );
 

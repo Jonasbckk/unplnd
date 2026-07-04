@@ -1,15 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useEffect, type ComponentProps } from 'react';
+import { useEffect, useState, type ComponentProps } from 'react';
 import { Pressable, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 
 import { Button, Card, Screen, Text } from '@/components/ui';
 import { useEveningStore } from '@/features/evening/evening-store';
 import { useFavoritesStore } from '@/features/favorites/favorites-store';
+import { StopGallery } from '@/features/planner/StopGallery';
 import { StopMeta } from '@/features/planner/StopMeta';
 import { usePlannerStore } from '@/features/planner/planner-store';
+import type { PlanStop } from '@/features/planner/types';
 import { haptics } from '@/lib/haptics';
 import { useT } from '@/lib/i18n';
 import { useTheme } from '@/theme';
@@ -40,6 +42,7 @@ export default function RouteScreen() {
   const favorites = useFavoritesStore((s) => s.places);
   const toggleFavorite = useFavoritesStore((s) => s.toggleFavorite);
   const loadFavorites = useFavoritesStore((s) => s.loadFavorites);
+  const [galleryStop, setGalleryStop] = useState<PlanStop | null>(null);
 
   useEffect(() => {
     void loadFavorites();
@@ -122,12 +125,41 @@ export default function RouteScreen() {
               <View style={{ flex: 1, paddingBottom: isLast ? 0 : t.spacing.lg }}>
                 <Card style={isMemory ? { borderWidth: 1.5, borderColor: t.colors.accentOrange } : undefined}>
                   {stop.photoUrl && (
-                    <Image
-                      source={{ uri: stop.photoUrl }}
-                      style={{ width: '100%', height: 130, borderRadius: t.radius.md, marginBottom: t.spacing.md }}
-                      contentFit="cover"
-                      transition={200}
-                    />
+                    <Pressable
+                      onPress={() => {
+                        haptics.light();
+                        setGalleryStop(stop);
+                      }}
+                      style={{ marginBottom: t.spacing.md }}
+                    >
+                      <Image
+                        source={{ uri: stop.photoUrl }}
+                        style={{ width: '100%', height: 130, borderRadius: t.radius.md }}
+                        contentFit="cover"
+                        transition={200}
+                      />
+                      {(stop.photoNames?.length ?? 0) > 1 && (
+                        <View
+                          style={{
+                            position: 'absolute',
+                            bottom: 8,
+                            right: 8,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 4,
+                            backgroundColor: 'rgba(0,0,0,0.6)',
+                            paddingHorizontal: 8,
+                            paddingVertical: 4,
+                            borderRadius: t.radius.pill,
+                          }}
+                        >
+                          <Ionicons name="images-outline" size={13} color="#FFFFFF" />
+                          <Text variant="small" style={{ color: '#FFFFFF', fontWeight: '600' }}>
+                            {stop.photoNames?.length}
+                          </Text>
+                        </View>
+                      )}
+                    </Pressable>
                   )}
                   <View style={{ gap: 4 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}>
@@ -186,6 +218,8 @@ export default function RouteScreen() {
           }}
         />
       </Animated.View>
+
+      <StopGallery stop={galleryStop} onClose={() => setGalleryStop(null)} />
     </Screen>
   );
 }

@@ -26,6 +26,8 @@ export interface PlanStop {
   lat?: number;
   lng?: number;
   photoUrl?: string;
+  /** Unresolved Google photo names — resolved on demand when the gallery opens. */
+  photoNames?: string[];
 }
 
 export interface GeneratedPlan {
