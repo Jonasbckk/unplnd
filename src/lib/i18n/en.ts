@@ -225,6 +225,10 @@ export const en = {
     blockTitle: 'Block this user?',
     blockBody: 'You won’t see evenings from this person anymore.',
     blocked: 'Blocked.',
+    delete: 'Delete publication',
+    deleteTitle: 'Delete publication?',
+    deleteBody: 'The evening disappears from the community. Your memory stays with you.',
+    deleted: 'Publication deleted.',
   },
   albums: {
     title: 'Memories',

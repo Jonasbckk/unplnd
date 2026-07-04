@@ -261,6 +261,10 @@ export const de = {
     blockTitle: 'Diesen Nutzer blockieren?',
     blockBody: 'Du siehst dann keine Abende mehr von dieser Person.',
     blocked: 'Blockiert.',
+    delete: 'Veröffentlichung löschen',
+    deleteTitle: 'Veröffentlichung löschen?',
+    deleteBody: 'Der Abend verschwindet aus der Community. Deine Erinnerung bleibt bei dir.',
+    deleted: 'Veröffentlichung gelöscht.',
   },
   albums: {
     title: 'Erinnerungen',

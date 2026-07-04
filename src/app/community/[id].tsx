@@ -6,8 +6,16 @@ import { ActivityIndicator, Pressable, ScrollView, useWindowDimensions, View } f
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, Text } from '@/components/ui';
+import { useAuthStore } from '@/features/auth/auth-store';
 import { usePlannerStore } from '@/features/planner/planner-store';
-import { blockUser, getCommunityPlan, reportPlan, toggleStar, type CommunityPlan } from '@/lib/community';
+import {
+  blockUser,
+  deletePublishedPlan,
+  getCommunityPlan,
+  reportPlan,
+  toggleStar,
+  type CommunityPlan,
+} from '@/lib/community';
 import { confirmDialog } from '@/lib/confirm';
 import { haptics } from '@/lib/haptics';
 import { useT } from '@/lib/i18n';
@@ -22,6 +30,7 @@ export default function CommunityPlanDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { width } = useWindowDimensions();
   const loadIntoPlanner = usePlannerStore((s) => s.setPlan);
+  const me = useAuthStore((s) => s.user?.id);
   const [plan, setPlan] = useState<CommunityPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [starred, setStarred] = useState(false);
@@ -99,6 +108,23 @@ export default function CommunityPlanDetail() {
     if (!ok) return;
     await blockUser(plan.authorId);
     toast(tr('community.blocked'));
+    router.back();
+  };
+
+  const isMine = !!me && !!plan && me === plan.authorId;
+
+  const onDeletePublished = async () => {
+    if (!plan) return;
+    const ok = await confirmDialog(
+      tr('community.deleteTitle'),
+      tr('community.deleteBody'),
+      tr('community.delete'),
+      tr('common2.cancel'),
+    );
+    if (!ok) return;
+    await deletePublishedPlan(plan.id);
+    haptics.success();
+    toast(tr('community.deleted'));
     router.back();
   };
 
@@ -237,16 +263,26 @@ export default function CommunityPlanDetail() {
               </View>
 
               <View style={{ flexDirection: 'row', gap: t.spacing.lg, marginTop: t.spacing.md }}>
-                <Pressable onPress={onReport} hitSlop={6}>
-                  <Text variant="small" color="textSecondary">
-                    {tr('community.report')}
-                  </Text>
-                </Pressable>
-                <Pressable onPress={onBlock} hitSlop={6}>
-                  <Text variant="small" color="textSecondary">
-                    {tr('community.block')}
-                  </Text>
-                </Pressable>
+                {isMine ? (
+                  <Pressable onPress={onDeletePublished} hitSlop={6}>
+                    <Text variant="small" color="error" style={{ fontWeight: '600' }}>
+                      {tr('community.delete')}
+                    </Text>
+                  </Pressable>
+                ) : (
+                  <>
+                    <Pressable onPress={onReport} hitSlop={6}>
+                      <Text variant="small" color="textSecondary">
+                        {tr('community.report')}
+                      </Text>
+                    </Pressable>
+                    <Pressable onPress={onBlock} hitSlop={6}>
+                      <Text variant="small" color="textSecondary">
+                        {tr('community.block')}
+                      </Text>
+                    </Pressable>
+                  </>
+                )}
               </View>
             </View>
           </ScrollView>

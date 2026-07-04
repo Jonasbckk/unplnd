@@ -261,6 +261,12 @@ export async function toggleStar(planId: string, currentlyStarred: boolean): Pro
   }
 }
 
+/** Delete your OWN published plan — removes it from the community feed (RLS: author only). */
+export async function deletePublishedPlan(planId: string): Promise<boolean> {
+  const { error } = await supabase.from('published_plans').delete().eq('id', planId);
+  return !error;
+}
+
 /** Report a published plan for moderation (App-Store requirement for UGC). */
 export async function reportPlan(planId: string, reason?: string): Promise<void> {
   const userId = useAuthStore.getState().user?.id;

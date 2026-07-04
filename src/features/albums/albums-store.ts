@@ -140,6 +140,8 @@ export const useAlbumsStore = create<AlbumsState>((set, get) => ({
   },
 
   deleteAlbum: async (id) => {
+    // Deleting the memory also removes its published version from the community (no orphans).
+    await supabase.from('published_plans').delete().eq('source_album_id', id);
     // Clean up stored photos first (album_photos rows cascade with the album row).
     const { data: photoRows } = await supabase.from('album_photos').select('storage_path').eq('album_id', id);
     const paths = (photoRows ?? []).map((row) => row.storage_path as string);
