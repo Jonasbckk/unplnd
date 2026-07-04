@@ -208,6 +208,7 @@ export const en = {
   community: {
     title: 'Community',
     sub: 'Evenings from others — nearby first.',
+    emptyTitle: 'Quiet here for now',
     empty: 'No published evenings near you yet. Be the first!',
     needLocation: 'Turn on location to see evenings near you.',
     by: 'by %{name}',
@@ -315,6 +316,7 @@ export const en = {
     photos: 'Photos',
     topMood: 'Top mood',
     moods: 'Your moods',
+    emptyTitle: 'No numbers yet',
     empty: 'Your stats begin with your first evening.',
   },
   settings: {
@@ -347,12 +349,15 @@ export const en = {
     sub: 'Great places right around you.',
     nearby: 'Near you',
     loading: 'Finding good spots…',
+    emptyTitle: 'Nothing fitting yet',
     empty: 'Nothing here right now — try another category.',
     searchPlaceholder: 'What are you after? e.g. sushi, rooftop bar…',
+    searchEmptyTitle: 'No matches',
     searchEmpty: 'Couldn’t find anything good for that nearby. Try something else.',
     communityTitle: 'Community evenings',
     communitySub: 'Real evenings people published near you.',
     filterOpen: 'Open now',
+    filterEmptyTitle: 'No matches',
     filterEmpty: 'No matches with these filters. Try loosening them.',
     needLocation: 'Turn on location to discover places near you.',
     categories: {

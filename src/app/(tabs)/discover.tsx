@@ -4,7 +4,7 @@ import { useRouter, type Href } from 'expo-router';
 import { useCallback, useEffect, useState, type ComponentProps } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
-import { Button, Card, FadeInUp, Input, Screen, Skeleton, Text } from '@/components/ui';
+import { Button, Card, EmptyState, FadeInUp, Input, Screen, Skeleton, Text } from '@/components/ui';
 import { LocationChip } from '@/features/location/LocationChip';
 import { useFavoritesStore } from '@/features/favorites/favorites-store';
 import { getDiscoverPlaces, type DiscoverPlace } from '@/lib/discover';
@@ -371,17 +371,13 @@ export default function DiscoverScreen() {
           ))}
         </View>
       ) : places.length === 0 ? (
-        <View style={{ alignItems: 'center', paddingVertical: t.spacing.xxl }}>
-          <Text variant="bodyLarge" color="textSecondary" center>
-            {activeQuery ? tr('discover.searchEmpty') : tr('discover.empty')}
-          </Text>
-        </View>
+        <EmptyState
+          icon={activeQuery ? 'search-outline' : 'compass-outline'}
+          title={activeQuery ? tr('discover.searchEmptyTitle') : tr('discover.emptyTitle')}
+          body={activeQuery ? tr('discover.searchEmpty') : tr('discover.empty')}
+        />
       ) : shown.length === 0 ? (
-        <View style={{ alignItems: 'center', paddingVertical: t.spacing.xxl }}>
-          <Text variant="bodyLarge" color="textSecondary" center>
-            {tr('discover.filterEmpty')}
-          </Text>
-        </View>
+        <EmptyState icon="filter-outline" title={tr('discover.filterEmptyTitle')} body={tr('discover.filterEmpty')} />
       ) : (
         <View style={{ gap: t.spacing.base }}>
           <Text variant="h3">{activeQuery ? `„${activeQuery}"` : tr('discover.nearby')}</Text>

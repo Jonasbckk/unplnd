@@ -5,7 +5,7 @@ import { Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Card, Text, useCountUp } from '@/components/ui';
+import { Card, EmptyState, Text, useCountUp } from '@/components/ui';
 import { useAlbumsStore } from '@/features/albums/albums-store';
 import { optionLabel, useT } from '@/lib/i18n';
 import { useTheme } from '@/theme';
@@ -83,10 +83,8 @@ export default function StatsScreen() {
         </View>
 
         {albums.length === 0 ? (
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: t.spacing.xl }}>
-            <Text variant="bodyLarge" color="textSecondary" center>
-              {tr('stats.empty')}
-            </Text>
+          <View style={{ flex: 1, justifyContent: 'center' }}>
+            <EmptyState icon="bar-chart-outline" title={tr('stats.emptyTitle')} body={tr('stats.empty')} />
           </View>
         ) : (
           <ScrollView

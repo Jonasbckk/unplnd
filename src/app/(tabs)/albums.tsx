@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 
-import { Button, FadeInUp, Screen, Skeleton, Text } from '@/components/ui';
+import { Button, EmptyState, FadeInUp, Screen, Skeleton, Text } from '@/components/ui';
 import { MemoryCard } from '@/features/albums/MemoryCard';
 import { useAlbumsStore } from '@/features/albums/albums-store';
 import { useT } from '@/lib/i18n';
@@ -44,16 +44,13 @@ export default function AlbumsScreen() {
 
   if (albums.length === 0) {
     return (
-      <Screen contentStyle={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: t.spacing.md }}>
-        <Text variant="displayMedium" center>
-          {tr('albums.emptyTitle')}
-        </Text>
-        <Text variant="bodyLarge" color="textSecondary" center>
-          {tr('albums.emptyBody')}
-        </Text>
-        <View style={{ marginTop: t.spacing.base, alignSelf: 'stretch' }}>
-          <Button title={tr('albums.planTonight')} onPress={() => router.navigate('/planner')} />
-        </View>
+      <Screen contentStyle={{ flex: 1, justifyContent: 'center' }}>
+        <EmptyState
+          icon="images-outline"
+          title={tr('albums.emptyTitle')}
+          body={tr('albums.emptyBody')}
+          action={<Button title={tr('albums.planTonight')} onPress={() => router.navigate('/planner')} />}
+        />
       </Screen>
     );
   }

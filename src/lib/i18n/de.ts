@@ -244,6 +244,7 @@ export const de = {
   community: {
     title: 'Community',
     sub: 'Abende von anderen — in deiner Nähe zuerst.',
+    emptyTitle: 'Noch ruhig hier',
     empty: 'Noch keine veröffentlichten Abende in deiner Nähe. Sei der Erste!',
     needLocation: 'Aktiviere den Standort, um Abende in deiner Nähe zu sehen.',
     by: 'von %{name}',
@@ -351,6 +352,7 @@ export const de = {
     photos: 'Fotos',
     topMood: 'Lieblingsstimmung',
     moods: 'Deine Stimmungen',
+    emptyTitle: 'Noch keine Zahlen',
     empty: 'Deine Statistik beginnt mit deinem ersten Abend.',
   },
   settings: {
@@ -383,12 +385,15 @@ export const de = {
     sub: 'Gute Orte direkt in deiner Nähe.',
     nearby: 'In deiner Nähe',
     loading: 'Suche gute Orte…',
+    emptyTitle: 'Nichts Passendes',
     empty: 'Gerade nichts Passendes — probier eine andere Kategorie.',
     searchPlaceholder: 'Wonach ist dir? z. B. Sushi, Rooftop-Bar…',
+    searchEmptyTitle: 'Nichts gefunden',
     searchEmpty: 'Dazu haben wir gerade nichts Gutes in der Nähe gefunden. Versuch was anderes.',
     communityTitle: 'Community-Abende',
     communitySub: 'Echte Abende, die andere in deiner Nähe veröffentlicht haben.',
     filterOpen: 'Jetzt offen',
+    filterEmptyTitle: 'Keine Treffer',
     filterEmpty: 'Keine Treffer mit diesen Filtern. Lockere sie etwas.',
     needLocation: 'Aktiviere den Standort, um Orte in deiner Nähe zu entdecken.',
     categories: {

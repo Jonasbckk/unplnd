@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button, Card, FadeInUp, Skeleton, Text } from '@/components/ui';
+import { Button, Card, EmptyState, FadeInUp, Skeleton, Text } from '@/components/ui';
 import { getCommunityPlans, toggleStar, type CommunityPlan } from '@/lib/community';
 import { haptics } from '@/lib/haptics';
 import { useT } from '@/lib/i18n';
@@ -177,11 +177,7 @@ export default function CommunityScreen() {
             ))}
           </View>
         ) : plans.length === 0 ? (
-          <View style={{ alignItems: 'center', paddingVertical: t.spacing.xxl }}>
-            <Text variant="bodyLarge" color="textSecondary" center>
-              {tr('community.empty')}
-            </Text>
-          </View>
+          <EmptyState icon="people-outline" title={tr('community.emptyTitle')} body={tr('community.empty')} />
         ) : (
           plans.map((plan, i) => (
             <FadeInUp key={plan.id} index={i}>
