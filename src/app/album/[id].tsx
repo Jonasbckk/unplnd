@@ -1,12 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, Share, View, useWindowDimensions } from 'react-native';
+import { Pressable, ScrollView, Share, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button, Card, Input, Text } from '@/components/ui';
+import { Button, Card, FadeInUp, Input, Text } from '@/components/ui';
 import { formatAlbumDate } from '@/features/albums/MemoryCard';
+import { shade } from '@/utils/color';
 import { useAlbumsStore } from '@/features/albums/albums-store';
 import { getAlbumPhotos, pickPhotos, uploadAlbumPhotos, type AlbumPhoto } from '@/features/albums/photos';
 import { confirmDialog } from '@/lib/confirm';
@@ -117,9 +119,20 @@ export default function AlbumDetail() {
   return (
     <View style={{ flex: 1, backgroundColor: t.colors.background }}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: t.spacing.xxl }}>
-        <View style={{ backgroundColor: album.coverColor }}>
+        <View style={{ overflow: 'hidden' }}>
+          <LinearGradient
+            colors={[shade(album.coverColor, 0.16), album.coverColor, shade(album.coverColor, -0.24)]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+          {/* Bottom scrim so the title always reads on light covers. */}
+          <LinearGradient
+            colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.22)']}
+            style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 130 }}
+          />
           <SafeAreaView edges={['top']}>
-            <View style={{ padding: t.spacing.lg, minHeight: 200, justifyContent: 'space-between' }}>
+            <View style={{ padding: t.spacing.lg, minHeight: 224, justifyContent: 'space-between' }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Pressable onPress={() => router.back()} hitSlop={8}>
                   <Ionicons name="chevron-back" size={26} color="#FFFFFF" />
@@ -134,10 +147,14 @@ export default function AlbumDetail() {
                 </View>
               </View>
               <View style={{ gap: 4 }}>
-                <Text variant="displayMedium" color="onPrimary">
+                <Text
+                  variant="displayMedium"
+                  color="onPrimary"
+                  style={{ textShadowColor: 'rgba(0,0,0,0.28)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 10 }}
+                >
                   {album.title}
                 </Text>
-                <Text variant="body" color="onPrimary">
+                <Text variant="body" color="onPrimary" style={{ opacity: 0.95 }}>
                   {formatAlbumDate(album.date)}
                   {album.city ? ` · ${album.city}` : ''}
                 </Text>
@@ -146,7 +163,7 @@ export default function AlbumDetail() {
           </SafeAreaView>
         </View>
 
-        <View style={{ padding: t.spacing.lg, gap: t.spacing.lg }}>
+        <FadeInUp style={{ padding: t.spacing.lg, gap: t.spacing.lg }}>
           <View style={{ flexDirection: 'row', gap: t.spacing.sm }}>
             <Text variant="small" color="textSecondary">
               {album.weather}
@@ -201,26 +218,45 @@ export default function AlbumDetail() {
             />
           )}
 
-          <View style={{ gap: t.spacing.sm }}>
+          <View style={{ gap: t.spacing.md }}>
             <Text variant="h3">{tr('albums.theEvening')}</Text>
-            {album.timeline.map((stop, i) => (
-              <View key={i} style={{ flexDirection: 'row', gap: t.spacing.base, paddingVertical: t.spacing.sm }}>
-                <Text variant="body" color="primary" style={{ width: 52, fontWeight: '600' }}>
-                  {stop.time}
-                </Text>
-                <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}>
-                    <Text variant="body" style={{ flex: 1, fontWeight: '600' }}>
-                      {stop.title}
-                    </Text>
-                    {stop.memoryMoment && <Ionicons name="sparkles" size={15} color={t.colors.accentOrange} />}
+            <View>
+              {album.timeline.map((stop, i) => (
+                <View key={i} style={{ flexDirection: 'row', gap: t.spacing.base }}>
+                  {/* Connected rail — a dot per stop, joined by a line. */}
+                  <View style={{ width: 14, alignItems: 'center' }}>
+                    <View
+                      style={{
+                        width: 12,
+                        height: 12,
+                        borderRadius: 6,
+                        backgroundColor: t.colors.primary,
+                        marginTop: 3,
+                        borderWidth: 2,
+                        borderColor: t.colors.background,
+                      }}
+                    />
+                    {i < album.timeline.length - 1 && (
+                      <View style={{ flex: 1, width: 2, backgroundColor: t.colors.divider, marginVertical: 2 }} />
+                    )}
                   </View>
-                  <Text variant="small" color="textSecondary">
-                    {stop.reason}
-                  </Text>
+                  <View style={{ flex: 1, paddingBottom: t.spacing.lg }}>
+                    <Text variant="small" color="primary" style={{ fontWeight: '700' }}>
+                      {stop.time}
+                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm, marginTop: 2 }}>
+                      <Text variant="body" style={{ flex: 1, fontWeight: '600' }}>
+                        {stop.title}
+                      </Text>
+                      {stop.memoryMoment && <Ionicons name="sparkles" size={15} color={t.colors.accentOrange} />}
+                    </View>
+                    <Text variant="small" color="textSecondary" style={{ marginTop: 2 }}>
+                      {stop.reason}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-            ))}
+              ))}
+            </View>
           </View>
 
           <View style={{ gap: t.spacing.md }}>
@@ -256,7 +292,7 @@ export default function AlbumDetail() {
           />
           <Button title={tr('albums.share')} variant="secondary" onPress={shareAlbum} />
           <Button title={tr('albums.done')} variant="secondary" onPress={() => router.replace('/')} />
-        </View>
+        </FadeInUp>
       </ScrollView>
     </View>
   );
