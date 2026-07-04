@@ -243,6 +243,9 @@ export const de = {
     needLocation: 'Aktiviere den Standort, um Abende in deiner Nähe zu sehen.',
     by: 'von %{name}',
     someone: 'jemandem',
+    usePlan: 'Diesen Plan übernehmen',
+    creatorRated: 'Ersteller:',
+    notFound: 'Dieser Abend ist nicht mehr verfügbar.',
   },
   albums: {
     title: 'Erinnerungen',

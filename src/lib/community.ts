@@ -9,6 +9,7 @@ export interface CommunityPlan {
   authorAvatar: string | null;
   title: string;
   city: string | null;
+  summary: string | null;
   photos: string[];
   starCount: number;
   selfRating: number | null;
@@ -45,7 +46,7 @@ export async function getCommunityPlans(): Promise<CommunityResult> {
 
   const { data, error } = await supabase
     .from('published_plans')
-    .select('id, author_name, author_avatar, title, city, lat, lng, photos, star_count, self_rating, route, created_at')
+    .select('id, author_name, author_avatar, title, city, summary, lat, lng, photos, star_count, self_rating, route, created_at')
     .eq('hidden', false)
     .order('created_at', { ascending: false })
     .limit(60);
@@ -71,6 +72,7 @@ export async function getCommunityPlans(): Promise<CommunityResult> {
       authorAvatar: (p.author_avatar as string | null) ?? null,
       title: p.title as string,
       city: (p.city as string | null) ?? null,
+      summary: (p.summary as string | null) ?? null,
       photos: Array.isArray(p.photos) ? (p.photos as string[]) : [],
       starCount: (p.star_count as number) ?? 0,
       selfRating: (p.self_rating as number | null) ?? null,
@@ -91,6 +93,46 @@ export async function getCommunityPlans(): Promise<CommunityResult> {
   });
 
   return { plans, needsLocation: false };
+}
+
+/** Fetch a single published plan by id (for the detail screen). */
+export async function getCommunityPlan(id: string): Promise<CommunityPlan | null> {
+  if (!isSupabaseConfigured) return null;
+  const { data, error } = await supabase
+    .from('published_plans')
+    .select('id, author_name, author_avatar, title, city, summary, photos, star_count, self_rating, route, created_at')
+    .eq('id', id)
+    .maybeSingle();
+  if (error || !data) return null;
+
+  const userId = useAuthStore.getState().user?.id;
+  let starred = false;
+  if (userId) {
+    const { data: mine } = await supabase
+      .from('plan_stars')
+      .select('id')
+      .eq('published_plan_id', id)
+      .eq('user_id', userId)
+      .maybeSingle();
+    starred = Boolean(mine);
+  }
+
+  const p = data as Record<string, unknown>;
+  return {
+    id: p.id as string,
+    authorName: (p.author_name as string | null) ?? null,
+    authorAvatar: (p.author_avatar as string | null) ?? null,
+    title: p.title as string,
+    city: (p.city as string | null) ?? null,
+    summary: (p.summary as string | null) ?? null,
+    photos: Array.isArray(p.photos) ? (p.photos as string[]) : [],
+    starCount: (p.star_count as number) ?? 0,
+    selfRating: (p.self_rating as number | null) ?? null,
+    route: Array.isArray(p.route) ? (p.route as PlanStop[]) : [],
+    createdAt: p.created_at as string,
+    starred,
+    distanceM: null,
+  };
 }
 
 /** Star / unstar a published plan (the star_count trigger keeps the total in sync). */

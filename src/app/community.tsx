@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,6 +15,7 @@ import { useTheme } from '@/theme';
 function CommunityCard({ plan }: { plan: CommunityPlan }) {
   const t = useTheme();
   const { t: tr, locale } = useT();
+  const router = useRouter();
   const [starred, setStarred] = useState(plan.starred);
   const [count, setCount] = useState(plan.starCount);
 
@@ -39,7 +40,7 @@ function CommunityCard({ plan }: { plan: CommunityPlan }) {
     .join(' · ');
 
   return (
-    <Card padded={false} style={{ overflow: 'hidden' }}>
+    <Card padded={false} onPress={() => router.push(`/community/${plan.id}` as Href)} style={{ overflow: 'hidden' }}>
       {plan.photos[0] ? (
         <Image source={{ uri: plan.photos[0] }} style={{ width: '100%', height: 190 }} contentFit="cover" transition={220} />
       ) : (

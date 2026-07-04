@@ -207,6 +207,9 @@ export const en = {
     needLocation: 'Turn on location to see evenings near you.',
     by: 'by %{name}',
     someone: 'someone',
+    usePlan: 'Use this plan',
+    creatorRated: 'Creator:',
+    notFound: 'This evening is no longer available.',
   },
   albums: {
     title: 'Memories',
