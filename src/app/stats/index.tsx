@@ -5,7 +5,7 @@ import { Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Card, Text } from '@/components/ui';
+import { Card, Text, useCountUp } from '@/components/ui';
 import { useAlbumsStore } from '@/features/albums/albums-store';
 import { optionLabel, useT } from '@/lib/i18n';
 import { useTheme } from '@/theme';
@@ -31,10 +31,11 @@ function mostCommon(values: (string | undefined)[]): string | undefined {
 
 function StatCard({ icon, value, label }: { icon: IoniconName; value: string | number; label: string }) {
   const t = useTheme();
+  const counted = useCountUp(typeof value === 'number' ? value : 0);
   return (
     <Card style={{ flex: 1, gap: 6 }}>
       <Ionicons name={icon} size={20} color={t.colors.primary} />
-      <Text variant="h1">{value}</Text>
+      <Text variant="h1">{typeof value === 'number' ? counted : value}</Text>
       <Text variant="small" color="textSecondary">
         {label}
       </Text>
@@ -69,6 +70,7 @@ export default function StatsScreen() {
   }, [albums]);
 
   const maxMood = stats.moods.length ? stats.moods[0][1] : 1;
+  const heroCount = useCountUp(stats.evenings, 900);
 
   return (
     <View style={{ flex: 1, backgroundColor: t.colors.background }}>
@@ -95,7 +97,7 @@ export default function StatsScreen() {
             <Animated.View entering={FadeInDown.duration(360)}>
               <Card style={{ backgroundColor: t.colors.primary, alignItems: 'center', paddingVertical: t.spacing.xl }}>
                 <Text style={{ color: '#FFFFFF', fontSize: 64, fontWeight: '800', lineHeight: 68 }}>
-                  {stats.evenings}
+                  {heroCount}
                 </Text>
                 <Text variant="bodyLarge" color="onPrimary" style={{ opacity: 0.9 }}>
                   {tr('stats.heroLabel')}

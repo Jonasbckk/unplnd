@@ -4,7 +4,7 @@ import { useRouter, type Href } from 'expo-router';
 import { useEffect, useState, type ComponentProps } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
-import { Button, Card, Screen, Text } from '@/components/ui';
+import { Button, Card, Screen, Text, useCountUp } from '@/components/ui';
 import { MemoryCard } from '@/features/albums/MemoryCard';
 import { useAlbumsStore } from '@/features/albums/albums-store';
 import { useAuthStore } from '@/features/auth/auth-store';
@@ -47,6 +47,7 @@ function Stat({
   accent: string;
 }) {
   const t = useTheme();
+  const counted = useCountUp(typeof value === 'number' ? value : 0);
   return (
     <View style={{ alignItems: 'center', gap: 4, flex: 1 }}>
       <View
@@ -62,7 +63,7 @@ function Stat({
         <Ionicons name={icon} size={20} color={accent} />
       </View>
       <Text variant="h2" color="textHeading" numberOfLines={1}>
-        {value}
+        {typeof value === 'number' ? counted : value}
       </Text>
       <Text variant="caption" color="textSecondary" numberOfLines={1}>
         {label}

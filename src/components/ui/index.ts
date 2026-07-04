@@ -10,4 +10,5 @@ export { SegmentedControl, type SegmentedControlProps, type SegmentedOption } fr
 export { NetworkBanner } from './network-banner';
 export { Toast } from './toast';
 export { StarRating, type StarRatingProps } from './star-rating';
-export { FadeInUp } from './motion';
+export { FadeInUp, useCountUp } from './motion';
+export { Skeleton } from './skeleton';

@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import Animated, {
   Easing,
@@ -49,4 +49,32 @@ export function FadeInUp({ children, index = 0, delay = 0, step = 55, distance =
   }));
 
   return <Animated.View style={[style, animatedStyle]}>{children}</Animated.View>;
+}
+
+/**
+ * Counts a number up from 0 to `target` on mount (easeOutCubic). Renders instantly under
+ * Reduce Motion. Uses the rAF timestamp only — no Date/performance calls.
+ */
+export function useCountUp(target: number, duration = 700): number {
+  const reduced = useReducedMotion();
+  const [value, setValue] = useState(reduced ? target : 0);
+
+  useEffect(() => {
+    if (reduced || target <= 0) {
+      setValue(target);
+      return;
+    }
+    let raf = 0;
+    let startTs = 0;
+    const tick = (ts: number) => {
+      if (!startTs) startTs = ts;
+      const p = Math.min(1, (ts - startTs) / duration);
+      setValue(Math.round(target * (1 - Math.pow(1 - p, 3))));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration, reduced]);
+
+  return value;
 }

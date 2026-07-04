@@ -5,7 +5,7 @@ import { useEffect, useState, type ComponentProps } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Card, FadeInUp, Text } from '@/components/ui';
+import { Card, FadeInUp, Text, useCountUp } from '@/components/ui';
 import { ProfileBanner } from '@/features/profile/ProfileBanner';
 import { getProfileStyle } from '@/features/profile/profile-styles';
 import { getPublicProfile, getUserPublishedPlans, type CommunityPlan, type PublicProfile } from '@/lib/community';
@@ -16,6 +16,7 @@ type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
 function Stat({ icon, value, label, accent }: { icon: IoniconName; value: number; label: string; accent: string }) {
   const t = useTheme();
+  const counted = useCountUp(value);
   return (
     <View style={{ alignItems: 'center', gap: 4, flex: 1 }}>
       <View
@@ -31,7 +32,7 @@ function Stat({ icon, value, label, accent }: { icon: IoniconName; value: number
         <Ionicons name={icon} size={20} color={accent} />
       </View>
       <Text variant="h2" color="textHeading">
-        {value}
+        {counted}
       </Text>
       <Text variant="caption" color="textSecondary" numberOfLines={1}>
         {label}

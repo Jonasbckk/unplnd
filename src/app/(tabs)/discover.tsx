@@ -2,9 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter, type Href } from 'expo-router';
 import { useCallback, useEffect, useState, type ComponentProps } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
-import { Button, Card, FadeInUp, Input, Screen, Text } from '@/components/ui';
+import { Button, Card, FadeInUp, Input, Screen, Skeleton, Text } from '@/components/ui';
 import { LocationChip } from '@/features/location/LocationChip';
 import { useFavoritesStore } from '@/features/favorites/favorites-store';
 import { getDiscoverPlaces, type DiscoverPlace } from '@/lib/discover';
@@ -364,11 +364,11 @@ export default function DiscoverScreen() {
           </View>
         </View>
       ) : loading ? (
-        <View style={{ alignItems: 'center', gap: t.spacing.md, paddingVertical: t.spacing.xxl }}>
-          <ActivityIndicator color={t.colors.primary} />
-          <Text variant="small" color="textSecondary">
-            {tr('discover.loading')}
-          </Text>
+        <View style={{ gap: t.spacing.base }}>
+          <Skeleton height={22} width="45%" />
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} height={240} radius={t.radius.card} />
+          ))}
         </View>
       ) : places.length === 0 ? (
         <View style={{ alignItems: 'center', paddingVertical: t.spacing.xxl }}>

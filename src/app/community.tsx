@@ -2,10 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter, type Href } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button, Card, FadeInUp, Text } from '@/components/ui';
+import { Button, Card, FadeInUp, Skeleton, Text } from '@/components/ui';
 import { getCommunityPlans, toggleStar, type CommunityPlan } from '@/lib/community';
 import { haptics } from '@/lib/haptics';
 import { useT } from '@/lib/i18n';
@@ -171,8 +171,10 @@ export default function CommunityScreen() {
             </View>
           </View>
         ) : loading ? (
-          <View style={{ alignItems: 'center', paddingVertical: t.spacing.xxl }}>
-            <ActivityIndicator color={t.colors.primary} />
+          <View style={{ gap: t.spacing.base }}>
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} height={264} radius={t.radius.card} />
+            ))}
           </View>
         ) : plans.length === 0 ? (
           <View style={{ alignItems: 'center', paddingVertical: t.spacing.xxl }}>
