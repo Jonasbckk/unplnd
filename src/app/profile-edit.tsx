@@ -5,11 +5,19 @@ import { useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button, Input, Text } from '@/components/ui';
+import { Button, Chip, Input, Text } from '@/components/ui';
 import { useAuthStore } from '@/features/auth/auth-store';
+import { INTERESTS, MAX_INTERESTS, PROMPTS } from '@/features/profile/profile-extras';
 import { haptics } from '@/lib/haptics';
 import { useT } from '@/lib/i18n';
-import { pickAvatar, updateProfileAvatar, updateProfileBio, updateProfileHomeCity, updateProfileName } from '@/lib/profile';
+import {
+  pickAvatar,
+  updateProfileAvatar,
+  updateProfileBio,
+  updateProfileExtras,
+  updateProfileHomeCity,
+  updateProfileName,
+} from '@/lib/profile';
 import { toast } from '@/store/toast-store';
 import { useTheme } from '@/theme';
 
@@ -19,14 +27,30 @@ export default function EditProfile() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const meta = user?.user_metadata as
-    | { display_name?: string; avatar_url?: string; bio?: string; home_city?: string }
+    | {
+        display_name?: string;
+        avatar_url?: string;
+        bio?: string;
+        home_city?: string;
+        interests?: string[];
+        prompts?: Record<string, string>;
+      }
     | undefined;
   const [name, setName] = useState(meta?.display_name ?? '');
   const [bio, setBio] = useState(meta?.bio ?? '');
   const [homeCity, setHomeCity] = useState(meta?.home_city ?? '');
+  const [interests, setInterests] = useState<string[]>(meta?.interests ?? []);
+  const [promptAnswers, setPromptAnswers] = useState<Record<string, string>>(meta?.prompts ?? {});
   const [avatar, setAvatar] = useState(meta?.avatar_url ?? '');
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const toggleInterest = (key: string) => {
+    haptics.selection();
+    setInterests((cur) =>
+      cur.includes(key) ? cur.filter((k) => k !== key) : cur.length >= MAX_INTERESTS ? cur : [...cur, key],
+    );
+  };
 
   const onPickAvatar = async () => {
     const asset = await pickAvatar();
@@ -49,8 +73,9 @@ export default function EditProfile() {
     const okName = await updateProfileName(name);
     const okBio = await updateProfileBio(bio);
     const okCity = await updateProfileHomeCity(homeCity);
+    const okExtras = await updateProfileExtras(interests, promptAnswers);
     setSaving(false);
-    if (okName && okBio && okCity) {
+    if (okName && okBio && okCity && okExtras) {
       haptics.success();
       toast(tr('editProfile.saved'));
       router.back();
@@ -186,6 +211,36 @@ export default function EditProfile() {
             {`${bio.length}/160`}
           </Text>
         </View>
+
+        <View style={{ alignSelf: 'stretch', gap: t.spacing.sm }}>
+          <Text variant="small" color="textSecondary">
+            {tr('extras.interestsLabel', { max: MAX_INTERESTS })}
+          </Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: t.spacing.sm }}>
+            {INTERESTS.map((key) => (
+              <Chip
+                key={key}
+                label={tr(`interests.${key}`)}
+                selected={interests.includes(key)}
+                onPress={() => toggleInterest(key)}
+              />
+            ))}
+          </View>
+        </View>
+
+        {PROMPTS.map((key) => (
+          <View key={key} style={{ alignSelf: 'stretch', gap: t.spacing.sm }}>
+            <Text variant="small" color="textSecondary">
+              {tr(`prompts.${key}`)}
+            </Text>
+            <Input
+              value={promptAnswers[key] ?? ''}
+              onChangeText={(v) => setPromptAnswers((cur) => ({ ...cur, [key]: v }))}
+              placeholder={tr('extras.promptPlaceholder')}
+              maxLength={140}
+            />
+          </View>
+        ))}
 
         <View style={{ alignSelf: 'stretch' }}>
           <Button title={tr('editProfile.save')} loading={saving} disabled={!name.trim()} onPress={onSave} />

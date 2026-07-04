@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Card, FadeInUp, Text, useCountUp } from '@/components/ui';
 import { useAuthStore } from '@/features/auth/auth-store';
 import { ProfileBanner } from '@/features/profile/ProfileBanner';
+import { ProfileExtras } from '@/features/profile/ProfileExtras';
 import { getProfileStyle } from '@/features/profile/profile-styles';
 import { getPublicProfile, getUserPublishedPlans, type CommunityPlan, type PublicProfile } from '@/lib/community';
 import {
@@ -342,6 +343,8 @@ export default function PublicProfileScreen() {
               </Card>
             </View>
           )}
+
+          <ProfileExtras interests={profile.interests} prompts={profile.prompts} accent={accent} />
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}>
             <View style={{ width: 4, height: 18, borderRadius: 2, backgroundColor: accent }} />

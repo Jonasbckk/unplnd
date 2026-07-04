@@ -4,12 +4,13 @@ import { useRouter, type Href } from 'expo-router';
 import { useEffect, useState, type ComponentProps } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
-import { Button, Card, Screen, Text, useCountUp } from '@/components/ui';
+import { Card, Screen, Text, useCountUp } from '@/components/ui';
 import { MemoryCard } from '@/features/albums/MemoryCard';
 import { useAlbumsStore } from '@/features/albums/albums-store';
 import { useAuthStore } from '@/features/auth/auth-store';
 import { useFavoritesStore } from '@/features/favorites/favorites-store';
 import { ProfileBanner } from '@/features/profile/ProfileBanner';
+import { ProfileExtras } from '@/features/profile/ProfileExtras';
 import { useProfileStyle } from '@/features/profile/profile-styles';
 import { getPublicProfile } from '@/lib/community';
 import { getPendingCount } from '@/lib/connections';
@@ -85,6 +86,62 @@ function SectionHeading({ title, accent }: { title: string; accent: string }) {
   );
 }
 
+/** A tappable menu tile — icon medallion + label, with an optional count badge. */
+function MenuTile({
+  icon,
+  label,
+  accent,
+  badge,
+  onPress,
+}: {
+  icon: IoniconName;
+  label: string;
+  accent: string;
+  badge?: number;
+  onPress: () => void;
+}) {
+  const t = useTheme();
+  return (
+    <Card onPress={onPress} style={{ width: '48%', padding: t.spacing.base, gap: t.spacing.sm }}>
+      <View
+        style={{
+          width: 42,
+          height: 42,
+          borderRadius: t.radius.pill,
+          backgroundColor: accent + '1F',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Ionicons name={icon} size={22} color={accent} />
+        {badge && badge > 0 ? (
+          <View
+            style={{
+              position: 'absolute',
+              top: -4,
+              right: -4,
+              minWidth: 18,
+              height: 18,
+              borderRadius: 9,
+              paddingHorizontal: 4,
+              backgroundColor: t.colors.error,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Text variant="caption" style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 10 }}>
+              {badge}
+            </Text>
+          </View>
+        ) : null}
+      </View>
+      <Text variant="small" style={{ fontWeight: '600' }} numberOfLines={1}>
+        {label}
+      </Text>
+    </Card>
+  );
+}
+
 /** Profile — a personal story, not an account page (22_PROFILE). */
 export default function ProfileScreen() {
   const t = useTheme();
@@ -123,12 +180,22 @@ export default function ProfileScreen() {
   }, [user?.id]);
 
   const meta = user?.user_metadata as
-    | { display_name?: string; avatar_url?: string; bio?: string; home_city?: string; pinned_places?: string[] }
+    | {
+        display_name?: string;
+        avatar_url?: string;
+        bio?: string;
+        home_city?: string;
+        pinned_places?: string[];
+        interests?: string[];
+        prompts?: Record<string, string>;
+      }
     | undefined;
   const name = meta?.display_name ?? user?.email?.split('@')[0] ?? 'You';
   const avatarUrl = meta?.avatar_url;
   const bio = meta?.bio;
   const homeCity = meta?.home_city;
+  const interests = meta?.interests ?? [];
+  const prompts = meta?.prompts ?? {};
   const [pinned, setPinned] = useState<string[]>(() => meta?.pinned_places ?? []);
 
   const onTogglePin = (place: string) => {
@@ -317,27 +384,52 @@ export default function ProfileScreen() {
         </View>
       )}
 
-      <View style={{ gap: t.spacing.md, marginTop: t.spacing.sm }}>
-        <Button
-          title={pending > 0 ? `${tr('profile.connections')} (${pending})` : tr('profile.connections')}
+      <ProfileExtras interests={interests} prompts={prompts} accent={accent} />
+
+      <View
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          justifyContent: 'space-between',
+          rowGap: t.spacing.base,
+          marginTop: t.spacing.sm,
+        }}
+      >
+        <MenuTile
+          icon="people-outline"
+          label={tr('profile.connections')}
+          accent={accent}
+          badge={pending}
           onPress={() => router.push('/connections' as Href)}
         />
-        <Button title={tr('profile.messages')} variant="secondary" onPress={() => router.push('/messages' as Href)} />
-        <Button
-          title={tr('profile.style')}
-          variant="secondary"
+        <MenuTile
+          icon="chatbubbles-outline"
+          label={tr('profile.messages')}
+          accent={accent}
+          onPress={() => router.push('/messages' as Href)}
+        />
+        <MenuTile
+          icon="color-palette-outline"
+          label={tr('profile.style')}
+          accent={accent}
           onPress={() => router.push('/profile-style' as Href)}
         />
         {albums.length > 0 && (
-          <Button
-            title={tr('profile.statistics')}
-            variant="secondary"
+          <MenuTile
+            icon="stats-chart-outline"
+            label={tr('profile.statsShort')}
+            accent={accent}
             /* '/stats' is a real route; cast only because the dev server's typed-route file
                regenerates on next `expo start`. */
             onPress={() => router.push('/stats' as Href)}
           />
         )}
-        <Button title={tr('profile.settings')} variant="secondary" onPress={() => router.push('/settings')} />
+        <MenuTile
+          icon="settings-outline"
+          label={tr('profile.settings')}
+          accent={accent}
+          onPress={() => router.push('/settings')}
+        />
       </View>
     </Screen>
   );

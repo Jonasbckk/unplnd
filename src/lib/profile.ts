@@ -1,6 +1,7 @@
 import * as ImagePicker from 'expo-image-picker';
 
 import { useAuthStore } from '@/features/auth/auth-store';
+import { MAX_INTERESTS } from '@/features/profile/profile-extras';
 import { supabase } from '@/lib/supabase';
 
 /** Pick a single square photo for the avatar (with crop). Returns null if cancelled/denied. */
@@ -53,6 +54,25 @@ export async function updateProfileHomeCity(city: string): Promise<boolean> {
   if (error) return false;
   const userId = useAuthStore.getState().user?.id;
   if (userId) await supabase.from('profiles').update({ home_city: trimmed || null }).eq('id', userId);
+  return true;
+}
+
+/** Update interests + prompt answers — on the auth user (reactive) + the profiles row (public). */
+export async function updateProfileExtras(
+  interests: string[],
+  prompts: Record<string, string>,
+): Promise<boolean> {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return false;
+  const cleanInterests = interests.slice(0, MAX_INTERESTS);
+  const cleanPrompts: Record<string, string> = {};
+  for (const [k, v] of Object.entries(prompts)) {
+    const val = v.trim().slice(0, 140);
+    if (val) cleanPrompts[k] = val;
+  }
+  const { error } = await supabase.auth.updateUser({ data: { interests: cleanInterests, prompts: cleanPrompts } });
+  if (error) return false;
+  await supabase.from('profiles').update({ interests: cleanInterests, prompts: cleanPrompts }).eq('id', userId);
   return true;
 }
 
