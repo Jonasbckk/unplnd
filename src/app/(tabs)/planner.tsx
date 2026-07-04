@@ -62,26 +62,8 @@ export default function PlannerScreen() {
   return (
     <Screen scroll contentStyle={{ gap: t.spacing.lg }}>
       <LocationChip />
-      {/* Just tell us — the Planner is a conversation, not a form (Constitution Rule 12). */}
-      <View style={{ gap: t.spacing.md }}>
-        <Text variant="h2">{tr('planner.freeTitle')}</Text>
-        <Input
-          value={freeText}
-          onChangeText={setFreeText}
-          placeholder={tr('planner.freePlaceholder')}
-          multiline
-          style={{ minHeight: 92, paddingTop: t.spacing.md, textAlignVertical: 'top' }}
-        />
-        <Button title={tr('planner.freeGo')} disabled={!freeText.trim()} onPress={planFromText} />
-      </View>
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.md }}>
-        <View style={{ flex: 1, height: 1, backgroundColor: t.colors.divider }} />
-        <Text variant="small" color="textSecondary">
-          {tr('planner.or')}
-        </Text>
-        <View style={{ flex: 1, height: 1, backgroundColor: t.colors.divider }} />
-      </View>
+      <Text variant="displayMedium">{tr('planner.title')}</Text>
 
       <View style={{ height: 4, borderRadius: t.radius.pill, backgroundColor: t.colors.border, overflow: 'hidden' }}>
         <View
@@ -93,8 +75,6 @@ export default function PlannerScreen() {
           }}
         />
       </View>
-
-      <Text variant="displayMedium">{tr('planner.title')}</Text>
 
       {QUESTIONS.slice(0, revealed + 1).map((q, i) => {
         if (i === activeIndex) {
@@ -114,6 +94,27 @@ export default function PlannerScreen() {
       })}
 
       {ready && <Button title={tr('planner.create')} onPress={() => router.push('/plan/generating')} />}
+
+      {/* Or describe it yourself — the Planner is a conversation, not a form (Constitution Rule 12). */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.md, marginTop: t.spacing.sm }}>
+        <View style={{ flex: 1, height: 1, backgroundColor: t.colors.divider }} />
+        <Text variant="small" color="textSecondary">
+          {tr('planner.or')}
+        </Text>
+        <View style={{ flex: 1, height: 1, backgroundColor: t.colors.divider }} />
+      </View>
+
+      <View style={{ gap: t.spacing.md }}>
+        <Text variant="h3">{tr('planner.freeTitle')}</Text>
+        <Input
+          value={freeText}
+          onChangeText={setFreeText}
+          placeholder={tr('planner.freePlaceholder')}
+          multiline
+          style={{ height: 104, paddingTop: t.spacing.md, textAlignVertical: 'top' }}
+        />
+        <Button title={tr('planner.freeGo')} disabled={!freeText.trim()} onPress={planFromText} />
+      </View>
     </Screen>
   );
 }

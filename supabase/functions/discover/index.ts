@@ -169,7 +169,7 @@ Deno.serve(async (req) => {
   const raw = query
     ? await searchText(query, lat, lng, googleKey, language)
     : await searchNearby(types, lat, lng, googleKey, language);
-  const minCount = query ? 10 : 20;
+  const minCount = query ? 8 : 10;
   const today = (new Date().getUTCDay() + 6) % 7;
 
   const places: DiscoverPlace[] = raw
@@ -199,7 +199,9 @@ Deno.serve(async (req) => {
         distanceM: Math.round(haversine(lat, lng, p.location.latitude, p.location.longitude)),
       };
     })
-    .sort((a, b) => b.rating * Math.log10(b.ratingCount + 10) - a.rating * Math.log10(a.ratingCount + 10))
+    // Rating first (surfaces the trendy, aesthetic spots), review count only as a tiebreaker —
+    // otherwise a 500-review bakery always buries a great 15-review café.
+    .sort((a, b) => b.rating - a.rating || b.ratingCount - a.ratingCount)
     .slice(0, 20)
     .map(({ photoName: _photoName, ...rest }) => rest);
 

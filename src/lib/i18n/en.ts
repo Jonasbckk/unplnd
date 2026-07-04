@@ -107,8 +107,8 @@ export const en = {
     title: 'Let’s plan your evening.',
     create: 'Create my evening',
     none: 'None',
-    or: 'or pick below',
-    freeTitle: 'Let’s plan your evening',
+    or: 'or',
+    freeTitle: 'Or say it in your own words',
     freePlaceholder: 'Just tell us what you feel like … e.g. “we’re bored, what’s good?” or “cafés first, then all-you-can-eat”',
     freeGo: 'Plan my evening',
     questions: {

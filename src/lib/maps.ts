@@ -10,5 +10,7 @@ export function openInMaps(query: string, placeId?: string) {
   const url = placeId
     ? `https://www.google.com/maps/search/?api=1&query=${encoded}&query_place_id=${placeId}`
     : `https://www.google.com/maps/search/?api=1&query=${encoded}`;
-  void Linking.openURL(url);
+  // Some platforms (iOS/Expo Go) reject the promise even though the maps app DID open — swallow
+  // that false alarm so it never surfaces as an uncaught-rejection error to the user.
+  Linking.openURL(url).catch(() => {});
 }
