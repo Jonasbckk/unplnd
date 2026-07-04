@@ -188,6 +188,18 @@ export const en = {
     rateTitle: 'How was your evening?',
     rateStops: 'And the individual spots?',
   },
+  publish: {
+    button: 'Publish this evening',
+    done: 'Published ✓',
+    confirmTitle: 'Publish this evening?',
+    confirmBody:
+      'People near you will see your plan, your photos and your name. You can only publish evenings you documented yourself.',
+    confirm: 'Publish',
+    success: 'Your evening is live in the community. ✨',
+    already: 'This evening is already published.',
+    needPhotos: 'Add your own photos of the evening first.',
+    failed: 'That didn’t work just now. Try again later.',
+  },
   albums: {
     title: 'Memories',
     emptyTitle: 'Your memories are waiting.',

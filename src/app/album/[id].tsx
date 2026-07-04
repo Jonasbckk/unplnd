@@ -11,6 +11,7 @@ import { useAlbumsStore } from '@/features/albums/albums-store';
 import { getAlbumPhotos, pickPhotos, uploadAlbumPhotos, type AlbumPhoto } from '@/features/albums/photos';
 import { confirmDialog } from '@/lib/confirm';
 import { haptics } from '@/lib/haptics';
+import { publishPlan } from '@/lib/publish';
 import { toast } from '@/store/toast-store';
 import { optionLabel, useT } from '@/lib/i18n';
 import { useTheme } from '@/theme';
@@ -30,6 +31,8 @@ export default function AlbumDetail() {
   const [uploading, setUploading] = useState(false);
   const [editingNote, setEditingNote] = useState(false);
   const [noteDraft, setNoteDraft] = useState('');
+  const [publishing, setPublishing] = useState(false);
+  const [published, setPublished] = useState(false);
 
   useEffect(() => {
     if (id) void getAlbumPhotos(id).then(setPhotos);
@@ -58,6 +61,33 @@ export default function AlbumDetail() {
       // user dismissed or platform unsupported — nothing to do
     }
   }, [album]);
+
+  const publish = useCallback(async () => {
+    if (!album) return;
+    if (photos.length === 0) {
+      toast(tr('publish.needPhotos'));
+      return;
+    }
+    const ok = await confirmDialog(
+      tr('publish.confirmTitle'),
+      tr('publish.confirmBody'),
+      tr('publish.confirm'),
+      tr('common2.cancel'),
+    );
+    if (!ok) return;
+    setPublishing(true);
+    const result = await publishPlan(album.id);
+    setPublishing(false);
+    if (result.ok) {
+      setPublished(true);
+      haptics.success();
+      toast(result.alreadyPublished ? tr('publish.already') : tr('publish.success'));
+    } else {
+      toast(result.reason === 'no_photos' ? tr('publish.needPhotos') : tr('publish.failed'));
+    }
+    // tr is stable per language; album + photo count are the real deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [album, photos.length]);
 
   const onDelete = useCallback(async () => {
     if (!album) return;
@@ -218,7 +248,13 @@ export default function AlbumDetail() {
             <Button title={tr('albums.addPhotos')} variant="secondary" loading={uploading} onPress={addPhotos} />
           </View>
 
-          <Button title={tr('albums.share')} onPress={shareAlbum} />
+          <Button
+            title={published ? tr('publish.done') : tr('publish.button')}
+            loading={publishing}
+            disabled={published}
+            onPress={publish}
+          />
+          <Button title={tr('albums.share')} variant="secondary" onPress={shareAlbum} />
         </View>
       </ScrollView>
     </View>

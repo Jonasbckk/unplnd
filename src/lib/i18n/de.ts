@@ -224,6 +224,18 @@ export const de = {
     rateTitle: 'Wie war dein Abend?',
     rateStops: 'Und die einzelnen Orte?',
   },
+  publish: {
+    button: 'Abend veröffentlichen',
+    done: 'Veröffentlicht ✓',
+    confirmTitle: 'Diesen Abend veröffentlichen?',
+    confirmBody:
+      'Andere Nutzer in deiner Nähe sehen deinen Plan, deine Fotos und deinen Namen. Du kannst nur veröffentlichen, was du selbst dokumentiert hast.',
+    confirm: 'Veröffentlichen',
+    success: 'Dein Abend ist jetzt in der Community. ✨',
+    already: 'Dieser Abend ist schon veröffentlicht.',
+    needPhotos: 'Füge erst eigene Fotos vom Abend hinzu.',
+    failed: 'Hat gerade nicht geklappt. Versuch es später nochmal.',
+  },
   albums: {
     title: 'Erinnerungen',
     emptyTitle: 'Deine Erinnerungen warten.',
