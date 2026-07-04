@@ -1,5 +1,5 @@
 import { useAuthStore } from '@/features/auth/auth-store';
-import { getPublicProfile, type PublicProfile } from '@/lib/community';
+import { getBlockedIds, getPublicProfile, type PublicProfile } from '@/lib/community';
 import { supabase } from '@/lib/supabase';
 
 export interface SharedPlan {
@@ -108,6 +108,7 @@ export async function getConversationMeta(convId: string): Promise<ConversationM
 export async function getConversations(): Promise<ConversationSummary[]> {
   const me = useAuthStore.getState().user?.id;
   if (!me) return [];
+  const blocked = await getBlockedIds();
   const { data: mine } = await supabase.from('conversation_participants').select('conversation_id').eq('user_id', me);
   const ids = (mine ?? []).map((p) => p.conversation_id as string);
   if (!ids.length) return [];
@@ -145,7 +146,7 @@ export async function getConversations(): Promise<ConversationSummary[]> {
     }
   }
 
-  return Promise.all(
+  const summaries = await Promise.all(
     convs.map(async (c) => {
       const cid = c.id as string;
       const members = byConv.get(cid) ?? [];
@@ -168,4 +169,24 @@ export async function getConversations(): Promise<ConversationSummary[]> {
       } as ConversationSummary;
     }),
   );
+  // Hide 1:1 chats with people you've blocked.
+  return summaries.filter((s) => s.isGroup || !s.other || !blocked.has(s.other.id));
+}
+
+/** Report a message for moderation (App-Store requirement for direct messages). */
+export async function reportMessage(messageId: string, reason?: string): Promise<void> {
+  const me = useAuthStore.getState().user?.id;
+  if (!me) return;
+  try {
+    await supabase.from('message_reports').insert({ message_id: messageId, reporter_id: me, reason: reason ?? null });
+  } catch {
+    // best effort
+  }
+}
+
+/** Leave a group (or remove yourself from any conversation). */
+export async function leaveConversation(convId: string): Promise<void> {
+  const me = useAuthStore.getState().user?.id;
+  if (!me) return;
+  await supabase.from('conversation_participants').delete().eq('conversation_id', convId).eq('user_id', me);
 }

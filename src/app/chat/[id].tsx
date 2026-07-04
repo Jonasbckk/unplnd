@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -13,16 +14,21 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/ui';
 import { useAuthStore } from '@/features/auth/auth-store';
+import { blockUser, getBlockedIds } from '@/lib/community';
+import { confirmDialog } from '@/lib/confirm';
 import { haptics } from '@/lib/haptics';
 import { useT } from '@/lib/i18n';
 import {
   getConversationMeta,
   getMessages,
+  leaveConversation,
+  reportMessage,
   sendMessage,
   subscribeToMessages,
   type Message,
   type SharedPlan,
 } from '@/lib/messaging';
+import { toast } from '@/store/toast-store';
 import { useTheme } from '@/theme';
 
 function PlanCard({ plan, onPress, onDark }: { plan: SharedPlan; onPress?: () => void; onDark: boolean }) {
@@ -57,7 +63,19 @@ function PlanCard({ plan, onPress, onDark }: { plan: SharedPlan; onPress?: () =>
   );
 }
 
-function Bubble({ message, mine, senderName, onPlan }: { message: Message; mine: boolean; senderName?: string; onPlan?: (p: SharedPlan) => void }) {
+function Bubble({
+  message,
+  mine,
+  senderName,
+  onPlan,
+  onLongPress,
+}: {
+  message: Message;
+  mine: boolean;
+  senderName?: string;
+  onPlan?: (p: SharedPlan) => void;
+  onLongPress?: () => void;
+}) {
   const t = useTheme();
   return (
     <View style={{ alignItems: mine ? 'flex-end' : 'flex-start', marginBottom: t.spacing.sm }}>
@@ -66,7 +84,9 @@ function Bubble({ message, mine, senderName, onPlan }: { message: Message; mine:
           {senderName}
         </Text>
       ) : null}
-      <View
+      <Pressable
+        onLongPress={mine ? undefined : onLongPress}
+        delayLongPress={350}
         style={{
           maxWidth: '82%',
           paddingVertical: t.spacing.sm,
@@ -85,7 +105,7 @@ function Bubble({ message, mine, senderName, onPlan }: { message: Message; mine:
         {message.sharedPlan ? (
           <PlanCard plan={message.sharedPlan} onDark={mine} onPress={() => message.sharedPlan && onPlan?.(message.sharedPlan)} />
         ) : null}
-      </View>
+      </Pressable>
     </View>
   );
 }
@@ -102,12 +122,17 @@ export default function ChatScreen() {
   const [otherId, setOtherId] = useState<string | null>(null);
   const [names, setNames] = useState<Record<string, string>>({});
   const [draft, setDraft] = useState('');
+  const [blocked, setBlocked] = useState<Set<string>>(new Set());
+  const [menuOpen, setMenuOpen] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     if (!id) return;
     let active = true;
     void getMessages(id).then((m) => active && setMessages(m));
+    void getBlockedIds().then((b) => {
+      if (active) setBlocked(b);
+    });
     void getConversationMeta(id).then((meta) => {
       if (!active || !meta) return;
       setIsGroup(meta.isGroup);
@@ -158,6 +183,50 @@ export default function ChatScreen() {
     if (plan.sourceId) router.push(`/community/${plan.sourceId}` as Href);
   };
 
+  const reportMsg = async (m: Message) => {
+    const ok = await confirmDialog(
+      tr('chatMod.reportTitle'),
+      tr('chatMod.reportBody'),
+      tr('chatMod.report'),
+      tr('common2.cancel'),
+    );
+    if (!ok) return;
+    await reportMessage(m.id);
+    toast(tr('chatMod.reported'));
+  };
+
+  const blockPartner = async () => {
+    setMenuOpen(false);
+    if (!otherId) return;
+    const ok = await confirmDialog(
+      tr('chatMod.blockTitle'),
+      tr('chatMod.blockBody'),
+      tr('chatMod.block'),
+      tr('common2.cancel'),
+    );
+    if (!ok) return;
+    await blockUser(otherId);
+    toast(tr('chatMod.blocked'));
+    router.back();
+  };
+
+  const leaveGroup = async () => {
+    setMenuOpen(false);
+    if (!id) return;
+    const ok = await confirmDialog(
+      tr('chatMod.leaveTitle'),
+      tr('chatMod.leaveBody'),
+      tr('chatMod.leave'),
+      tr('common2.cancel'),
+    );
+    if (!ok) return;
+    await leaveConversation(id);
+    toast(tr('chatMod.left'));
+    router.back();
+  };
+
+  const visible = messages.filter((m) => !blocked.has(m.senderId));
+
   return (
     <View style={{ flex: 1, backgroundColor: t.colors.background }}>
       <SafeAreaView edges={['top']}>
@@ -179,6 +248,9 @@ export default function ChatScreen() {
               </Text>
             ) : null}
           </Pressable>
+          <Pressable onPress={() => setMenuOpen(true)} hitSlop={8}>
+            <Ionicons name="ellipsis-horizontal" size={22} color={t.colors.textPrimary} />
+          </Pressable>
         </View>
       </SafeAreaView>
 
@@ -192,18 +264,19 @@ export default function ChatScreen() {
           contentContainerStyle={{ padding: t.spacing.lg, gap: 0 }}
           showsVerticalScrollIndicator={false}
         >
-          {messages.length === 0 ? (
+          {visible.length === 0 ? (
             <Text variant="body" color="textSecondary" center style={{ marginTop: t.spacing.xxl }}>
               {tr('chat.empty')}
             </Text>
           ) : (
-            messages.map((m) => (
+            visible.map((m) => (
               <Bubble
                 key={m.id}
                 message={m}
                 mine={m.senderId === me}
                 senderName={isGroup ? names[m.senderId] : undefined}
                 onPlan={openPlan}
+                onLongPress={() => reportMsg(m)}
               />
             ))
           )}
@@ -257,6 +330,47 @@ export default function ChatScreen() {
           </Pressable>
         </View>
       </KeyboardAvoidingView>
+
+      <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
+        <Pressable
+          onPress={() => setMenuOpen(false)}
+          style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: t.colors.overlay }}
+        >
+          <Pressable
+            onPress={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: t.colors.card,
+              borderTopLeftRadius: t.radius.sheet,
+              borderTopRightRadius: t.radius.sheet,
+              padding: t.spacing.lg,
+              paddingBottom: t.spacing.xl,
+              gap: t.spacing.xs,
+            }}
+          >
+            {isGroup ? (
+              <Pressable onPress={leaveGroup} style={{ paddingVertical: t.spacing.md }}>
+                <Text variant="body" color="error" style={{ fontWeight: '600' }}>
+                  {tr('chatMod.leave')}
+                </Text>
+              </Pressable>
+            ) : (
+              <Pressable onPress={blockPartner} style={{ paddingVertical: t.spacing.md }}>
+                <Text variant="body" color="error" style={{ fontWeight: '600' }}>
+                  {tr('chatMod.blockUser')}
+                </Text>
+              </Pressable>
+            )}
+            <Text variant="caption" color="textSecondary" style={{ paddingBottom: t.spacing.sm }}>
+              {tr('chatMod.reportHint')}
+            </Text>
+            <Pressable onPress={() => setMenuOpen(false)} style={{ paddingVertical: t.spacing.md }}>
+              <Text variant="body" color="textSecondary">
+                {tr('common2.cancel')}
+              </Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }

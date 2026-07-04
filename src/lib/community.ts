@@ -268,6 +268,14 @@ export async function reportPlan(planId: string, reason?: string): Promise<void>
   }
 }
 
+/** The set of user ids the current user has blocked (to filter feeds, chats and inbox). */
+export async function getBlockedIds(): Promise<Set<string>> {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return new Set();
+  const { data } = await supabase.from('blocked_users').select('blocked_id').eq('blocker_id', userId);
+  return new Set((data ?? []).map((b) => b.blocked_id as string));
+}
+
 /** Block a user — you won't see their published plans anymore. */
 export async function blockUser(authorId: string): Promise<void> {
   const userId = useAuthStore.getState().user?.id;
