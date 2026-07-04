@@ -98,6 +98,27 @@ export async function getConnections(): Promise<ConnectionEntry[]> {
   );
 }
 
+export interface UserResult {
+  id: string;
+  name: string | null;
+  avatar: string | null;
+  isFounder: boolean;
+}
+
+/** Search people by name (to connect without needing a published plan). */
+export async function searchUsers(query: string): Promise<UserResult[]> {
+  const q = query.trim();
+  if (q.length < 2) return [];
+  const { data, error } = await supabase.rpc('search_users', { q });
+  if (error || !data) return [];
+  return (data as Record<string, unknown>[]).map((r) => ({
+    id: r.id as string,
+    name: (r.display_name as string | null) ?? null,
+    avatar: (r.photo_url as string | null) ?? null,
+    isFounder: Boolean(r.is_founder),
+  }));
+}
+
 /** Count of pending requests waiting for you (for the Profile badge). */
 export async function getPendingCount(): Promise<number> {
   const me = useAuthStore.getState().user?.id;

@@ -10,11 +10,13 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { Image } from 'expo-image';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/ui';
 import { useAuthStore } from '@/features/auth/auth-store';
-import { blockUser, getBlockedIds } from '@/lib/community';
+import { blockUser, getBlockedIds, type PublicProfile } from '@/lib/community';
 import { confirmDialog } from '@/lib/confirm';
 import { haptics } from '@/lib/haptics';
 import { useT } from '@/lib/i18n';
@@ -30,6 +32,11 @@ import {
 } from '@/lib/messaging';
 import { toast } from '@/store/toast-store';
 import { useTheme } from '@/theme';
+
+function formatTime(iso: string): string {
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
 
 function PlanCard({ plan, onPress, onDark }: { plan: SharedPlan; onPress?: () => void; onDark: boolean }) {
   const t = useTheme();
@@ -78,7 +85,10 @@ function Bubble({
 }) {
   const t = useTheme();
   return (
-    <View style={{ alignItems: mine ? 'flex-end' : 'flex-start', marginBottom: t.spacing.sm }}>
+    <Animated.View
+      entering={FadeIn.duration(200)}
+      style={{ alignItems: mine ? 'flex-end' : 'flex-start', marginBottom: t.spacing.sm }}
+    >
       {senderName && !mine ? (
         <Text variant="caption" color="textSecondary" style={{ marginLeft: 8, marginBottom: 2 }}>
           {senderName}
@@ -106,7 +116,10 @@ function Bubble({
           <PlanCard plan={message.sharedPlan} onDark={mine} onPress={() => message.sharedPlan && onPlan?.(message.sharedPlan)} />
         ) : null}
       </Pressable>
-    </View>
+      <Text variant="caption" color="textSecondary" style={{ marginTop: 2, marginHorizontal: 6, opacity: 0.7 }}>
+        {formatTime(message.createdAt)}
+      </Text>
+    </Animated.View>
   );
 }
 
@@ -116,10 +129,12 @@ export default function ChatScreen() {
   const { t: tr } = useT();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const me = useAuthStore((s) => s.user?.id);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isGroup, setIsGroup] = useState(false);
   const [title, setTitle] = useState('');
   const [otherId, setOtherId] = useState<string | null>(null);
+  const [partner, setPartner] = useState<PublicProfile | null>(null);
   const [names, setNames] = useState<Record<string, string>>({});
   const [draft, setDraft] = useState('');
   const [blocked, setBlocked] = useState<Set<string>>(new Set());
@@ -141,8 +156,12 @@ export default function ChatScreen() {
       setNames(map);
       if (meta.isGroup) {
         setTitle(meta.title ?? tr('chat.group'));
+      } else {
+        const other = meta.participants.find((p) => p.id !== me) ?? null;
+        setPartner(other);
+        setOtherId(other?.id ?? null);
+        setTitle(other?.name ?? tr('community.someone'));
       }
-      // For DMs the title/partner is resolved by the effect below (needs `me`).
     });
     const unsub = subscribeToMessages(id, (m) => {
       setMessages((cur) => (cur.some((x) => x.id === m.id) ? cur : [...cur, m]));
@@ -151,18 +170,7 @@ export default function ChatScreen() {
       active = false;
       unsub();
     };
-  }, [id, tr]);
-
-  // Resolve the DM partner (the participant who isn't me) for the header + link.
-  const me = useAuthStore((s) => s.user?.id);
-  useEffect(() => {
-    if (isGroup || !me) return;
-    const other = Object.keys(names).find((uid) => uid !== me);
-    if (other) {
-      setOtherId(other);
-      setTitle(names[other] ?? '');
-    }
-  }, [isGroup, names, me]);
+  }, [id, tr, me]);
 
   useEffect(() => {
     const timer = setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 60);
@@ -237,16 +245,42 @@ export default function ChatScreen() {
           <Pressable
             disabled={isGroup || !otherId}
             onPress={() => otherId && router.push(`/user/${otherId}` as Href)}
-            style={{ flex: 1 }}
+            style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}
           >
-            <Text variant="h3" numberOfLines={1}>
-              {title || tr('chat.title')}
-            </Text>
-            {isGroup ? (
-              <Text variant="caption" color="textSecondary">
-                {tr('chat.members', { count: Object.keys(names).length })}
-              </Text>
-            ) : null}
+            <View
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: t.radius.pill,
+                backgroundColor: isGroup ? t.colors.accentOlive : t.colors.primary,
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+              }}
+            >
+              {isGroup ? (
+                <Ionicons name="people" size={19} color="#FFFFFF" />
+              ) : partner?.avatar ? (
+                <Image source={{ uri: partner.avatar }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+              ) : (
+                <Text variant="small" color="onPrimary" style={{ fontWeight: '700' }}>
+                  {(title || '?').charAt(0).toUpperCase()}
+                </Text>
+              )}
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                <Text variant="h3" numberOfLines={1}>
+                  {title || tr('chat.title')}
+                </Text>
+                {!isGroup && partner?.isFounder ? <Ionicons name="ribbon" size={14} color={t.colors.primary} /> : null}
+              </View>
+              {isGroup ? (
+                <Text variant="caption" color="textSecondary">
+                  {tr('chat.members', { count: Object.keys(names).length })}
+                </Text>
+              ) : null}
+            </View>
           </Pressable>
           <Pressable onPress={() => setMenuOpen(true)} hitSlop={8}>
             <Ionicons name="ellipsis-horizontal" size={22} color={t.colors.textPrimary} />
@@ -263,11 +297,27 @@ export default function ChatScreen() {
           ref={scrollRef}
           contentContainerStyle={{ padding: t.spacing.lg, gap: 0 }}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
         >
           {visible.length === 0 ? (
-            <Text variant="body" color="textSecondary" center style={{ marginTop: t.spacing.xxl }}>
-              {tr('chat.empty')}
-            </Text>
+            <View style={{ alignItems: 'center', gap: t.spacing.md, marginTop: t.spacing.huge }}>
+              <View
+                style={{
+                  width: 72,
+                  height: 72,
+                  borderRadius: t.radius.pill,
+                  backgroundColor: t.colors.surfaceSecondary,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Ionicons name="chatbubbles-outline" size={32} color={t.colors.primary} />
+              </View>
+              <Text variant="body" color="textSecondary" center>
+                {tr('chat.empty')}
+              </Text>
+            </View>
           ) : (
             visible.map((m) => (
               <Bubble

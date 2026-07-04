@@ -295,6 +295,8 @@ export const en = {
   },
   connections: {
     title: 'Connections',
+    searchPlaceholder: 'Search by name…',
+    noResults: 'No one found. Try another name.',
     requests: 'Requests',
     yours: 'Your connections',
     noneYet: "No connections yet. Explore evenings and connect with the people behind them.",

@@ -331,6 +331,8 @@ export const de = {
   },
   connections: {
     title: 'Verbindungen',
+    searchPlaceholder: 'Nach Namen suchen…',
+    noResults: 'Niemanden gefunden. Probier einen anderen Namen.',
     requests: 'Anfragen',
     yours: 'Deine Verbindungen',
     noneYet: 'Noch keine Verbindungen. Entdecke Abende und verbinde dich mit den Leuten dahinter.',

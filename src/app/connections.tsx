@@ -5,13 +5,15 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { EmptyState, Text } from '@/components/ui';
+import { EmptyState, Input, Text } from '@/components/ui';
 import {
   acceptRequest,
   getConnections,
   getIncomingRequests,
   removeConnection,
+  searchUsers,
   type ConnectionEntry,
+  type UserResult,
 } from '@/lib/connections';
 import { haptics } from '@/lib/haptics';
 import { useT } from '@/lib/i18n';
@@ -70,7 +72,28 @@ function PersonRow({ entry, onPress, right }: { entry: ConnectionEntry; onPress?
   );
 }
 
-/** Connections — incoming requests to accept, and the people you're connected with (Phase 1). */
+function ResultRow({ result, onPress }: { result: UserResult; onPress: () => void }) {
+  const t = useTheme();
+  const { t: tr } = useT();
+  const name = result.name || tr('community.someone') || '?';
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.base, paddingVertical: t.spacing.sm }}
+    >
+      <Avatar uri={result.avatar} name={name} />
+      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+        <Text variant="body" style={{ fontWeight: '600' }} numberOfLines={1}>
+          {name}
+        </Text>
+        {result.isFounder && <Ionicons name="ribbon" size={14} color={t.colors.primary} />}
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={t.colors.textSecondary} />
+    </Pressable>
+  );
+}
+
+/** Connections — search people, accept requests, and the people you're connected with. */
 export default function ConnectionsScreen() {
   const t = useTheme();
   const { t: tr } = useT();
@@ -79,6 +102,25 @@ export default function ConnectionsScreen() {
   const [connections, setConnections] = useState<ConnectionEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<UserResult[]>([]);
+  const searching = query.trim().length >= 2;
+
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) {
+      setResults([]);
+      return;
+    }
+    let active = true;
+    const timer = setTimeout(() => {
+      void searchUsers(q).then((r) => active && setResults(r));
+    }, 300);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [query]);
 
   const load = useCallback(async () => {
     const [inc, cons] = await Promise.all([getIncomingRequests(), getConnections()]);
@@ -135,9 +177,31 @@ export default function ConnectionsScreen() {
       <ScrollView
         contentContainerStyle={{ padding: t.spacing.lg, paddingTop: 0, gap: t.spacing.xl }}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.colors.primary} />}
       >
-        {empty ? (
+        <Input
+          value={query}
+          onChangeText={setQuery}
+          placeholder={tr('connections.searchPlaceholder')}
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="search"
+        />
+        {searching ? (
+          results.length === 0 ? (
+            <Text variant="small" color="textSecondary">
+              {tr('connections.noResults')}
+            </Text>
+          ) : (
+            <View style={{ gap: t.spacing.sm }}>
+              {results.map((r) => (
+                <ResultRow key={r.id} result={r} onPress={() => router.push(`/user/${r.id}` as Href)} />
+              ))}
+            </View>
+          )
+        ) : empty ? (
           <EmptyState icon="people-outline" title={tr('connections.emptyTitle')} body={tr('connections.emptyBody')} />
         ) : (
           <>

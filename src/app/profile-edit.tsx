@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, Input, Text } from '@/components/ui';
@@ -78,7 +78,17 @@ export default function EditProfile() {
         </View>
       </SafeAreaView>
 
-      <View style={{ padding: t.spacing.lg, gap: t.spacing.xl, alignItems: 'center' }}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+      >
+        <ScrollView
+          contentContainerStyle={{ padding: t.spacing.lg, gap: t.spacing.xl, alignItems: 'center' }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator={false}
+        >
         <Pressable onPress={onPickAvatar} disabled={uploading}>
           <View
             style={{
@@ -156,6 +166,7 @@ export default function EditProfile() {
             placeholder={tr('editProfile.cityPlaceholder')}
             autoCapitalize="words"
             maxLength={60}
+            returnKeyType="done"
           />
         </View>
 
@@ -179,7 +190,8 @@ export default function EditProfile() {
         <View style={{ alignSelf: 'stretch' }}>
           <Button title={tr('editProfile.save')} loading={saving} disabled={!name.trim()} onPress={onSave} />
         </View>
-      </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
