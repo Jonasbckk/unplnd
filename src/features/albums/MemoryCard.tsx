@@ -1,5 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
@@ -7,6 +9,7 @@ import { Text } from '@/components/ui';
 import { dateLocale, i18n } from '@/lib/i18n';
 import { useTheme } from '@/theme';
 import { shade } from '@/utils/color';
+import { getAlbumCoverUrl } from './photos';
 import type { Album } from './types';
 
 export function formatAlbumDate(iso: string): string {
@@ -21,13 +24,28 @@ interface MemoryCardProps {
   width?: number;
 }
 
-/** A memory as a card — a dimensional cover (tonal gradient + gloss), title, date. Tap to open. */
+/** A memory as a card — its real cover photo (or a dimensional tonal cover), title, date. */
 export function MemoryCard({ album, onPress, compact = false, width }: MemoryCardProps) {
   const t = useTheme();
   const scale = useSharedValue(1);
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   const cover = album.coverColor;
   const coverHeight = compact ? 108 : 150;
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if ((album.photoCount ?? 0) === 0) {
+      setCoverUrl(null);
+      return;
+    }
+    let active = true;
+    void getAlbumCoverUrl(album.id).then((url) => {
+      if (active) setCoverUrl(url);
+    });
+    return () => {
+      active = false;
+    };
+  }, [album.id, album.photoCount]);
 
   return (
     <Animated.View style={[animatedStyle, width ? { width } : undefined]}>
@@ -42,18 +60,30 @@ export function MemoryCard({ album, onPress, compact = false, width }: MemoryCar
         style={{ borderRadius: t.radius.card, overflow: 'hidden', backgroundColor: t.colors.card, ...t.shadows.md }}
       >
         <View style={{ height: coverHeight, justifyContent: 'space-between', padding: t.spacing.base }}>
-          {/* Tonal cover — a lit top-left falling to a deeper bottom-right gives the block real depth. */}
-          <LinearGradient
-            colors={[shade(cover, 0.16), cover, shade(cover, -0.22)]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={StyleSheet.absoluteFill}
-          />
-          {/* Soft gloss along the top edge — subtle premium sheen. */}
-          <LinearGradient
-            colors={['rgba(255,255,255,0.18)', 'rgba(255,255,255,0)']}
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, height: coverHeight * 0.55 }}
-          />
+          {coverUrl ? (
+            <>
+              <Image source={{ uri: coverUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={220} />
+              {/* Scrim so the title always reads over the photo. */}
+              <LinearGradient
+                colors={['rgba(0,0,0,0.05)', 'rgba(0,0,0,0.15)', 'rgba(0,0,0,0.6)']}
+                style={StyleSheet.absoluteFill}
+              />
+            </>
+          ) : (
+            <>
+              {/* Tonal cover — a lit top-left falling to a deeper bottom-right gives real depth. */}
+              <LinearGradient
+                colors={[shade(cover, 0.16), cover, shade(cover, -0.22)]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFill}
+              />
+              <LinearGradient
+                colors={['rgba(255,255,255,0.18)', 'rgba(255,255,255,0)']}
+                style={{ position: 'absolute', top: 0, left: 0, right: 0, height: coverHeight * 0.55 }}
+              />
+            </>
+          )}
           <View style={{ alignItems: 'flex-end', minHeight: 18 }}>
             {album.favorite && <Ionicons name="heart" size={18} color="#FFFFFF" />}
           </View>
@@ -61,7 +91,7 @@ export function MemoryCard({ album, onPress, compact = false, width }: MemoryCar
             variant={compact ? 'h3' : 'h2'}
             color="onPrimary"
             numberOfLines={2}
-            style={{ textShadowColor: 'rgba(0,0,0,0.28)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 8 }}
+            style={{ textShadowColor: 'rgba(0,0,0,0.35)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 8 }}
           >
             {album.title}
           </Text>

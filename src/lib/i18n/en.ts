@@ -227,6 +227,7 @@ export const en = {
   },
   albums: {
     title: 'Memories',
+    subtitle: 'Your best evenings, captured.',
     emptyTitle: 'Your memories are waiting.',
     emptyBody: 'Complete your first evening to create your first album.',
     planTonight: 'Plan tonight',

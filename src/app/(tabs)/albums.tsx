@@ -57,7 +57,12 @@ export default function AlbumsScreen() {
 
   return (
     <Screen scroll contentStyle={{ gap: t.spacing.lg }} onRefresh={onRefresh} refreshing={refreshing}>
-      <Text variant="displayMedium">{tr('albums.title')}</Text>
+      <View style={{ gap: 4 }}>
+        <Text variant="displayMedium">{tr('albums.title')}</Text>
+        <Text variant="bodyLarge" color="textSecondary">
+          {tr('albums.subtitle')}
+        </Text>
+      </View>
       <View style={{ gap: t.spacing.base }}>
         {albums.map((album, i) => (
           <FadeInUp key={album.id} index={i}>

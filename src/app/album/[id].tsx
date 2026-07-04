@@ -120,17 +120,29 @@ export default function AlbumDetail() {
     <View style={{ flex: 1, backgroundColor: t.colors.background }}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: t.spacing.xxl }}>
         <View style={{ overflow: 'hidden' }}>
-          <LinearGradient
-            colors={[shade(album.coverColor, 0.16), album.coverColor, shade(album.coverColor, -0.24)]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={StyleSheet.absoluteFill}
-          />
-          {/* Bottom scrim so the title always reads on light covers. */}
-          <LinearGradient
-            colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.22)']}
-            style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 130 }}
-          />
+          {photos[0]?.url ? (
+            <>
+              <Image source={{ uri: photos[0].url }} style={StyleSheet.absoluteFill} contentFit="cover" transition={220} />
+              <LinearGradient
+                colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.1)', 'rgba(0,0,0,0.6)']}
+                style={StyleSheet.absoluteFill}
+              />
+            </>
+          ) : (
+            <>
+              <LinearGradient
+                colors={[shade(album.coverColor, 0.16), album.coverColor, shade(album.coverColor, -0.24)]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFill}
+              />
+              {/* Bottom scrim so the title always reads on light covers. */}
+              <LinearGradient
+                colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.22)']}
+                style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 130 }}
+              />
+            </>
+          )}
           <SafeAreaView edges={['top']}>
             <View style={{ padding: t.spacing.lg, minHeight: 224, justifyContent: 'space-between' }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -264,12 +276,12 @@ export default function AlbumDetail() {
             {photos.length > 0 ? (
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: t.spacing.sm }}>
                 {photos.map((photo) => {
-                  const size = (width - t.spacing.lg * 2 - t.spacing.sm * 2) / 3;
+                  const size = (width - t.spacing.lg * 2 - t.spacing.sm) / 2;
                   return (
                     <Image
                       key={photo.id}
                       source={{ uri: photo.url }}
-                      style={{ width: size, height: size, borderRadius: t.radius.sm }}
+                      style={{ width: size, height: size, borderRadius: t.radius.md }}
                       contentFit="cover"
                       transition={200}
                     />

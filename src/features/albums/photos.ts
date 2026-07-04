@@ -64,6 +64,22 @@ export async function uploadAlbumPhotos(
   return newCount;
 }
 
+/** The album's first photo as a signed URL (for the card cover). Null if none. */
+export async function getAlbumCoverUrl(albumId: string): Promise<string | null> {
+  const { data } = await supabase
+    .from('album_photos')
+    .select('storage_path')
+    .eq('album_id', albumId)
+    .order('sort_order', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (!data) return null;
+  const { data: signed } = await supabase.storage
+    .from('photos')
+    .createSignedUrl(data.storage_path as string, SIGNED_URL_TTL_SECONDS);
+  return signed?.signedUrl ?? null;
+}
+
 /** Loads an album's photos as signed URLs (owner-only via RLS + private bucket). */
 export async function getAlbumPhotos(albumId: string): Promise<AlbumPhoto[]> {
   const { data, error } = await supabase

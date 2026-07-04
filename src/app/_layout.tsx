@@ -19,17 +19,25 @@ import { NetworkBanner, Toast } from '@/components/ui';
 import { useAuthStore } from '@/features/auth/auth-store';
 import { useAppStore } from '@/store/app-store';
 import { useConnectivityStore } from '@/store/connectivity-store';
-import { ThemeProvider } from '@/theme';
+import { ThemeProvider, useTheme } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
 
 // Gate: onboarding → auth → app.
 function RootNavigator() {
+  const t = useTheme();
   const hasOnboarded = useAppStore((s) => s.hasOnboarded);
   const session = useAuthStore((s) => s.session);
 
   return (
-    <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        animation: 'fade',
+        // Match the theme so screen transitions never flash a white default background.
+        contentStyle: { backgroundColor: t.colors.background },
+      }}
+    >
       <Stack.Protected guard={!hasOnboarded}>
         <Stack.Screen name="onboarding" />
       </Stack.Protected>
