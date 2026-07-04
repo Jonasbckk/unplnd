@@ -5,12 +5,14 @@ import { useCallback, useEffect, useState, type ComponentProps } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
-import { Button, Card, Chip, Logo, Screen, Text } from '@/components/ui';
+import { Button, Card, Screen, Text } from '@/components/ui';
 import { MemoryCard } from '@/features/albums/MemoryCard';
 import { useAlbumsStore } from '@/features/albums/albums-store';
 import { useEveningStore } from '@/features/evening/evening-store';
 import { getGreetingSegment } from '@/features/home/greeting';
+import { HomeHero } from '@/features/home/HomeHero';
 import { QUICK_CATEGORIES, startPlannerWithMood } from '@/features/planner/presets';
+import { haptics } from '@/lib/haptics';
 import { getCommunityPlans, type CommunityPlan } from '@/lib/community';
 import { getDiscoverPlaces, type DiscoverPlace } from '@/lib/discover';
 import { optionLabel, useT } from '@/lib/i18n';
@@ -63,30 +65,13 @@ export default function HomeScreen() {
   }, [loadData]);
 
   const currentStop = evening?.stops.find((s) => s.status === 'current');
+  // Warm brand accents cycled across the idea tiles for a lively, colorful grid.
+  const IDEA_COLORS = [t.colors.primary, t.colors.accentOrange, t.colors.accentOlive, t.colors.accentOcean];
 
   return (
     <Screen scroll onRefresh={onRefresh} refreshing={refreshing}>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: t.spacing.sm,
-          marginBottom: t.spacing.lg,
-        }}
-      >
-        <Logo size={26} />
-        <Text variant="h3" color="textHeading" style={{ letterSpacing: 1.5, fontWeight: '700' }}>
-          UNPLND
-        </Text>
-      </View>
-
-      <Animated.View entering={FadeInDown.duration(350).delay(40)}>
-        <Text variant="small" color="textSecondary">
-          {tr(`home.greetings.${segment}.hello`)}
-        </Text>
-        <Text variant="displayMedium" style={{ marginTop: t.spacing.xs }}>
-          {tr(`home.greetings.${segment}.headline`)}
-        </Text>
+      <Animated.View entering={FadeInDown.duration(400)}>
+        <HomeHero segment={segment} />
       </Animated.View>
 
       {/* Real weather via Open-Meteo; hidden until loaded, never an error state (17_HOME). */}
@@ -138,14 +123,36 @@ export default function HomeScreen() {
         <Text variant="h3" style={{ marginTop: t.spacing.xl, marginBottom: t.spacing.md }}>
           {tr('home.quickIdeas')}
         </Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: t.spacing.sm }}>
-          {QUICK_CATEGORIES.map((category) => (
-            <Chip
-              key={category.label}
-              label={optionLabel(category.label)}
-              onPress={() => startPlannerWithMood(category.mood)}
-            />
-          ))}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: t.spacing.base }}>
+          {QUICK_CATEGORIES.map((category, i) => {
+            const color = IDEA_COLORS[i % IDEA_COLORS.length];
+            return (
+              <Pressable
+                key={category.label}
+                onPress={() => {
+                  haptics.selection();
+                  startPlannerWithMood(category.mood);
+                }}
+                style={{ width: '23%', alignItems: 'center', gap: 6 }}
+              >
+                <View
+                  style={{
+                    width: '100%',
+                    aspectRatio: 1,
+                    borderRadius: t.radius.md,
+                    backgroundColor: color + '1F',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Ionicons name={category.icon} size={26} color={color} />
+                </View>
+                <Text variant="caption" color="textSecondary" numberOfLines={1}>
+                  {optionLabel(category.label)}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
       </Animated.View>
 
