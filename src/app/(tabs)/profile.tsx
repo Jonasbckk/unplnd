@@ -102,43 +102,55 @@ function MenuTile({
 }) {
   const t = useTheme();
   return (
-    <Card onPress={onPress} style={{ width: '48%', padding: t.spacing.base, gap: t.spacing.sm }}>
+    <Pressable onPress={onPress} style={({ pressed }) => ({ width: '48%', opacity: pressed ? 0.85 : 1 })}>
       <View
         style={{
-          width: 42,
-          height: 42,
-          borderRadius: t.radius.pill,
-          backgroundColor: accent + '1F',
+          flexDirection: 'row',
           alignItems: 'center',
-          justifyContent: 'center',
+          gap: t.spacing.md,
+          backgroundColor: t.colors.surfaceSecondary,
+          borderRadius: t.radius.lg,
+          paddingVertical: t.spacing.base,
+          paddingHorizontal: t.spacing.base,
         }}
       >
-        <Ionicons name={icon} size={22} color={accent} />
-        {badge && badge > 0 ? (
-          <View
-            style={{
-              position: 'absolute',
-              top: -4,
-              right: -4,
-              minWidth: 18,
-              height: 18,
-              borderRadius: 9,
-              paddingHorizontal: 4,
-              backgroundColor: t.colors.error,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Text variant="caption" style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 10 }}>
-              {badge}
-            </Text>
-          </View>
-        ) : null}
+        <View
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: t.radius.pill,
+            backgroundColor: accent + '24',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Ionicons name={icon} size={21} color={accent} />
+          {badge && badge > 0 ? (
+            <View
+              style={{
+                position: 'absolute',
+                top: -5,
+                right: -5,
+                minWidth: 18,
+                height: 18,
+                borderRadius: 9,
+                paddingHorizontal: 4,
+                backgroundColor: t.colors.error,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Text variant="caption" style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 10 }}>
+                {badge}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+        <Text variant="small" style={{ flex: 1, fontWeight: '600' }} numberOfLines={1}>
+          {label}
+        </Text>
       </View>
-      <Text variant="small" style={{ fontWeight: '600' }} numberOfLines={1}>
-        {label}
-      </Text>
-    </Card>
+    </Pressable>
   );
 }
 
@@ -318,6 +330,45 @@ export default function ProfileScreen() {
         </View>
       </Card>
 
+      <View
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          justifyContent: 'space-between',
+          rowGap: t.spacing.base,
+        }}
+      >
+        <MenuTile
+          icon="people-outline"
+          label={tr('profile.connections')}
+          accent={accent}
+          badge={pending}
+          onPress={() => router.push('/connections' as Href)}
+        />
+        <MenuTile
+          icon="chatbubbles-outline"
+          label={tr('profile.messages')}
+          accent={accent}
+          onPress={() => router.push('/messages' as Href)}
+        />
+        <MenuTile
+          icon="color-palette-outline"
+          label={tr('profile.style')}
+          accent={accent}
+          onPress={() => router.push('/profile-style' as Href)}
+        />
+        {albums.length > 0 && (
+          <MenuTile
+            icon="stats-chart-outline"
+            label={tr('profile.statsShort')}
+            accent={accent}
+            /* '/stats' is a real route; cast only because the dev server's typed-route file
+               regenerates on next `expo start`. */
+            onPress={() => router.push('/stats' as Href)}
+          />
+        )}
+      </View>
+
       {albums.length > 0 ? (
         <View style={{ gap: t.spacing.md }}>
           <SectionHeading title={tr('profile.recentMemories')} accent={accent} />
@@ -385,52 +436,6 @@ export default function ProfileScreen() {
       )}
 
       <ProfileExtras interests={interests} prompts={prompts} accent={accent} />
-
-      <View
-        style={{
-          flexDirection: 'row',
-          flexWrap: 'wrap',
-          justifyContent: 'space-between',
-          rowGap: t.spacing.base,
-          marginTop: t.spacing.sm,
-        }}
-      >
-        <MenuTile
-          icon="people-outline"
-          label={tr('profile.connections')}
-          accent={accent}
-          badge={pending}
-          onPress={() => router.push('/connections' as Href)}
-        />
-        <MenuTile
-          icon="chatbubbles-outline"
-          label={tr('profile.messages')}
-          accent={accent}
-          onPress={() => router.push('/messages' as Href)}
-        />
-        <MenuTile
-          icon="color-palette-outline"
-          label={tr('profile.style')}
-          accent={accent}
-          onPress={() => router.push('/profile-style' as Href)}
-        />
-        {albums.length > 0 && (
-          <MenuTile
-            icon="stats-chart-outline"
-            label={tr('profile.statsShort')}
-            accent={accent}
-            /* '/stats' is a real route; cast only because the dev server's typed-route file
-               regenerates on next `expo start`. */
-            onPress={() => router.push('/stats' as Href)}
-          />
-        )}
-        <MenuTile
-          icon="settings-outline"
-          label={tr('profile.settings')}
-          accent={accent}
-          onPress={() => router.push('/settings')}
-        />
-      </View>
     </Screen>
   );
 }

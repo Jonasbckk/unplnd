@@ -1,11 +1,53 @@
-import { View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Pressable, View } from 'react-native';
 
 import { Text } from '@/components/ui';
 import { useT } from '@/lib/i18n';
 import { useTheme } from '@/theme';
-import { PROMPTS } from './profile-extras';
+import { INTEREST_ICONS, PROMPTS } from './profile-extras';
 
-/** Interests (accent chips) + answered prompts (Q&A cards). Shown on own + public profiles. */
+/** An interest as an icon + label chip. Display mode (accent tint) or selectable (edit). */
+export function InterestChip({
+  interestKey,
+  accent,
+  selected,
+  onPress,
+}: {
+  interestKey: string;
+  accent: string;
+  selected?: boolean;
+  onPress?: () => void;
+}) {
+  const t = useTheme();
+  const { t: tr } = useT();
+  const icon = INTEREST_ICONS[interestKey] ?? 'ellipse-outline';
+  const isEdit = !!onPress;
+  const bg = isEdit ? (selected ? accent : t.colors.surfaceSecondary) : accent + '1F';
+  const fg = isEdit ? (selected ? '#FFFFFF' : t.colors.textPrimary) : accent;
+
+  const content = (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingHorizontal: t.spacing.base,
+        paddingVertical: t.spacing.sm,
+        borderRadius: t.radius.pill,
+        backgroundColor: bg,
+      }}
+    >
+      <Ionicons name={icon} size={14} color={fg} />
+      <Text variant="small" style={{ color: fg, fontWeight: '600' }}>
+        {tr(`interests.${interestKey}`)}
+      </Text>
+    </View>
+  );
+
+  return onPress ? <Pressable onPress={onPress}>{content}</Pressable> : content;
+}
+
+/** Interests (icon chips) + answered prompts (Q&A cards). Shown on own + public profiles. */
 export function ProfileExtras({
   interests,
   prompts,
@@ -30,19 +72,7 @@ export function ProfileExtras({
           </View>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: t.spacing.sm }}>
             {interests.map((key) => (
-              <View
-                key={key}
-                style={{
-                  paddingHorizontal: t.spacing.base,
-                  paddingVertical: t.spacing.sm,
-                  borderRadius: t.radius.pill,
-                  backgroundColor: accent + '1F',
-                }}
-              >
-                <Text variant="small" style={{ color: accent, fontWeight: '600' }}>
-                  {tr(`interests.${key}`)}
-                </Text>
-              </View>
+              <InterestChip key={key} interestKey={key} accent={accent} />
             ))}
           </View>
         </View>

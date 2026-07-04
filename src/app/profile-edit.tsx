@@ -5,8 +5,9 @@ import { useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button, Chip, Input, Text } from '@/components/ui';
+import { Button, Input, Text } from '@/components/ui';
 import { useAuthStore } from '@/features/auth/auth-store';
+import { InterestChip } from '@/features/profile/ProfileExtras';
 import { INTERESTS, MAX_INTERESTS, PROMPTS } from '@/features/profile/profile-extras';
 import { haptics } from '@/lib/haptics';
 import { useT } from '@/lib/i18n';
@@ -218,9 +219,10 @@ export default function EditProfile() {
           </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: t.spacing.sm }}>
             {INTERESTS.map((key) => (
-              <Chip
+              <InterestChip
                 key={key}
-                label={tr(`interests.${key}`)}
+                interestKey={key}
+                accent={t.colors.primary}
                 selected={interests.includes(key)}
                 onPress={() => toggleInterest(key)}
               />
