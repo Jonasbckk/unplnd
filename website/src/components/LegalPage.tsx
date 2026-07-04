@@ -196,8 +196,9 @@ function Datenschutz() {
 
       <H3>Analyse-Tools und Tools von Drittanbietern</H3>
       <P>
-        Diese Website setzt derzeit keine Analyse- oder Tracking-Tools ein und verwendet
-        keine Cookies zu Analysezwecken.
+        Beim Besuch dieser Website kann Ihr Surf-Verhalten statistisch ausgewertet werden.
+        Das geschieht mit Vercel Web Analytics (siehe Abschnitt 5). Die Auswertung erfolgt
+        ohne Cookies und ohne geräteübergreifende Identifikation.
       </P>
 
       <H2>2. Hosting</H2>
@@ -478,7 +479,27 @@ function Datenschutz() {
         gesetzliche Aufbewahrungsfristen – bleiben unberührt.
       </P>
 
-      <H2>5. Plugins und Tools</H2>
+      <H2>5. Analyse-Tools, Plugins und Tools</H2>
+
+      <H3>Vercel Web Analytics</H3>
+      <P>
+        Diese Website nutzt Vercel Web Analytics, einen Analysedienst der Vercel Inc., 440 N
+        Barranca Ave #4133, Covina, CA 91723, USA. Erfasst werden aggregierte Informationen
+        wie aufgerufene Seiten, Referrer, Land, Browser- und Gerätetyp. Vercel Web Analytics
+        verwendet keine Cookies und speichert keine personenbezogenen Identifikatoren; die
+        Zuordnung von Seitenaufrufen erfolgt über einen kurzlebigen Hash, der keine
+        geräteübergreifende Wiedererkennung erlaubt. Die Verarbeitung erfolgt auf Grundlage
+        unseres berechtigten Interesses an der statistischen Analyse und Verbesserung
+        unseres Online-Angebots (Art. 6 Abs. 1 lit. f DSGVO). Weitere Informationen:{' '}
+        <a
+          href="https://vercel.com/docs/analytics/privacy-policy"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-medium text-terra-ink underline decoration-terra/40 underline-offset-2 hover:text-heading"
+        >
+          https://vercel.com/docs/analytics/privacy-policy
+        </a>
+      </P>
 
       <H3>Schriftarten (lokales Hosting)</H3>
       <P>
