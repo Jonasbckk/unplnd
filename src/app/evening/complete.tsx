@@ -110,7 +110,7 @@ export default function EveningComplete() {
             setSaving(true);
             await persistRatings();
             const location = await getCurrentLocation();
-            const id = await createFromPlan(evening.plan, evening.mood, location?.city ?? '');
+            const id = await createFromPlan(evening.plan, evening.mood, location?.city ?? '', evening.planRowId);
             await finishEvening();
             setSaving(false);
             if (id) {

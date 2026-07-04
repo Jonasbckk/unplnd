@@ -64,7 +64,12 @@ interface AlbumsState {
   loading: boolean;
   loaded: boolean;
   loadAlbums: () => Promise<void>;
-  createFromPlan: (plan: GeneratedPlan, mood: string | undefined, city: string) => Promise<string | null>;
+  createFromPlan: (
+    plan: GeneratedPlan,
+    mood: string | undefined,
+    city: string,
+    planId?: string | null,
+  ) => Promise<string | null>;
   toggleFavorite: (id: string) => Promise<void>;
   updateNote: (id: string, note: string) => Promise<void>;
   /** Hard delete for MVP (soft delete comes with the offline/sync phase) — removes photos too. */
@@ -88,7 +93,7 @@ export const useAlbumsStore = create<AlbumsState>((set, get) => ({
     set({ loading: false });
   },
 
-  createFromPlan: async (plan, mood, city) => {
+  createFromPlan: async (plan, mood, city, planId) => {
     const userId = useAuthStore.getState().user?.id;
     if (!userId) return null;
 
@@ -104,6 +109,8 @@ export const useAlbumsStore = create<AlbumsState>((set, get) => ({
         timeline: plan.stops,
         photo_count: 0,
         favorite: false,
+        // Link to the source plan so its self-rating (Feature C) travels with the album.
+        plan_id: planId ?? null,
       })
       .select('*')
       .single();

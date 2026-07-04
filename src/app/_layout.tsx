@@ -12,6 +12,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -88,12 +89,22 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ThemeProvider>
-          <RootNavigator />
-          <NetworkBanner />
-          <Toast />
-          <StatusBar style="auto" />
+          <AppShell />
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
+  );
+}
+
+/** A themed background wraps everything, so screen transitions never flash the window color. */
+function AppShell() {
+  const t = useTheme();
+  return (
+    <View style={{ flex: 1, backgroundColor: t.colors.background }}>
+      <RootNavigator />
+      <NetworkBanner />
+      <Toast />
+      <StatusBar style="auto" />
+    </View>
   );
 }
