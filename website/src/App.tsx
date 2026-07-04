@@ -6,6 +6,7 @@ import { Showcase } from './components/Showcase';
 import { Bento } from './components/Bento';
 import { Discover } from './components/Discover';
 import { Social } from './components/Social';
+import { Faq } from './components/Faq';
 import { EarlyAccess } from './components/EarlyAccess';
 import { LegalPage } from './components/LegalPage';
 import { Footer } from './components/Footer';
@@ -60,6 +61,7 @@ export default function App() {
             <Bento />
             <Discover />
             <Social />
+            <Faq />
           </>
         )}
       </main>

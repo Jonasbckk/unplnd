@@ -3,22 +3,121 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>UNPLND. Plan less. Live more.</title>
+    <title>UNPLND: Nie wieder „Was machen wir heute?“ | Abende planen in Sekunden</title>
     <meta
       name="description"
-      content="UNPLND plant euren Abend in Sekunden: komplette Route mit Spots, Navigation und automatischem Erinnerungsalbum. Kostenlos für iOS und Android."
+      content="UNPLND plant euren Abend in Sekunden: fertige Route mit Bars, Restaurants und Spots, Navigation und automatisches Erinnerungsalbum. Early Access sichern. Bald für iOS und Android."
     />
+    <link rel="canonical" href="https://unplnd.com/" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
     <link rel="icon" type="image/png" href="/brand/logo-mark.png" />
     <link rel="apple-touch-icon" href="/brand/logo-mark.png" />
+    <meta name="application-name" content="UNPLND" />
+    <meta name="apple-mobile-web-app-title" content="UNPLND" />
     <meta name="theme-color" content="#F9F4EF" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#171412" media="(prefers-color-scheme: dark)" />
-    <meta property="og:title" content="UNPLND. Plan less. Live more." />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="UNPLND" />
+    <meta property="og:locale" content="de_DE" />
+    <meta property="og:url" content="https://unplnd.com/" />
+    <meta property="og:title" content="UNPLND: Nie wieder „Was machen wir heute?“" />
     <meta
       property="og:description"
-      content="Nie wieder: Was machen wir heute? Dein Abend, komplett geplant in Sekunden."
+      content="Dein Abend, geplant in Sekunden: Route, Spots, Navigation und ein Album, das sich von selbst füllt. Bald für iOS und Android."
     />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="/brand/logo-mark.png" />
+    <meta property="og:image" content="https://unplnd.com/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="UNPLND Logo neben der Zeile: Nie wieder „Was machen wir heute?“ Dein Abend. Geplant in Sekunden."
+    />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="UNPLND: Nie wieder „Was machen wir heute?“" />
+    <meta
+      name="twitter:description"
+      content="Dein Abend, geplant in Sekunden: Route, Spots, Navigation und ein automatisches Erinnerungsalbum. Bald für iOS und Android."
+    />
+    <meta name="twitter:image" content="https://unplnd.com/og.png" />
+
+    <!-- Structured data: brand graph + app + FAQ (answers mirror the visible FAQ section) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://unplnd.com/#org",
+            "name": "UNPLND",
+            "url": "https://unplnd.com/",
+            "logo": "https://unplnd.com/brand/logo-mark.png",
+            "email": "info@unplnd.com",
+            "sameAs": [
+              "https://www.tiktok.com/@unplnd.com",
+              "https://www.instagram.com/unplndcom/"
+            ]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://unplnd.com/#website",
+            "url": "https://unplnd.com/",
+            "name": "UNPLND",
+            "inLanguage": "de-DE",
+            "publisher": { "@id": "https://unplnd.com/#org" }
+          },
+          {
+            "@type": "MobileApplication",
+            "name": "UNPLND",
+            "operatingSystem": "iOS, Android",
+            "applicationCategory": "LifestyleApplication",
+            "description": "UNPLND plant euren Abend in Sekunden: fertige Route mit Bars, Restaurants und Spots, Navigation und automatisches Erinnerungsalbum.",
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+            "publisher": { "@id": "https://unplnd.com/#org" }
+          },
+          {
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Was ist UNPLND?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "UNPLND ist eine App, die euch in Sekunden einen kompletten Abend plant: eine Route mit Bars, Restaurants und Aktivitäten, Navigation von Spot zu Spot und ein Album, das eure Fotos automatisch sammelt."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Wann erscheint UNPLND?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Bald für iOS und Android. Trag dich in den Early Access ein und du bekommst die eine Mail zum Launch."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Was kostet UNPLND?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Der Download wird kostenlos sein."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Wie funktioniert die Planung?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Ihr sagt UNPLND kurz, worauf ihr Bock habt: Stimmung, Budget, Gruppe, Zeit. Daraus entsteht eine fertige Route für euren Abend."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
