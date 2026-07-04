@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { useCallback, useEffect, useState, type ComponentProps } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 
-import { Button, Card, Screen, Text } from '@/components/ui';
+import { Button, Card, Input, Screen, Text } from '@/components/ui';
 import { useFavoritesStore } from '@/features/favorites/favorites-store';
 import { getDiscoverPlaces, type DiscoverPlace } from '@/lib/discover';
 import { haptics } from '@/lib/haptics';
@@ -116,30 +116,55 @@ export default function DiscoverScreen() {
   const t = useTheme();
   const { t: tr } = useT();
   const [category, setCategory] = useState<string | undefined>(undefined);
+  const [query, setQuery] = useState('');
+  const [activeQuery, setActiveQuery] = useState<string | undefined>(undefined);
   const [places, setPlaces] = useState<DiscoverPlace[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [needsLocation, setNeedsLocation] = useState(false);
 
-  const load = useCallback(async (cat?: string) => {
+  const load = useCallback(async (cat?: string, q?: string) => {
     setLoading(true);
-    const result = await getDiscoverPlaces(cat);
+    const result = await getDiscoverPlaces(cat, false, q);
     setPlaces(result.places);
     setNeedsLocation(result.needsLocation);
     setLoading(false);
   }, []);
 
+  // Load by category on mount + category change — but not while a text search is active.
   useEffect(() => {
+    if (activeQuery) return;
     void load(category);
-  }, [category, load]);
+  }, [category, activeQuery, load]);
+
+  const runSearch = useCallback(() => {
+    const q = query.trim();
+    if (!q) return;
+    haptics.selection();
+    setActiveQuery(q);
+    setCategory(undefined);
+    void load(undefined, q);
+  }, [query, load]);
+
+  const clearSearch = useCallback(() => {
+    setQuery('');
+    setActiveQuery(undefined); // the effect reloads the current category once this clears
+  }, []);
+
+  const selectCategory = useCallback((key?: string) => {
+    haptics.selection();
+    setQuery('');
+    setActiveQuery(undefined);
+    setCategory(key);
+  }, []);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    const result = await getDiscoverPlaces(category, true);
+    const result = await getDiscoverPlaces(category, true, activeQuery);
     setPlaces(result.places);
     setNeedsLocation(result.needsLocation);
     setRefreshing(false);
-  }, [category]);
+  }, [category, activeQuery]);
 
   return (
     <Screen scroll contentStyle={{ gap: t.spacing.lg }} onRefresh={onRefresh} refreshing={refreshing}>
@@ -150,6 +175,30 @@ export default function DiscoverScreen() {
         </Text>
       </View>
 
+      {/* Free-text search — "I want a great sushi place" (21_DISCOVER). */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}>
+        <View style={{ flex: 1 }}>
+          <Input
+            value={query}
+            onChangeText={setQuery}
+            placeholder={tr('discover.searchPlaceholder')}
+            returnKeyType="search"
+            onSubmitEditing={runSearch}
+          />
+        </View>
+        <Pressable
+          onPress={activeQuery ? clearSearch : runSearch}
+          hitSlop={8}
+          style={{ padding: t.spacing.sm }}
+        >
+          <Ionicons
+            name={activeQuery ? 'close-circle' : 'search'}
+            size={activeQuery ? 22 : 20}
+            color={activeQuery ? t.colors.textSecondary : t.colors.primary}
+          />
+        </Pressable>
+      </View>
+
       {/* Category selector */}
       <ScrollView
         horizontal
@@ -157,14 +206,11 @@ export default function DiscoverScreen() {
         contentContainerStyle={{ gap: t.spacing.sm, paddingRight: t.spacing.lg }}
       >
         {CATEGORIES.map((c) => {
-          const selected = c.key === category;
+          const selected = !activeQuery && c.key === category;
           return (
             <Pressable
               key={c.labelKey}
-              onPress={() => {
-                haptics.selection();
-                setCategory(c.key);
-              }}
+              onPress={() => selectCategory(c.key)}
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -210,12 +256,12 @@ export default function DiscoverScreen() {
       ) : places.length === 0 ? (
         <View style={{ alignItems: 'center', paddingVertical: t.spacing.xxl }}>
           <Text variant="bodyLarge" color="textSecondary" center>
-            {tr('discover.empty')}
+            {activeQuery ? tr('discover.searchEmpty') : tr('discover.empty')}
           </Text>
         </View>
       ) : (
         <View style={{ gap: t.spacing.base }}>
-          <Text variant="h3">{tr('discover.nearby')}</Text>
+          <Text variant="h3">{activeQuery ? `„${activeQuery}"` : tr('discover.nearby')}</Text>
           {places.map((place) => (
             <DiscoverCard key={place.id} place={place} />
           ))}

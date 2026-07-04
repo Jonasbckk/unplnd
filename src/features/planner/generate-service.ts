@@ -38,7 +38,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 /** A plan, or an honest failure the UI turns into a message — we never show a mock (founder decision). */
 export type GenerateResult =
   | { ok: true; plan: GeneratedPlan }
-  | { ok: false; kind: 'no_options' | 'failed' };
+  | { ok: false; kind: 'no_options' | 'failed' | 'limit' };
 
 export async function generateEvening(answers: PlannerAnswers, location: AppLocation): Promise<GenerateResult> {
   if (!isSupabaseConfigured) {
@@ -76,8 +76,9 @@ export async function generateEvening(answers: PlannerAnswers, location: AppLoca
     );
 
     if (data?.plan) return { ok: true, plan: data.plan };
-    // NO_OPTIONS comes back at HTTP 200 so we can tell "nothing open" apart from a real failure.
+    // These come back at HTTP 200 so we can tell them apart from a generic failure.
     if (data?.error?.code === 'NO_OPTIONS') return { ok: false, kind: 'no_options' };
+    if (data?.error?.code === 'LIMIT_REACHED') return { ok: false, kind: 'limit' };
     if (__DEV__) {
       console.warn('[UNPLND] Plan fehlgeschlagen:', error?.message ?? data?.error?.code ?? 'unbekannt');
     }

@@ -33,8 +33,9 @@ const CACHE_TTL_MS = 10 * 60 * 1000;
  * The Google key stays server-side in the `discover` Edge Function; on any failure we return
  * an empty list so Discover degrades gracefully.
  */
-export async function getDiscoverPlaces(category?: string, force = false): Promise<DiscoverResult> {
-  const key = category ?? 'all';
+export async function getDiscoverPlaces(category?: string, force = false, query?: string): Promise<DiscoverResult> {
+  const q = query?.trim();
+  const key = q ? `q:${q.toLowerCase()}` : (category ?? 'all');
   const cached = cache.get(key);
   if (!force && cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.result;
 
@@ -47,7 +48,8 @@ export async function getDiscoverPlaces(category?: string, force = false): Promi
       body: {
         latitude: location.latitude,
         longitude: location.longitude,
-        category,
+        category: q ? undefined : category,
+        query: q || undefined,
         language: i18n.locale,
       },
     });

@@ -2,9 +2,13 @@
 // Two-phase engine (14_TECH_STACK + 19_ROUTE):
 //   Phase A: Google Places (New) finds REAL, well-rated venues near the user, per mood.
 //   Phase B: the AI (Claude or Gemini) curates them into a story-arc evening.
-// All keys live server-side only (31_SECURITY). Falls back to a generic AI plan when
-// Google/location are unavailable, so the user is never left without an evening (18A).
-// Secrets: GOOGLE_MAPS_API_KEY (+ ANTHROPIC_API_KEY or GEMINI_API_KEY).
+// All keys live server-side only (31_SECURITY). We NEVER return a mock/generic plan: if no real
+// plan can be built we return an honest NO_OPTIONS / failure the app turns into a message.
+// Free users get UNPLND_DAILY_PLAN_LIMIT plans/day (premium is unlimited), enforced here.
+// Secrets: GOOGLE_MAPS_API_KEY (+ ANTHROPIC_API_KEY or GEMINI_API_KEY). SUPABASE_URL /
+// SUPABASE_SERVICE_ROLE_KEY / SUPABASE_ANON_KEY are injected automatically.
+
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 interface PlanRequest {
   mood?: string;
@@ -56,6 +60,8 @@ const CORS = {
 
 const ANTHROPIC_MODEL = Deno.env.get('UNPLND_AI_MODEL') ?? 'claude-sonnet-5';
 const GEMINI_MODEL = Deno.env.get('UNPLND_GEMINI_MODEL') ?? 'gemini-2.5-flash';
+// Free-tier daily plan cap (premium is unlimited). Overridable via env without a code change.
+const DAILY_FREE_LIMIT = Number(Deno.env.get('UNPLND_DAILY_PLAN_LIMIT') ?? '5');
 const PLACES_BASE = 'https://places.googleapis.com/v1';
 
 // ---------------- Google Places (Phase A) ----------------
@@ -728,6 +734,11 @@ Deno.serve(async (req) => {
       { error: { code: 'PLAN_GENERATION_FAILED', message: 'We couldn’t craft this one. Try again?', retryable: true } },
       { status: 502, headers: CORS },
     );
+  const limitReachedResponse = () =>
+    Response.json(
+      { error: { code: 'LIMIT_REACHED', message: 'Daily free plan limit reached.', retryable: false, limit: DAILY_FREE_LIMIT } },
+      { headers: CORS },
+    );
   const runAI = (system: string, user: string, withPlaceId: boolean): Promise<RawPlan | null> => {
     const call = anthropicKey
       ? callAnthropic(system, user, planTool(withPlaceId), anthropicKey)
@@ -761,6 +772,38 @@ Deno.serve(async (req) => {
     );
   }
   const language = body.language ?? 'de';
+
+  // ---- Daily free-plan limit: DAILY_FREE_LIMIT/day per user (premium is unlimited). Enforced
+  //      via the service role so it can't be faked from the client. Fails OPEN on any hiccup. ----
+  const supaUrl = Deno.env.get('SUPABASE_URL');
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
+  const authHeader = req.headers.get('Authorization');
+  let userId: string | null = null;
+  let admin: ReturnType<typeof createClient> | null = null;
+  if (supaUrl && serviceKey && anonKey && authHeader) {
+    try {
+      const asUser = createClient(supaUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
+      const { data: u } = await asUser.auth.getUser();
+      userId = u.user?.id ?? null;
+      admin = createClient(supaUrl, serviceKey);
+      if (userId) {
+        const { data: profile } = await admin.from('profiles').select('premium').eq('id', userId).single();
+        if (!profile?.premium) {
+          const startOfDay = new Date();
+          startOfDay.setUTCHours(0, 0, 0, 0);
+          const { count } = await admin
+            .from('plan_generations')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', userId)
+            .gte('created_at', startOfDay.toISOString());
+          if ((count ?? 0) >= DAILY_FREE_LIMIT) return limitReachedResponse();
+        }
+      }
+    } catch (e) {
+      console.error('limit_check_error', String(e).slice(0, 200));
+    }
+  }
 
   // ---- Phase A + B: real places, when we have Google + a location ----
   const canSearchReal = Boolean(googleKey) && typeof body.latitude === 'number' && typeof body.longitude === 'number';
@@ -832,6 +875,15 @@ Deno.serve(async (req) => {
           if (c?.photoName) s.photoUrl = await resolvePhoto(c.photoName, googleKey!);
         }),
       );
+
+      // Count this successful generation against the user's daily limit (best effort).
+      if (admin && userId) {
+        try {
+          await admin.from('plan_generations').insert({ user_id: userId });
+        } catch (e) {
+          console.error('record_generation_error', String(e).slice(0, 200));
+        }
+      }
 
       const score = Math.min(97, 82 + (stops.some((s) => s.memoryMoment) ? 6 : 0) + stops.length * 2);
       return Response.json(

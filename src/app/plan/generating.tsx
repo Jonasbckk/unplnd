@@ -92,7 +92,7 @@ function RouteDraw({ width }: { width: number }) {
   );
 }
 
-type Phase = 'generating' | 'locationNeeded' | 'noOptions' | 'failed';
+type Phase = 'generating' | 'locationNeeded' | 'noOptions' | 'failed' | 'limitReached';
 
 export default function GeneratingScreen() {
   const t = useTheme();
@@ -121,8 +121,8 @@ export default function GeneratingScreen() {
     const [result] = await Promise.all([generateEvening(answers, location), minDelay]);
     if (cancelled.current) return;
     if (!result.ok) {
-      // Never a mock: show an honest state (nothing open vs. something went wrong).
-      setPhase(result.kind === 'no_options' ? 'noOptions' : 'failed');
+      // Never a mock: show an honest state (limit reached / nothing open / something went wrong).
+      setPhase(result.kind === 'limit' ? 'limitReached' : result.kind === 'no_options' ? 'noOptions' : 'failed');
       return;
     }
     setPlan(result.plan);
@@ -232,6 +232,45 @@ export default function GeneratingScreen() {
         <Animated.View entering={FadeInDown.duration(350).delay(120)} style={{ alignSelf: 'stretch', gap: t.spacing.md }}>
           <Button title={tr('generating.retry')} onPress={() => void run()} />
           <Button title={tr('generating.back')} variant="secondary" onPress={() => router.back()} />
+        </Animated.View>
+      </View>
+    );
+  }
+
+  if (phase === 'limitReached') {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: t.colors.background,
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: t.spacing.lg,
+          padding: t.spacing.lg,
+        }}
+      >
+        <Animated.View entering={FadeInDown.duration(350)} style={{ alignItems: 'center', gap: t.spacing.lg }}>
+          <View
+            style={{
+              width: 72,
+              height: 72,
+              borderRadius: t.radius.pill,
+              backgroundColor: t.colors.surfaceSecondary,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Ionicons name="sparkles-outline" size={32} color={t.colors.primary} />
+          </View>
+          <Text variant="h1" center>
+            {tr('generating.limitTitle')}
+          </Text>
+          <Text variant="bodyLarge" color="textSecondary" center>
+            {tr('generating.limitBody')}
+          </Text>
+        </Animated.View>
+        <Animated.View entering={FadeInDown.duration(350).delay(120)} style={{ alignSelf: 'stretch' }}>
+          <Button title={tr('generating.limitButton')} onPress={() => router.back()} />
         </Animated.View>
       </View>
     );

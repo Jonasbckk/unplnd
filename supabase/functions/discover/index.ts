@@ -8,6 +8,8 @@ interface DiscoverRequest {
   latitude?: number;
   longitude?: number;
   category?: string;
+  /** Free-text search, e.g. "great sushi restaurant" — uses Places Text Search instead of a category. */
+  query?: string;
   language?: 'de' | 'en';
 }
 
@@ -96,6 +98,33 @@ async function searchNearby(types: string[], lat: number, lng: number, key: stri
   return json?.places ?? [];
 }
 
+// Free-text search (Places Text Search) — for "I want a great sushi place" style discovery.
+async function searchText(query: string, lat: number, lng: number, key: string, language: string): Promise<any[]> {
+  const res = await fetch(`${PLACES_BASE}/places:searchText`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': key,
+      'X-Goog-FieldMask':
+        'places.id,places.displayName,places.primaryTypeDisplayName,places.rating,places.userRatingCount,places.currentOpeningHours,places.location,places.priceLevel,places.photos,places.formattedAddress',
+    },
+    body: JSON.stringify({
+      textQuery: query,
+      maxResultCount: 20,
+      languageCode: language,
+      regionCode: 'DE',
+      rankPreference: 'RELEVANCE',
+      locationBias: { circle: { center: { latitude: lat, longitude: lng }, radius: RADIUS } },
+    }),
+  });
+  if (!res.ok) {
+    console.error('discover_text_error', res.status, (await res.text()).slice(0, 300));
+    return [];
+  }
+  const json = await res.json();
+  return json?.places ?? [];
+}
+
 async function resolvePhoto(photoName: string, key: string): Promise<string | undefined> {
   try {
     const res = await fetch(
@@ -132,9 +161,15 @@ Deno.serve(async (req) => {
   const lat = body.latitude;
   const lng = body.longitude;
   const language = body.language ?? 'de';
+  const query = typeof body.query === 'string' ? body.query.trim() : '';
   const types = (body.category && CATEGORY_TYPES[body.category]) || DEFAULT_TYPES;
 
-  const raw = await searchNearby(types, lat, lng, googleKey, language);
+  // Free-text query → Text Search (niche spots have fewer reviews, so a lower count bar);
+  // otherwise the category Nearby search.
+  const raw = query
+    ? await searchText(query, lat, lng, googleKey, language)
+    : await searchNearby(types, lat, lng, googleKey, language);
+  const minCount = query ? 10 : 20;
   const today = (new Date().getUTCDay() + 6) % 7;
 
   const places: DiscoverPlace[] = raw
@@ -143,7 +178,7 @@ Deno.serve(async (req) => {
         p?.id &&
         p?.location &&
         (p.rating ?? 0) >= 4.0 &&
-        (p.userRatingCount ?? 0) >= 20 &&
+        (p.userRatingCount ?? 0) >= minCount &&
         !CHAIN_BLOCKLIST.test(p.displayName?.text ?? ''),
     )
     .map((p: any) => {

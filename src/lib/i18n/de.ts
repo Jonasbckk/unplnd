@@ -191,6 +191,10 @@ export const de = {
       'Bei uns ist kurz etwas schiefgelaufen. Versuch es gleich nochmal — wenn es weiter hakt, schreib uns an Info@unplnd.com.',
     retry: 'Nochmal versuchen',
     back: 'Einstellungen ändern',
+    limitTitle: 'Für heute genug geplant',
+    limitBody:
+      'Du hast deine Pläne für heute alle verplant. Morgen gibt\'s neue — jetzt aber raus und den Abend leben.',
+    limitButton: 'Alles klar',
   },
   route: {
     experience: 'Erlebnis %{score}',
@@ -298,6 +302,8 @@ export const de = {
     nearby: 'In deiner Nähe',
     loading: 'Suche gute Orte…',
     empty: 'Gerade nichts Passendes — probier eine andere Kategorie.',
+    searchPlaceholder: 'Wonach ist dir? z. B. Sushi, Rooftop-Bar…',
+    searchEmpty: 'Dazu haben wir gerade nichts Gutes in der Nähe gefunden. Versuch was anderes.',
     needLocation: 'Aktiviere den Standort, um Orte in deiner Nähe zu entdecken.',
     categories: {
       all: 'Für dich',

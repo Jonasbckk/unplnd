@@ -155,6 +155,10 @@ export const en = {
       'Something hiccuped on our side. Try again in a moment — if it keeps happening, drop us a line at Info@unplnd.com.',
     retry: 'Try again',
     back: 'Change settings',
+    limitTitle: 'That\'s enough planning for today',
+    limitBody:
+      'You\'ve used up today\'s plans. New ones land tomorrow — for now, get out there and live the evening.',
+    limitButton: 'Got it',
   },
   route: {
     experience: 'Experience %{score}',
@@ -262,6 +266,8 @@ export const en = {
     nearby: 'Near you',
     loading: 'Finding good spots…',
     empty: 'Nothing here right now — try another category.',
+    searchPlaceholder: 'What are you after? e.g. sushi, rooftop bar…',
+    searchEmpty: 'Couldn’t find anything good for that nearby. Try something else.',
     needLocation: 'Turn on location to discover places near you.',
     categories: {
       all: 'For you',
