@@ -7,9 +7,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, Text } from '@/components/ui';
 import { usePlannerStore } from '@/features/planner/planner-store';
-import { getCommunityPlan, toggleStar, type CommunityPlan } from '@/lib/community';
+import { blockUser, getCommunityPlan, reportPlan, toggleStar, type CommunityPlan } from '@/lib/community';
+import { confirmDialog } from '@/lib/confirm';
 import { haptics } from '@/lib/haptics';
 import { useT } from '@/lib/i18n';
+import { toast } from '@/store/toast-store';
 import { useTheme } from '@/theme';
 
 export default function CommunityPlanDetail() {
@@ -57,6 +59,34 @@ export default function CommunityPlanDetail() {
       score: plan.selfRating ? Math.min(97, plan.selfRating * 18 + 7) : 88,
     });
     router.replace('/plan/route');
+  };
+
+  const onReport = async () => {
+    if (!plan) return;
+    const ok = await confirmDialog(
+      tr('community.reportTitle'),
+      tr('community.reportBody'),
+      tr('community.report'),
+      tr('common2.cancel'),
+    );
+    if (!ok) return;
+    await reportPlan(plan.id);
+    toast(tr('community.reported'));
+    router.back();
+  };
+
+  const onBlock = async () => {
+    if (!plan?.authorId) return;
+    const ok = await confirmDialog(
+      tr('community.blockTitle'),
+      tr('community.blockBody'),
+      tr('community.block'),
+      tr('common2.cancel'),
+    );
+    if (!ok) return;
+    await blockUser(plan.authorId);
+    toast(tr('community.blocked'));
+    router.back();
   };
 
   return (
@@ -149,6 +179,19 @@ export default function CommunityPlanDetail() {
                     </View>
                   </View>
                 ))}
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: t.spacing.lg, marginTop: t.spacing.md }}>
+                <Pressable onPress={onReport} hitSlop={6}>
+                  <Text variant="small" color="textSecondary">
+                    {tr('community.report')}
+                  </Text>
+                </Pressable>
+                <Pressable onPress={onBlock} hitSlop={6}>
+                  <Text variant="small" color="textSecondary">
+                    {tr('community.block')}
+                  </Text>
+                </Pressable>
               </View>
             </View>
           </ScrollView>

@@ -5,6 +5,7 @@ import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
 export interface CommunityPlan {
   id: string;
+  authorId: string | null;
   authorName: string | null;
   authorAvatar: string | null;
   title: string;
@@ -46,7 +47,7 @@ export async function getCommunityPlans(): Promise<CommunityResult> {
 
   const { data, error } = await supabase
     .from('published_plans')
-    .select('id, author_name, author_avatar, title, city, summary, lat, lng, photos, star_count, self_rating, route, created_at')
+    .select('id, author_id, author_name, author_avatar, title, city, summary, lat, lng, photos, star_count, self_rating, route, created_at')
     .eq('hidden', false)
     .order('created_at', { ascending: false })
     .limit(60);
@@ -54,12 +55,15 @@ export async function getCommunityPlans(): Promise<CommunityResult> {
 
   const userId = useAuthStore.getState().user?.id;
   let starred = new Set<string>();
+  let blocked = new Set<string>();
   if (userId) {
     const { data: mine } = await supabase.from('plan_stars').select('published_plan_id').eq('user_id', userId);
     starred = new Set((mine ?? []).map((s) => s.published_plan_id as string));
+    const { data: bl } = await supabase.from('blocked_users').select('blocked_id').eq('blocker_id', userId);
+    blocked = new Set((bl ?? []).map((b) => b.blocked_id as string));
   }
 
-  const plans: CommunityPlan[] = data.map((p: Record<string, unknown>) => {
+  const mapped: CommunityPlan[] = data.map((p: Record<string, unknown>) => {
     const lat = p.lat as number | null;
     const lng = p.lng as number | null;
     const distanceM =
@@ -68,6 +72,7 @@ export async function getCommunityPlans(): Promise<CommunityResult> {
         : null;
     return {
       id: p.id as string,
+      authorId: (p.author_id as string | null) ?? null,
       authorName: (p.author_name as string | null) ?? null,
       authorAvatar: (p.author_avatar as string | null) ?? null,
       title: p.title as string,
@@ -82,6 +87,9 @@ export async function getCommunityPlans(): Promise<CommunityResult> {
       distanceM,
     };
   });
+
+  // Hide plans from users you've blocked.
+  const plans = mapped.filter((p) => !p.authorId || !blocked.has(p.authorId));
 
   // Nearby first, then more stars, then more recent.
   plans.sort((a, b) => {
@@ -100,7 +108,7 @@ export async function getCommunityPlan(id: string): Promise<CommunityPlan | null
   if (!isSupabaseConfigured) return null;
   const { data, error } = await supabase
     .from('published_plans')
-    .select('id, author_name, author_avatar, title, city, summary, photos, star_count, self_rating, route, created_at')
+    .select('id, author_id, author_name, author_avatar, title, city, summary, photos, star_count, self_rating, route, created_at')
     .eq('id', id)
     .maybeSingle();
   if (error || !data) return null;
@@ -120,6 +128,7 @@ export async function getCommunityPlan(id: string): Promise<CommunityPlan | null
   const p = data as Record<string, unknown>;
   return {
     id: p.id as string,
+    authorId: (p.author_id as string | null) ?? null,
     authorName: (p.author_name as string | null) ?? null,
     authorAvatar: (p.author_avatar as string | null) ?? null,
     title: p.title as string,
@@ -147,5 +156,29 @@ export async function toggleStar(planId: string, currentlyStarred: boolean): Pro
     }
   } catch {
     // Best effort — the optimistic UI already updated; a failed toggle self-corrects on refresh.
+  }
+}
+
+/** Report a published plan for moderation (App-Store requirement for UGC). */
+export async function reportPlan(planId: string, reason?: string): Promise<void> {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return;
+  try {
+    await supabase
+      .from('plan_reports')
+      .insert({ published_plan_id: planId, reporter_id: userId, reason: reason ?? null });
+  } catch {
+    // Best effort.
+  }
+}
+
+/** Block a user — you won't see their published plans anymore. */
+export async function blockUser(authorId: string): Promise<void> {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId || authorId === userId) return;
+  try {
+    await supabase.from('blocked_users').insert({ blocker_id: userId, blocked_id: authorId });
+  } catch {
+    // Best effort (a duplicate block just no-ops via the unique constraint).
   }
 }
