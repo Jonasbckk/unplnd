@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { View } from 'react-native';
 
 import { Card, Text } from '@/components/ui';
@@ -32,9 +33,23 @@ export function EveningDNA({ albums, accent }: { albums: Album[]; accent: string
           {dna.map((trait) => (
             <View key={trait.mood} style={{ gap: 6 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text variant="small" style={{ fontWeight: '600' }}>
-                  {`${trait.emoji}  ${tr(`dna.${trait.mood.toLowerCase()}`)}`}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}>
+                  <View
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: t.radius.pill,
+                      backgroundColor: accent + '24',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Ionicons name={trait.icon} size={15} color={accent} />
+                  </View>
+                  <Text variant="small" style={{ fontWeight: '600' }}>
+                    {tr(`dna.${trait.mood.toLowerCase()}`)}
+                  </Text>
+                </View>
                 <Text variant="small" color="textSecondary">
                   {`${trait.pct}%`}
                 </Text>
@@ -64,7 +79,7 @@ export function EveningDNA({ albums, accent }: { albums: Album[]; accent: string
                   borderRadius: t.radius.pill,
                 }}
               >
-                <Text variant="small">{b.emoji}</Text>
+                <Ionicons name={b.icon} size={15} color={accent} />
                 <Text variant="small" style={{ fontWeight: '600' }}>
                   {tr(`badges.${b.key}`)}
                 </Text>

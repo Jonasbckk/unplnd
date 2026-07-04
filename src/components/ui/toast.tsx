@@ -33,7 +33,8 @@ export function Toast() {
       <View
         style={[
           {
-            backgroundColor: t.colors.textHeading,
+            // Fixed warm-dark pill so it stays readable (white text) in BOTH light and dark mode.
+            backgroundColor: '#2E241E',
             paddingHorizontal: t.spacing.lg,
             paddingVertical: t.spacing.md,
             borderRadius: t.radius.pill,

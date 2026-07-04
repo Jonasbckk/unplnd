@@ -54,4 +54,12 @@ export const INTERESTS = [
 /** Profile prompts the user can answer (questions live in i18n under `prompts.<key>`). */
 export const PROMPTS = ['perfectEvening', 'takeMeTo', 'neighborhood', 'planStyle'] as const;
 
+/** Pre-made answer options per prompt (no free text). Labels live in i18n under `promptOpts.<prompt>.<opt>`. */
+export const PROMPT_OPTIONS: Record<string, string[]> = {
+  perfectEvening: ['goodfood', 'rooftop', 'spontaneous', 'planned', 'livemusic', 'cozy', 'longnight'],
+  takeMeTo: ['cocktailbar', 'hiddenrestaurant', 'rooftopview', 'livegig', 'cozycafe', 'dancefloor', 'nature'],
+  neighborhood: ['busy', 'quiet', 'trendy', 'central', 'waterside', 'local'],
+  planStyle: ['spontaneous', 'detailed', 'roughidea', 'letapp', 'together', 'surprise'],
+};
+
 export const MAX_INTERESTS = 10;

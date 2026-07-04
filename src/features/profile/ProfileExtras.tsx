@@ -4,7 +4,7 @@ import { Pressable, View } from 'react-native';
 import { Text } from '@/components/ui';
 import { useT } from '@/lib/i18n';
 import { useTheme } from '@/theme';
-import { INTEREST_ICONS, PROMPTS } from './profile-extras';
+import { INTEREST_ICONS, PROMPT_OPTIONS, PROMPTS } from './profile-extras';
 
 /** An interest as an icon + label chip. Display mode (accent tint) or selectable (edit). */
 export function InterestChip({
@@ -80,19 +80,23 @@ export function ProfileExtras({
 
       {answered.length > 0 && (
         <View style={{ gap: t.spacing.md }}>
-          {answered.map((key) => (
-            <View
-              key={key}
-              style={{ backgroundColor: t.colors.surfaceSecondary, borderRadius: t.radius.card, padding: t.spacing.base, gap: 4 }}
-            >
-              <Text variant="small" color="textSecondary">
-                {tr(`prompts.${key}`)}
-              </Text>
-              <Text variant="bodyLarge" style={{ fontWeight: '600' }}>
-                {prompts[key]}
-              </Text>
-            </View>
-          ))}
+          {answered.map((key) => {
+            const raw = prompts[key];
+            const answer = PROMPT_OPTIONS[key]?.includes(raw) ? tr(`promptOpts.${key}.${raw}`) : raw;
+            return (
+              <View
+                key={key}
+                style={{ backgroundColor: t.colors.surfaceSecondary, borderRadius: t.radius.card, padding: t.spacing.base, gap: 4 }}
+              >
+                <Text variant="small" color="textSecondary">
+                  {tr(`prompts.${key}`)}
+                </Text>
+                <Text variant="bodyLarge" style={{ fontWeight: '600' }}>
+                  {answer}
+                </Text>
+              </View>
+            );
+          })}
         </View>
       )}
     </View>

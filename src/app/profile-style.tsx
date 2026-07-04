@@ -30,9 +30,8 @@ export default function ProfileStyleScreen() {
     }
     if (style.id === active.id) return;
     haptics.success();
-    // The checkmark on the card is the confirmation — no toast needed (only on failure).
     const ok = await updateProfileStyle(style.id);
-    if (!ok) toast(tr('editProfile.failed'));
+    toast(ok ? tr('profileStyle.applied') : tr('editProfile.failed'));
   };
 
   return (

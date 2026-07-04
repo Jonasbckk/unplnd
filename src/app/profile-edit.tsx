@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Input, Text } from '@/components/ui';
 import { useAuthStore } from '@/features/auth/auth-store';
 import { InterestChip } from '@/features/profile/ProfileExtras';
-import { INTERESTS, MAX_INTERESTS, PROMPTS } from '@/features/profile/profile-extras';
+import { INTERESTS, MAX_INTERESTS, PROMPT_OPTIONS, PROMPTS } from '@/features/profile/profile-extras';
 import { haptics } from '@/lib/haptics';
 import { useT } from '@/lib/i18n';
 import {
@@ -235,12 +235,36 @@ export default function EditProfile() {
             <Text variant="small" color="textSecondary">
               {tr(`prompts.${key}`)}
             </Text>
-            <Input
-              value={promptAnswers[key] ?? ''}
-              onChangeText={(v) => setPromptAnswers((cur) => ({ ...cur, [key]: v }))}
-              placeholder={tr('extras.promptPlaceholder')}
-              maxLength={140}
-            />
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: t.spacing.sm }}>
+              {PROMPT_OPTIONS[key].map((opt) => {
+                const selected = promptAnswers[key] === opt;
+                return (
+                  <Pressable
+                    key={opt}
+                    onPress={() => {
+                      haptics.selection();
+                      setPromptAnswers((cur) => ({ ...cur, [key]: selected ? '' : opt }));
+                    }}
+                  >
+                    <View
+                      style={{
+                        paddingHorizontal: t.spacing.base,
+                        paddingVertical: t.spacing.sm,
+                        borderRadius: t.radius.pill,
+                        backgroundColor: selected ? t.colors.primary : t.colors.surfaceSecondary,
+                      }}
+                    >
+                      <Text
+                        variant="small"
+                        style={{ color: selected ? '#FFFFFF' : t.colors.textPrimary, fontWeight: '600' }}
+                      >
+                        {tr(`promptOpts.${key}.${opt}`)}
+                      </Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
         ))}
 

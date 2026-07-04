@@ -106,26 +106,25 @@ function MenuTile({
     <Pressable onPress={onPress} style={({ pressed }) => ({ width: '48%', opacity: pressed ? 0.85 : 1 })}>
       <View
         style={{
-          flexDirection: 'row',
           alignItems: 'center',
-          gap: t.spacing.md,
+          gap: t.spacing.sm,
           backgroundColor: t.colors.surfaceSecondary,
           borderRadius: t.radius.lg,
           paddingVertical: t.spacing.base,
-          paddingHorizontal: t.spacing.base,
+          paddingHorizontal: t.spacing.sm,
         }}
       >
         <View
           style={{
-            width: 40,
-            height: 40,
+            width: 44,
+            height: 44,
             borderRadius: t.radius.pill,
             backgroundColor: accent + '24',
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <Ionicons name={icon} size={21} color={accent} />
+          <Ionicons name={icon} size={22} color={accent} />
           {badge && badge > 0 ? (
             <View
               style={{
@@ -147,7 +146,7 @@ function MenuTile({
             </View>
           ) : null}
         </View>
-        <Text variant="small" style={{ flex: 1, fontWeight: '600' }} numberOfLines={1}>
+        <Text variant="small" center style={{ fontWeight: '600' }} numberOfLines={2}>
           {label}
         </Text>
       </View>
