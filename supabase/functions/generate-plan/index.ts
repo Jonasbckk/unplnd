@@ -185,8 +185,42 @@ function clusterRadiusFor(transport?: string): number {
   }
 }
 
-// Never belongs in a curated evening — fast-food primary types (excluded at the Places query).
-const JUNK_TYPES = ['fast_food_restaurant', 'meal_takeaway', 'meal_delivery'];
+// Never belongs in a curated evening — excluded at the Places query AND filtered by primary type.
+// A gas station or supermarket that happens to sell coffee is still not an evening venue.
+const JUNK_TYPES = [
+  'fast_food_restaurant',
+  'meal_takeaway',
+  'meal_delivery',
+  'gas_station',
+  'convenience_store',
+  'supermarket',
+  'grocery_store',
+  'lodging',
+  'hotel',
+  'motel',
+  'parking',
+  'atm',
+  'bank',
+  'pharmacy',
+  'drugstore',
+  'gym',
+  'fitness_center',
+  'car_repair',
+  'car_dealer',
+  'car_wash',
+];
+// Types that disqualify a place even as a SECONDARY type (a "Tankstelle mit Café" lists gas_station
+// in its types even when Google's primary type is something else). Narrow on purpose — a real
+// restaurant often also carries meal_takeaway, so those stay primary-type-only above.
+const HARD_BLOCK_TYPES = [
+  'gas_station',
+  'convenience_store',
+  'supermarket',
+  'grocery_store',
+  'car_repair',
+  'car_wash',
+  'car_dealer',
+];
 // …and chains/takeaways that slip through typed as plain "restaurant" (filtered by name).
 const CHAIN_BLOCKLIST =
   /\b(kfc|kentucky fried|mcdonald|burger king|subway|domino|pizza hut|call a pizza|starbucks|dunkin|five guys|popeyes|nordsee|fried chicken|chicken king)\b/i;
@@ -302,6 +336,8 @@ async function findCandidates(req: PlanRequest, key: string, plan: SearchGroup[]
           p?.location &&
           (p.rating ?? 0) >= 3.9 &&
           (p.userRatingCount ?? 0) >= 15 &&
+          !JUNK_TYPES.includes(p.primaryType) &&
+          !(Array.isArray(p.types) && p.types.some((tp: string) => HARD_BLOCK_TYPES.includes(tp))) &&
           !CHAIN_BLOCKLIST.test(p.displayName?.text ?? ''),
       )
       .map((p: any) => {

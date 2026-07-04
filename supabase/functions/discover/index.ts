@@ -49,7 +49,40 @@ const CATEGORY_TYPES: Record<string, string[]> = {
 };
 const DEFAULT_TYPES = ['restaurant', 'bar', 'cafe', 'tourist_attraction'];
 
-const JUNK_TYPES = ['fast_food_restaurant', 'meal_takeaway', 'meal_delivery'];
+// Primary types that are never an "evening out" venue — excluded from the Nearby search
+// AND filtered from every result. A gas station that happens to sell coffee is still a gas station.
+const JUNK_TYPES = [
+  'fast_food_restaurant',
+  'meal_takeaway',
+  'meal_delivery',
+  'gas_station',
+  'convenience_store',
+  'supermarket',
+  'grocery_store',
+  'lodging',
+  'hotel',
+  'motel',
+  'parking',
+  'atm',
+  'bank',
+  'pharmacy',
+  'drugstore',
+  'gym',
+  'fitness_center',
+  'car_repair',
+  'car_dealer',
+  'car_wash',
+];
+// Disqualifying even as a SECONDARY type — catches a "Tankstelle mit Café" that Google typed as cafe.
+const HARD_BLOCK_TYPES = [
+  'gas_station',
+  'convenience_store',
+  'supermarket',
+  'grocery_store',
+  'car_repair',
+  'car_wash',
+  'car_dealer',
+];
 const CHAIN_BLOCKLIST =
   /\b(kfc|kentucky fried|mcdonald|burger king|subway|domino|pizza hut|call a pizza|starbucks|dunkin|five guys|popeyes|nordsee|fried chicken|chicken king)\b/i;
 
@@ -78,7 +111,7 @@ async function searchNearby(types: string[], lat: number, lng: number, key: stri
       'Content-Type': 'application/json',
       'X-Goog-Api-Key': key,
       'X-Goog-FieldMask':
-        'places.id,places.displayName,places.primaryTypeDisplayName,places.rating,places.userRatingCount,places.currentOpeningHours,places.location,places.priceLevel,places.photos,places.formattedAddress',
+        'places.id,places.displayName,places.primaryType,places.types,places.primaryTypeDisplayName,places.rating,places.userRatingCount,places.currentOpeningHours,places.location,places.priceLevel,places.photos,places.formattedAddress',
     },
     body: JSON.stringify({
       includedTypes: types,
@@ -106,7 +139,7 @@ async function searchText(query: string, lat: number, lng: number, key: string, 
       'Content-Type': 'application/json',
       'X-Goog-Api-Key': key,
       'X-Goog-FieldMask':
-        'places.id,places.displayName,places.primaryTypeDisplayName,places.rating,places.userRatingCount,places.currentOpeningHours,places.location,places.priceLevel,places.photos,places.formattedAddress',
+        'places.id,places.displayName,places.primaryType,places.types,places.primaryTypeDisplayName,places.rating,places.userRatingCount,places.currentOpeningHours,places.location,places.priceLevel,places.photos,places.formattedAddress',
     },
     body: JSON.stringify({
       textQuery: query,
@@ -179,6 +212,8 @@ Deno.serve(async (req) => {
         p?.location &&
         (p.rating ?? 0) >= 4.0 &&
         (p.userRatingCount ?? 0) >= minCount &&
+        !JUNK_TYPES.includes(p.primaryType) &&
+        !(Array.isArray(p.types) && p.types.some((tp: string) => HARD_BLOCK_TYPES.includes(tp))) &&
         !CHAIN_BLOCKLIST.test(p.displayName?.text ?? ''),
     )
     .map((p: any) => {
