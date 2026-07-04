@@ -11,9 +11,9 @@ import { formatAlbumDate } from '@/features/albums/MemoryCard';
 import { shade } from '@/utils/color';
 import { useAlbumsStore } from '@/features/albums/albums-store';
 import { getAlbumPhotos, pickPhotos, uploadAlbumPhotos, type AlbumPhoto } from '@/features/albums/photos';
-import { confirmDialog } from '@/lib/confirm';
+import { choiceDialog, confirmDialog } from '@/lib/confirm';
 import { haptics } from '@/lib/haptics';
-import { publishPlan } from '@/lib/publish';
+import { isAlbumPublished, publishPlan } from '@/lib/publish';
 import { getPlanRating, savePlanRating } from '@/lib/ratings';
 import { toast } from '@/store/toast-store';
 import { optionLabel, useT } from '@/lib/i18n';
@@ -100,14 +100,27 @@ export default function AlbumDetail() {
 
   const onDelete = useCallback(async () => {
     if (!album) return;
-    const ok = await confirmDialog(
-      tr('albums.deleteTitle'),
-      tr('albums.deleteBody'),
-      tr('albums.delete'),
-      tr('common2.cancel'),
-    );
-    if (!ok) return;
-    await deleteAlbum(album.id);
+    // If this memory is published, ask whether to also remove the community version.
+    if (await isAlbumPublished(album.id)) {
+      const choice = await choiceDialog(
+        tr('albums.deletePublishedTitle'),
+        tr('albums.deletePublishedBody'),
+        tr('albums.deleteBoth'),
+        tr('albums.deleteMemoryOnly'),
+        tr('common2.cancel'),
+      );
+      if (choice === 'cancel') return;
+      await deleteAlbum(album.id, choice === 'primary');
+    } else {
+      const ok = await confirmDialog(
+        tr('albums.deleteTitle'),
+        tr('albums.deleteBody'),
+        tr('albums.delete'),
+        tr('common2.cancel'),
+      );
+      if (!ok) return;
+      await deleteAlbum(album.id, false);
+    }
     haptics.success();
     toast(tr('toast.albumDeleted'));
     router.back();

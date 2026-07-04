@@ -72,8 +72,8 @@ interface AlbumsState {
   ) => Promise<string | null>;
   toggleFavorite: (id: string) => Promise<void>;
   updateNote: (id: string, note: string) => Promise<void>;
-  /** Hard delete for MVP (soft delete comes with the offline/sync phase) — removes photos too. */
-  deleteAlbum: (id: string) => Promise<void>;
+  /** Hard delete (removes photos too). `deletePublished` also removes the community publication. */
+  deleteAlbum: (id: string, deletePublished: boolean) => Promise<void>;
 }
 
 export const useAlbumsStore = create<AlbumsState>((set, get) => ({
@@ -139,9 +139,11 @@ export const useAlbumsStore = create<AlbumsState>((set, get) => ({
     await supabase.from('albums').update({ note: trimmed || null }).eq('id', id);
   },
 
-  deleteAlbum: async (id) => {
-    // Deleting the memory also removes its published version from the community (no orphans).
-    await supabase.from('published_plans').delete().eq('source_album_id', id);
+  deleteAlbum: async (id, deletePublished) => {
+    // Only remove the community publication if the user chose to (asked on delete).
+    if (deletePublished) {
+      await supabase.from('published_plans').delete().eq('source_album_id', id);
+    }
     // Clean up stored photos first (album_photos rows cascade with the album row).
     const { data: photoRows } = await supabase.from('album_photos').select('storage_path').eq('album_id', id);
     const paths = (photoRows ?? []).map((row) => row.storage_path as string);

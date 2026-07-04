@@ -1,5 +1,15 @@
 import { supabase } from '@/lib/supabase';
 
+/** Whether this album currently has a published version in the community feed. */
+export async function isAlbumPublished(albumId: string): Promise<boolean> {
+  const { data } = await supabase
+    .from('published_plans')
+    .select('id')
+    .eq('source_album_id', albumId)
+    .maybeSingle();
+  return !!data;
+}
+
 export type PublishResult =
   | { ok: true; id: string; alreadyPublished: boolean }
   | { ok: false; reason: 'no_photos' | 'failed' };
