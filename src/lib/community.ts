@@ -33,6 +33,7 @@ export interface PublicProfile {
   styleId: string | null;
   homeCity: string | null;
   pinnedPlaces: string[];
+  isFounder: boolean;
   memberSince: string | null;
 }
 
@@ -173,6 +174,7 @@ export async function getPublicProfile(userId: string): Promise<PublicProfile | 
       styleId: (row.profile_style as string | null) ?? null,
       homeCity: (row.home_city as string | null) ?? null,
       pinnedPlaces: Array.isArray(row.pinned_places) ? (row.pinned_places as string[]) : [],
+      isFounder: Boolean(row.is_founder),
       memberSince: (row.member_since as string | null) ?? null,
     };
   }
@@ -194,6 +196,7 @@ export async function getPublicProfile(userId: string): Promise<PublicProfile | 
       styleId: null,
       homeCity: null,
       pinnedPlaces: [],
+      isFounder: false,
       memberSince: null,
     };
   }

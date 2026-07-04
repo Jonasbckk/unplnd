@@ -5,11 +5,22 @@ import { useEffect, useState, type ComponentProps } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Card, FadeInUp, Text, useCountUp } from '@/components/ui';
+import { Button, Card, FadeInUp, Text, useCountUp } from '@/components/ui';
+import { useAuthStore } from '@/features/auth/auth-store';
 import { ProfileBanner } from '@/features/profile/ProfileBanner';
 import { getProfileStyle } from '@/features/profile/profile-styles';
 import { getPublicProfile, getUserPublishedPlans, type CommunityPlan, type PublicProfile } from '@/lib/community';
+import {
+  acceptRequest,
+  getConnectionState,
+  removeConnection,
+  sendRequest,
+  type ConnectionState,
+} from '@/lib/connections';
+import { confirmDialog } from '@/lib/confirm';
+import { haptics } from '@/lib/haptics';
 import { useT } from '@/lib/i18n';
+import { toast } from '@/store/toast-store';
 import { useTheme } from '@/theme';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
@@ -89,6 +100,10 @@ export default function PublicProfileScreen() {
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [plans, setPlans] = useState<CommunityPlan[]>([]);
   const [loading, setLoading] = useState(true);
+  const me = useAuthStore((s) => s.user?.id);
+  const isOwn = !!me && me === id;
+  const [connState, setConnState] = useState<ConnectionState>('none');
+  const [connRow, setConnRow] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -103,6 +118,70 @@ export default function PublicProfileScreen() {
       active = false;
     };
   }, [id]);
+
+  useEffect(() => {
+    if (!id || !me || me === id) return;
+    let active = true;
+    void getConnectionState(id).then((info) => {
+      if (!active) return;
+      setConnState(info.state);
+      setConnRow(info.rowId);
+    });
+    return () => {
+      active = false;
+    };
+  }, [id, me]);
+
+  const refreshConn = async () => {
+    if (!id) return;
+    const info = await getConnectionState(id);
+    setConnState(info.state);
+    setConnRow(info.rowId);
+  };
+
+  const onConnectPress = async () => {
+    if (!id) return;
+    haptics.light();
+    if (connState === 'none') {
+      const next = await sendRequest(id);
+      if (next === 'outgoing') toast(tr('connections.requested'));
+      if (next === 'connected') toast(tr('connections.accepted'));
+      if (next !== 'none') haptics.success();
+      await refreshConn();
+    } else if (connState === 'incoming' && connRow) {
+      if (await acceptRequest(connRow)) {
+        haptics.success();
+        toast(tr('connections.accepted'));
+      }
+      await refreshConn();
+    } else if ((connState === 'outgoing' || connState === 'connected') && connRow) {
+      const ok = await confirmDialog(
+        connState === 'connected' ? tr('connections.disconnectTitle') : tr('connections.cancelTitle'),
+        connState === 'connected' ? tr('connections.disconnectBody') : tr('connections.cancelBody'),
+        tr('connections.remove'),
+        tr('common2.cancel'),
+      );
+      if (ok) {
+        await removeConnection(connRow);
+        await refreshConn();
+      }
+    }
+  };
+
+  const declineRequest = async () => {
+    if (!connRow) return;
+    await removeConnection(connRow);
+    await refreshConn();
+  };
+
+  const connLabel =
+    connState === 'connected'
+      ? tr('connections.connected')
+      : connState === 'incoming'
+        ? tr('connections.accept')
+        : connState === 'outgoing'
+          ? tr('connections.requested')
+          : tr('connections.connect');
 
   const style = getProfileStyle(profile?.styleId);
   const accent = style.accent;
@@ -160,6 +239,24 @@ export default function PublicProfileScreen() {
               <Text variant="h1" style={{ color: style.onGradient }} center>
                 {name}
               </Text>
+              {profile.isFounder && (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 4,
+                    backgroundColor: 'rgba(255,255,255,0.22)',
+                    paddingHorizontal: 10,
+                    paddingVertical: 4,
+                    borderRadius: t.radius.pill,
+                  }}
+                >
+                  <Ionicons name="ribbon" size={13} color={style.onGradient} />
+                  <Text variant="caption" style={{ color: style.onGradient, fontWeight: '700', letterSpacing: 0.3 }}>
+                    {tr('profile.founderBadge')}
+                  </Text>
+                </View>
+              )}
               {profile.homeCity ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                   <Ionicons name="location" size={12} color={style.onGradient} />
@@ -182,6 +279,23 @@ export default function PublicProfileScreen() {
               <Stat icon="star" value={totalStars} label={tr('publicProfile.starsReceived')} accent={accent} />
             </View>
           </Card>
+
+          {me && !isOwn && (
+            <View style={{ gap: t.spacing.sm }}>
+              <Button
+                title={connLabel}
+                variant={connState === 'none' || connState === 'incoming' ? 'primary' : 'secondary'}
+                onPress={onConnectPress}
+              />
+              {connState === 'incoming' && (
+                <Pressable onPress={declineRequest} style={{ alignSelf: 'center' }} hitSlop={8}>
+                  <Text variant="small" color="textSecondary">
+                    {tr('connections.decline')}
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+          )}
 
           {profile.pinnedPlaces.length > 0 && (
             <View style={{ gap: t.spacing.md }}>

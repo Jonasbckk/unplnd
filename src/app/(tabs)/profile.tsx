@@ -11,6 +11,8 @@ import { useAuthStore } from '@/features/auth/auth-store';
 import { useFavoritesStore } from '@/features/favorites/favorites-store';
 import { ProfileBanner } from '@/features/profile/ProfileBanner';
 import { useProfileStyle } from '@/features/profile/profile-styles';
+import { getPublicProfile } from '@/lib/community';
+import { getPendingCount } from '@/lib/connections';
 import { haptics } from '@/lib/haptics';
 import { setPinnedPlaces } from '@/lib/profile';
 import { optionLabel, useT } from '@/lib/i18n';
@@ -97,10 +99,28 @@ export default function ProfileScreen() {
   const style = useProfileStyle();
   const accent = style.accent;
 
+  const [pending, setPending] = useState(0);
+  const [isFounder, setIsFounder] = useState(false);
+
   useEffect(() => {
     void loadAlbums();
     void loadFavorites();
   }, [loadAlbums, loadFavorites]);
+
+  useEffect(() => {
+    const userId = user?.id;
+    if (!userId) return;
+    let active = true;
+    void getPendingCount().then((n) => {
+      if (active) setPending(n);
+    });
+    void getPublicProfile(userId).then((p) => {
+      if (active) setIsFounder(Boolean(p?.isFounder));
+    });
+    return () => {
+      active = false;
+    };
+  }, [user?.id]);
 
   const meta = user?.user_metadata as
     | { display_name?: string; avatar_url?: string; bio?: string; home_city?: string; pinned_places?: string[] }
@@ -178,6 +198,26 @@ export default function ProfileScreen() {
               <Text variant="h1" style={{ color: style.onGradient }}>
                 {name}
               </Text>
+              {isFounder && (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 4,
+                    alignSelf: 'flex-start',
+                    backgroundColor: 'rgba(255,255,255,0.22)',
+                    paddingHorizontal: 8,
+                    paddingVertical: 3,
+                    borderRadius: t.radius.pill,
+                    marginTop: 3,
+                  }}
+                >
+                  <Ionicons name="ribbon" size={12} color={style.onGradient} />
+                  <Text variant="caption" style={{ color: style.onGradient, fontWeight: '700' }}>
+                    {tr('profile.founderBadge')}
+                  </Text>
+                </View>
+              )}
               {homeCity ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 1 }}>
                   <Ionicons name="location" size={12} color={style.onGradient} />
@@ -278,6 +318,10 @@ export default function ProfileScreen() {
       )}
 
       <View style={{ gap: t.spacing.md, marginTop: t.spacing.sm }}>
+        <Button
+          title={pending > 0 ? `${tr('profile.connections')} (${pending})` : tr('profile.connections')}
+          onPress={() => router.push('/connections' as Href)}
+        />
         <Button
           title={tr('profile.style')}
           variant="secondary"
