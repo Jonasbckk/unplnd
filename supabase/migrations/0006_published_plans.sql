@@ -2,7 +2,8 @@
 -- Founder decisions (2026-07-04): show the author's name + profile; publishing is opt-in and
 -- requires the user's OWN photos; plans collect "stars" (likes) from other users (shown, and a
 -- tie-breaker AFTER proximity); NO followers / no user-level metrics; report/block for moderation.
--- Run once in the Supabase SQL Editor.
+-- IDEMPOTENT — safe to re-run (each policy is dropped before it is recreated).
+-- Run in the Supabase SQL Editor.
 
 -- ---------- published_plans ----------
 -- Author name/avatar are DENORMALIZED here (copied at publish time) so the feed never needs to
@@ -27,12 +28,16 @@ create table if not exists public.published_plans (
 );
 alter table public.published_plans enable row level security;
 -- Any signed-in user can read published (non-hidden) plans; authors always see their own.
+drop policy if exists "published_plans_read" on public.published_plans;
 create policy "published_plans_read" on public.published_plans for select
   using (not hidden or author_id = auth.uid());
+drop policy if exists "published_plans_insert_own" on public.published_plans;
 create policy "published_plans_insert_own" on public.published_plans for insert
   with check (author_id = auth.uid());
+drop policy if exists "published_plans_update_own" on public.published_plans;
 create policy "published_plans_update_own" on public.published_plans for update
   using (author_id = auth.uid()) with check (author_id = auth.uid());
+drop policy if exists "published_plans_delete_own" on public.published_plans;
 create policy "published_plans_delete_own" on public.published_plans for delete
   using (author_id = auth.uid());
 create index if not exists published_plans_city_created_idx
@@ -47,8 +52,11 @@ create table if not exists public.plan_stars (
   unique (published_plan_id, user_id)       -- one star per user per plan
 );
 alter table public.plan_stars enable row level security;
+drop policy if exists "plan_stars_read" on public.plan_stars;
 create policy "plan_stars_read" on public.plan_stars for select using (true);
+drop policy if exists "plan_stars_insert_own" on public.plan_stars;
 create policy "plan_stars_insert_own" on public.plan_stars for insert with check (user_id = auth.uid());
+drop policy if exists "plan_stars_delete_own" on public.plan_stars;
 create policy "plan_stars_delete_own" on public.plan_stars for delete using (user_id = auth.uid());
 
 -- Keep published_plans.star_count in sync with plan_stars.
@@ -75,6 +83,7 @@ create table if not exists public.plan_reports (
   created_at timestamptz not null default now()
 );
 alter table public.plan_reports enable row level security;
+drop policy if exists "plan_reports_insert_own" on public.plan_reports;
 create policy "plan_reports_insert_own" on public.plan_reports for insert
   with check (reporter_id = auth.uid());
 
@@ -84,9 +93,12 @@ insert into storage.buckets (id, name, public)
 values ('published-photos', 'published-photos', true)
 on conflict (id) do nothing;
 
+drop policy if exists "published_photos_public_read" on storage.objects;
 create policy "published_photos_public_read" on storage.objects for select
   using (bucket_id = 'published-photos');
+drop policy if exists "published_photos_insert_own" on storage.objects;
 create policy "published_photos_insert_own" on storage.objects for insert to authenticated
   with check (bucket_id = 'published-photos' and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists "published_photos_delete_own" on storage.objects;
 create policy "published_photos_delete_own" on storage.objects for delete to authenticated
   using (bucket_id = 'published-photos' and (storage.foldername(name))[1] = auth.uid()::text);

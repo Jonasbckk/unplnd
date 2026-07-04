@@ -10,5 +10,6 @@ create table if not exists public.blocked_users (
   unique (blocker_id, blocked_id)
 );
 alter table public.blocked_users enable row level security;
+drop policy if exists "blocked_users_all_own" on public.blocked_users;
 create policy "blocked_users_all_own" on public.blocked_users for all
   using (blocker_id = auth.uid()) with check (blocker_id = auth.uid());
