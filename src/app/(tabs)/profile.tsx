@@ -322,6 +322,7 @@ export default function ProfileScreen() {
           title={pending > 0 ? `${tr('profile.connections')} (${pending})` : tr('profile.connections')}
           onPress={() => router.push('/connections' as Href)}
         />
+        <Button title={tr('profile.messages')} variant="secondary" onPress={() => router.push('/messages' as Href)} />
         <Button
           title={tr('profile.style')}
           variant="secondary"

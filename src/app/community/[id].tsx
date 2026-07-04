@@ -12,6 +12,7 @@ import { confirmDialog } from '@/lib/confirm';
 import { haptics } from '@/lib/haptics';
 import { useT } from '@/lib/i18n';
 import { toast } from '@/store/toast-store';
+import { useShareStore } from '@/store/share-store';
 import { useTheme } from '@/theme';
 
 export default function CommunityPlanDetail() {
@@ -61,6 +62,18 @@ export default function CommunityPlanDetail() {
     router.replace('/plan/route');
   };
 
+  const shareToChat = () => {
+    if (!plan) return;
+    haptics.light();
+    useShareStore.getState().setPlan({
+      title: plan.title,
+      route: plan.route.map((s) => ({ time: s.time, title: s.title })),
+      photo: plan.photos[0] ?? null,
+      sourceId: plan.id,
+    });
+    router.push('/messages' as Href);
+  };
+
   const onReport = async () => {
     if (!plan) return;
     const ok = await confirmDialog(
@@ -92,10 +105,15 @@ export default function CommunityPlanDetail() {
   return (
     <View style={{ flex: 1, backgroundColor: t.colors.background }}>
       <SafeAreaView edges={['top']}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: t.spacing.lg, paddingVertical: t.spacing.md }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: t.spacing.lg, paddingVertical: t.spacing.md }}>
           <Pressable onPress={() => router.back()} hitSlop={8}>
             <Ionicons name="chevron-back" size={26} color={t.colors.textPrimary} />
           </Pressable>
+          {plan && (
+            <Pressable onPress={shareToChat} hitSlop={8}>
+              <Ionicons name="paper-plane-outline" size={22} color={t.colors.primary} />
+            </Pressable>
+          )}
         </View>
       </SafeAreaView>
 

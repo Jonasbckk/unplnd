@@ -17,6 +17,7 @@ import {
   sendRequest,
   type ConnectionState,
 } from '@/lib/connections';
+import { getOrCreateDm } from '@/lib/messaging';
 import { confirmDialog } from '@/lib/confirm';
 import { haptics } from '@/lib/haptics';
 import { useT } from '@/lib/i18n';
@@ -174,6 +175,13 @@ export default function PublicProfileScreen() {
     await refreshConn();
   };
 
+  const openDm = async () => {
+    if (!id) return;
+    haptics.light();
+    const conv = await getOrCreateDm(id);
+    if (conv) router.push(`/chat/${conv}` as Href);
+  };
+
   const connLabel =
     connState === 'connected'
       ? tr('connections.connected')
@@ -282,17 +290,26 @@ export default function PublicProfileScreen() {
 
           {me && !isOwn && (
             <View style={{ gap: t.spacing.sm }}>
-              <Button
-                title={connLabel}
-                variant={connState === 'none' || connState === 'incoming' ? 'primary' : 'secondary'}
-                onPress={onConnectPress}
-              />
-              {connState === 'incoming' && (
-                <Pressable onPress={declineRequest} style={{ alignSelf: 'center' }} hitSlop={8}>
-                  <Text variant="small" color="textSecondary">
-                    {tr('connections.decline')}
-                  </Text>
-                </Pressable>
+              {connState === 'connected' ? (
+                <>
+                  <Button title={tr('connections.message')} onPress={openDm} />
+                  <Button title={tr('connections.connected')} variant="secondary" onPress={onConnectPress} />
+                </>
+              ) : (
+                <>
+                  <Button
+                    title={connLabel}
+                    variant={connState === 'none' || connState === 'incoming' ? 'primary' : 'secondary'}
+                    onPress={onConnectPress}
+                  />
+                  {connState === 'incoming' && (
+                    <Pressable onPress={declineRequest} style={{ alignSelf: 'center' }} hitSlop={8}>
+                      <Text variant="small" color="textSecondary">
+                        {tr('connections.decline')}
+                      </Text>
+                    </Pressable>
+                  )}
+                </>
               )}
             </View>
           )}
