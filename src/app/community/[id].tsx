@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -122,10 +122,36 @@ export default function CommunityPlanDetail() {
 
             <View style={{ padding: t.spacing.lg, gap: t.spacing.md }}>
               <Text variant="displayMedium">{plan.title}</Text>
-              <Text variant="small" color="textSecondary">
-                {tr('community.by', { name: plan.authorName ?? tr('community.someone') })}
-                {plan.city ? ` · ${plan.city}` : ''}
-              </Text>
+              <Pressable
+                onPress={() => plan.authorId && router.push(`/user/${plan.authorId}` as Href)}
+                disabled={!plan.authorId}
+                hitSlop={6}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}
+              >
+                {plan.authorAvatar ? (
+                  <Image source={{ uri: plan.authorAvatar }} style={{ width: 28, height: 28, borderRadius: 14 }} contentFit="cover" />
+                ) : (
+                  <View
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 14,
+                      backgroundColor: t.colors.primary,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Text variant="caption" color="onPrimary">
+                      {(plan.authorName ?? '?').charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                )}
+                <Text variant="small" color="textSecondary" style={{ flex: 1 }}>
+                  {tr('community.by', { name: plan.authorName ?? tr('community.someone') })}
+                  {plan.city ? ` · ${plan.city}` : ''}
+                </Text>
+                {plan.authorId ? <Ionicons name="chevron-forward" size={14} color={t.colors.textSecondary} /> : null}
+              </Pressable>
 
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.lg }}>
                 <Pressable onPress={onStar} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>

@@ -9,7 +9,7 @@ import { Button, Input, Text } from '@/components/ui';
 import { useAuthStore } from '@/features/auth/auth-store';
 import { haptics } from '@/lib/haptics';
 import { useT } from '@/lib/i18n';
-import { pickAvatar, updateProfileAvatar, updateProfileName } from '@/lib/profile';
+import { pickAvatar, updateProfileAvatar, updateProfileBio, updateProfileName } from '@/lib/profile';
 import { toast } from '@/store/toast-store';
 import { useTheme } from '@/theme';
 
@@ -18,8 +18,9 @@ export default function EditProfile() {
   const { t: tr } = useT();
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
-  const meta = user?.user_metadata as { display_name?: string; avatar_url?: string } | undefined;
+  const meta = user?.user_metadata as { display_name?: string; avatar_url?: string; bio?: string } | undefined;
   const [name, setName] = useState(meta?.display_name ?? '');
+  const [bio, setBio] = useState(meta?.bio ?? '');
   const [avatar, setAvatar] = useState(meta?.avatar_url ?? '');
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -42,9 +43,10 @@ export default function EditProfile() {
   const onSave = async () => {
     if (!name.trim()) return;
     setSaving(true);
-    const ok = await updateProfileName(name);
+    const okName = await updateProfileName(name);
+    const okBio = await updateProfileBio(bio);
     setSaving(false);
-    if (ok) {
+    if (okName && okBio) {
       haptics.success();
       toast(tr('editProfile.saved'));
       router.back();
@@ -137,9 +139,24 @@ export default function EditProfile() {
             onChangeText={setName}
             placeholder={tr('editProfile.namePlaceholder')}
             autoCapitalize="words"
-            returnKeyType="done"
-            onSubmitEditing={onSave}
           />
+        </View>
+
+        <View style={{ alignSelf: 'stretch', gap: t.spacing.sm }}>
+          <Text variant="small" color="textSecondary">
+            {tr('editProfile.bioLabel')}
+          </Text>
+          <Input
+            value={bio}
+            onChangeText={setBio}
+            placeholder={tr('editProfile.bioPlaceholder')}
+            multiline
+            maxLength={160}
+            style={{ height: 92, paddingTop: t.spacing.md, textAlignVertical: 'top' }}
+          />
+          <Text variant="caption" color="textSecondary" style={{ alignSelf: 'flex-end' }}>
+            {`${bio.length}/160`}
+          </Text>
         </View>
 
         <View style={{ alignSelf: 'stretch' }}>

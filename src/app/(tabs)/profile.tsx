@@ -99,9 +99,10 @@ export default function ProfileScreen() {
     void loadFavorites();
   }, [loadAlbums, loadFavorites]);
 
-  const meta = user?.user_metadata as { display_name?: string; avatar_url?: string } | undefined;
+  const meta = user?.user_metadata as { display_name?: string; avatar_url?: string; bio?: string } | undefined;
   const name = meta?.display_name ?? user?.email?.split('@')[0] ?? 'You';
   const avatarUrl = meta?.avatar_url;
+  const bio = meta?.bio;
   const memberSince = user?.created_at ? new Date(user.created_at).getFullYear() : new Date().getFullYear();
   const memories = albums.length;
   const cities = new Set(albums.map((a) => a.city).filter(Boolean)).size;
@@ -163,6 +164,11 @@ export default function ProfileScreen() {
               <Text variant="small" style={{ color: style.onGradient, opacity: 0.85 }}>
                 {tr('profile.memberSince', { year: memberSince })}
               </Text>
+              {bio ? (
+                <Text variant="small" style={{ color: style.onGradient, opacity: 0.85, marginTop: 2 }} numberOfLines={2}>
+                  {bio}
+                </Text>
+              ) : null}
             </View>
           </Pressable>
           <Pressable onPress={() => router.push('/settings')} hitSlop={8}>

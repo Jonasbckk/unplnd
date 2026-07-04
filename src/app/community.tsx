@@ -47,10 +47,28 @@ function CommunityCard({ plan }: { plan: CommunityPlan }) {
         <View style={{ width: '100%', height: 190, backgroundColor: t.colors.surfaceSecondary }} />
       )}
       <View style={{ padding: t.spacing.base, gap: 6 }}>
-        <Text variant="small" color="textSecondary">
-          {tr('community.by', { name: plan.authorName ?? tr('community.someone') })}
-          {meta ? ` · ${meta}` : ''}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
+          <Pressable
+            onPress={() => plan.authorId && router.push(`/user/${plan.authorId}` as Href)}
+            disabled={!plan.authorId}
+            hitSlop={4}
+          >
+            <Text
+              variant="small"
+              style={{
+                color: plan.authorId ? t.colors.primary : t.colors.textSecondary,
+                fontWeight: plan.authorId ? '600' : '400',
+              }}
+            >
+              {tr('community.by', { name: plan.authorName ?? tr('community.someone') })}
+            </Text>
+          </Pressable>
+          {meta ? (
+            <Text variant="small" color="textSecondary">
+              {` · ${meta}`}
+            </Text>
+          ) : null}
+        </View>
         <Text variant="h3" numberOfLines={2}>
           {plan.title}
         </Text>

@@ -27,10 +27,23 @@ export async function updateProfileName(name: string): Promise<boolean> {
   return true;
 }
 
-/** Set the profile style (accent + banner). Stored on the auth user → reactive app-wide. */
+/** Set the profile style (accent + banner). Stored on the auth user (reactive) + profiles (public). */
 export async function updateProfileStyle(styleId: string): Promise<boolean> {
   const { error } = await supabase.auth.updateUser({ data: { profile_style: styleId } });
-  return !error;
+  if (error) return false;
+  const userId = useAuthStore.getState().user?.id;
+  if (userId) await supabase.from('profiles').update({ profile_style: styleId }).eq('id', userId);
+  return true;
+}
+
+/** Update the bio/tagline — on the auth user (reactive) + the profiles row (shown on your public profile). */
+export async function updateProfileBio(bio: string): Promise<boolean> {
+  const trimmed = bio.trim().slice(0, 160);
+  const { error } = await supabase.auth.updateUser({ data: { bio: trimmed } });
+  if (error) return false;
+  const userId = useAuthStore.getState().user?.id;
+  if (userId) await supabase.from('profiles').update({ bio: trimmed || null }).eq('id', userId);
+  return true;
 }
 
 /** Upload a new avatar → public URL, stored on the auth user + the profiles row. Returns the URL. */

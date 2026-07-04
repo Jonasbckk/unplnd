@@ -25,6 +25,15 @@ export interface CommunityResult {
   needsLocation: boolean;
 }
 
+export interface PublicProfile {
+  id: string;
+  name: string | null;
+  avatar: string | null;
+  bio: string | null;
+  styleId: string | null;
+  memberSince: string | null;
+}
+
 function haversine(aLat: number, aLng: number, bLat: number, bLng: number): number {
   const R = 6371000;
   const dLat = ((bLat - aLat) * Math.PI) / 180;
@@ -142,6 +151,84 @@ export async function getCommunityPlan(id: string): Promise<CommunityPlan | null
     starred,
     distanceM: null,
   };
+}
+
+/**
+ * A user's public profile — SAFE fields only (name, avatar, bio, style, member-since) via the
+ * get_public_profile function. Falls back to the denormalized author name/avatar from a published
+ * plan if the migration isn't applied yet, so the feature degrades gracefully.
+ */
+export async function getPublicProfile(userId: string): Promise<PublicProfile | null> {
+  if (!isSupabaseConfigured) return null;
+  const { data, error } = await supabase.rpc('get_public_profile', { target: userId });
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!error && row) {
+    return {
+      id: userId,
+      name: (row.display_name as string | null) ?? null,
+      avatar: (row.photo_url as string | null) ?? null,
+      bio: (row.bio as string | null) ?? null,
+      styleId: (row.profile_style as string | null) ?? null,
+      memberSince: (row.member_since as string | null) ?? null,
+    };
+  }
+  // Fallback: derive name + avatar from the author's most recent published plan.
+  const { data: pp } = await supabase
+    .from('published_plans')
+    .select('author_name, author_avatar')
+    .eq('author_id', userId)
+    .eq('hidden', false)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (pp) {
+    return {
+      id: userId,
+      name: (pp.author_name as string | null) ?? null,
+      avatar: (pp.author_avatar as string | null) ?? null,
+      bio: null,
+      styleId: null,
+      memberSince: null,
+    };
+  }
+  return null;
+}
+
+/** Every non-hidden plan a user has published — the feed on their public profile. */
+export async function getUserPublishedPlans(userId: string): Promise<CommunityPlan[]> {
+  if (!isSupabaseConfigured) return [];
+  const { data, error } = await supabase
+    .from('published_plans')
+    .select('id, author_id, author_name, author_avatar, title, city, summary, photos, star_count, self_rating, route, created_at')
+    .eq('author_id', userId)
+    .eq('hidden', false)
+    .order('created_at', { ascending: false })
+    .limit(60);
+  if (error || !data) return [];
+
+  const currentUserId = useAuthStore.getState().user?.id;
+  let starred = new Set<string>();
+  if (currentUserId) {
+    const { data: mine } = await supabase.from('plan_stars').select('published_plan_id').eq('user_id', currentUserId);
+    starred = new Set((mine ?? []).map((s) => s.published_plan_id as string));
+  }
+
+  return data.map((p: Record<string, unknown>) => ({
+    id: p.id as string,
+    authorId: (p.author_id as string | null) ?? null,
+    authorName: (p.author_name as string | null) ?? null,
+    authorAvatar: (p.author_avatar as string | null) ?? null,
+    title: p.title as string,
+    city: (p.city as string | null) ?? null,
+    summary: (p.summary as string | null) ?? null,
+    photos: Array.isArray(p.photos) ? (p.photos as string[]) : [],
+    starCount: (p.star_count as number) ?? 0,
+    selfRating: (p.self_rating as number | null) ?? null,
+    route: Array.isArray(p.route) ? (p.route as PlanStop[]) : [],
+    createdAt: p.created_at as string,
+    starred: starred.has(p.id as string),
+    distanceM: null,
+  }));
 }
 
 /** Star / unstar a published plan (the star_count trigger keeps the total in sync). */
