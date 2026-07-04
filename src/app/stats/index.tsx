@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Card, EmptyState, Text, useCountUp } from '@/components/ui';
 import { useAlbumsStore } from '@/features/albums/albums-store';
+import { computeExtendedStats } from '@/features/profile/evening-stats';
 import { optionLabel, useT } from '@/lib/i18n';
 import { useTheme } from '@/theme';
 
@@ -69,6 +70,8 @@ export default function StatsScreen() {
     return { evenings, cities, stops, photos, topMood, moods };
   }, [albums]);
 
+  const extended = useMemo(() => computeExtendedStats(albums), [albums]);
+  const venueTotal = extended.venues.restaurant + extended.venues.bar + extended.venues.club + extended.venues.cafe;
   const maxMood = stats.moods.length ? stats.moods[0][1] : 1;
   const heroCount = useCountUp(stats.evenings, 900);
 
@@ -117,7 +120,25 @@ export default function StatsScreen() {
                   label={tr('stats.topMood')}
                 />
               </View>
+              <View style={{ flexDirection: 'row', gap: t.spacing.base }}>
+                <StatCard icon="navigate-outline" value={extended.totalKm} label={tr('stats.km')} />
+                <StatCard icon="business-outline" value={extended.favoriteCity ?? '—'} label={tr('stats.favoriteCity')} />
+              </View>
             </Animated.View>
+
+            {venueTotal > 0 && (
+              <Animated.View entering={FadeInDown.duration(360).delay(120)} style={{ gap: t.spacing.base }}>
+                <Text variant="h3">{tr('stats.venuesTitle')}</Text>
+                <View style={{ flexDirection: 'row', gap: t.spacing.base }}>
+                  <StatCard icon="restaurant-outline" value={extended.venues.restaurant} label={tr('stats.restaurants')} />
+                  <StatCard icon="beer-outline" value={extended.venues.bar} label={tr('stats.bars')} />
+                </View>
+                <View style={{ flexDirection: 'row', gap: t.spacing.base }}>
+                  <StatCard icon="musical-notes-outline" value={extended.venues.club} label={tr('stats.clubs')} />
+                  <StatCard icon="cafe-outline" value={extended.venues.cafe} label={tr('stats.cafes')} />
+                </View>
+              </Animated.View>
+            )}
 
             {/* Moods breakdown */}
             {stats.moods.length >= 2 && (
