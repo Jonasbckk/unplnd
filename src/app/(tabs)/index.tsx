@@ -6,6 +6,7 @@ import { Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { Button, Card, Chip, Logo, Screen, Text } from '@/components/ui';
+import { MemoryCard } from '@/features/albums/MemoryCard';
 import { useAlbumsStore } from '@/features/albums/albums-store';
 import { useEveningStore } from '@/features/evening/evening-store';
 import { getGreetingSegment } from '@/features/home/greeting';
@@ -229,7 +230,7 @@ export default function HomeScreen() {
       )}
 
       {albums.length > 0 && (
-        <View style={{ marginTop: t.spacing.xl, gap: t.spacing.md }}>
+        <Animated.View entering={FadeInDown.duration(350).delay(380)} style={{ marginTop: t.spacing.xl, gap: t.spacing.md }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <Text variant="h3">{tr('home.recentMemories')}</Text>
             <Text variant="small" color="textSecondary" onPress={() => router.navigate('/albums')}>
@@ -242,28 +243,16 @@ export default function HomeScreen() {
             contentContainerStyle={{ gap: t.spacing.base }}
           >
             {albums.slice(0, 5).map((album) => (
-              <Pressable
+              <MemoryCard
                 key={album.id}
+                album={album}
+                compact
+                width={150}
                 onPress={() => router.push({ pathname: '/album/[id]', params: { id: album.id } })}
-                style={{ width: 150 }}
-              >
-                <View
-                  style={{
-                    height: 100,
-                    borderRadius: t.radius.md,
-                    backgroundColor: album.coverColor,
-                    justifyContent: 'flex-end',
-                    padding: t.spacing.sm,
-                  }}
-                >
-                  <Text variant="small" color="onPrimary" style={{ fontWeight: '600' }} numberOfLines={2}>
-                    {album.title}
-                  </Text>
-                </View>
-              </Pressable>
+              />
             ))}
           </ScrollView>
-        </View>
+        </Animated.View>
       )}
     </Screen>
   );

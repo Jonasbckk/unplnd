@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
-import { Button, Screen, Text } from '@/components/ui';
+import { Button, FadeInUp, Screen, Text } from '@/components/ui';
 import { MemoryCard } from '@/features/albums/MemoryCard';
 import { useAlbumsStore } from '@/features/albums/albums-store';
 import { useT } from '@/lib/i18n';
@@ -57,12 +57,13 @@ export default function AlbumsScreen() {
     <Screen scroll contentStyle={{ gap: t.spacing.lg }} onRefresh={onRefresh} refreshing={refreshing}>
       <Text variant="displayMedium">{tr('albums.title')}</Text>
       <View style={{ gap: t.spacing.base }}>
-        {albums.map((album) => (
-          <MemoryCard
-            key={album.id}
-            album={album}
-            onPress={() => router.push({ pathname: '/album/[id]', params: { id: album.id } })}
-          />
+        {albums.map((album, i) => (
+          <FadeInUp key={album.id} index={i}>
+            <MemoryCard
+              album={album}
+              onPress={() => router.push({ pathname: '/album/[id]', params: { id: album.id } })}
+            />
+          </FadeInUp>
         ))}
       </View>
     </Screen>

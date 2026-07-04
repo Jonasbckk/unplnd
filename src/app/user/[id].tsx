@@ -5,7 +5,7 @@ import { useEffect, useState, type ComponentProps } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Card, Text } from '@/components/ui';
+import { Card, FadeInUp, Text } from '@/components/ui';
 import { ProfileBanner } from '@/features/profile/ProfileBanner';
 import { getProfileStyle } from '@/features/profile/profile-styles';
 import { getPublicProfile, getUserPublishedPlans, type CommunityPlan, type PublicProfile } from '@/lib/community';
@@ -221,8 +221,10 @@ export default function PublicProfileScreen() {
               {tr('publicProfile.noEvenings')}
             </Text>
           ) : (
-            plans.map((plan) => (
-              <UserPlanCard key={plan.id} plan={plan} onPress={() => router.push(`/community/${plan.id}` as Href)} />
+            plans.map((plan, i) => (
+              <FadeInUp key={plan.id} index={i}>
+                <UserPlanCard plan={plan} onPress={() => router.push(`/community/${plan.id}` as Href)} />
+              </FadeInUp>
             ))
           )}
         </ScrollView>

@@ -5,6 +5,7 @@ import { useEffect, useState, type ComponentProps } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { Button, Card, Screen, Text } from '@/components/ui';
+import { MemoryCard } from '@/features/albums/MemoryCard';
 import { useAlbumsStore } from '@/features/albums/albums-store';
 import { useAuthStore } from '@/features/auth/auth-store';
 import { useFavoritesStore } from '@/features/favorites/favorites-store';
@@ -214,25 +215,13 @@ export default function ProfileScreen() {
           <SectionHeading title={tr('profile.recentMemories')} accent={accent} />
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: t.spacing.base }}>
             {albums.slice(0, 5).map((album) => (
-              <Pressable
+              <MemoryCard
                 key={album.id}
+                album={album}
+                compact
+                width={160}
                 onPress={() => router.push({ pathname: '/album/[id]', params: { id: album.id } })}
-                style={{ width: 160 }}
-              >
-                <View
-                  style={{
-                    height: 104,
-                    borderRadius: t.radius.md,
-                    backgroundColor: album.coverColor,
-                    justifyContent: 'flex-end',
-                    padding: t.spacing.sm,
-                  }}
-                >
-                  <Text variant="small" color="onPrimary" style={{ fontWeight: '600' }} numberOfLines={2}>
-                    {album.title}
-                  </Text>
-                </View>
-              </Pressable>
+              />
             ))}
           </ScrollView>
         </View>

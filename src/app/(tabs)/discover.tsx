@@ -4,7 +4,7 @@ import { useRouter, type Href } from 'expo-router';
 import { useCallback, useEffect, useState, type ComponentProps } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 
-import { Button, Card, Input, Screen, Text } from '@/components/ui';
+import { Button, Card, FadeInUp, Input, Screen, Text } from '@/components/ui';
 import { LocationChip } from '@/features/location/LocationChip';
 import { useFavoritesStore } from '@/features/favorites/favorites-store';
 import { getDiscoverPlaces, type DiscoverPlace } from '@/lib/discover';
@@ -385,8 +385,10 @@ export default function DiscoverScreen() {
       ) : (
         <View style={{ gap: t.spacing.base }}>
           <Text variant="h3">{activeQuery ? `„${activeQuery}"` : tr('discover.nearby')}</Text>
-          {shown.map((place) => (
-            <DiscoverCard key={place.id} place={place} />
+          {shown.map((place, i) => (
+            <FadeInUp key={place.id} index={i}>
+              <DiscoverCard place={place} />
+            </FadeInUp>
           ))}
         </View>
       )}

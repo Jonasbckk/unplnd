@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button, Card, Text } from '@/components/ui';
+import { Button, Card, FadeInUp, Text } from '@/components/ui';
 import { getCommunityPlans, toggleStar, type CommunityPlan } from '@/lib/community';
 import { haptics } from '@/lib/haptics';
 import { useT } from '@/lib/i18n';
@@ -181,7 +181,11 @@ export default function CommunityScreen() {
             </Text>
           </View>
         ) : (
-          plans.map((plan) => <CommunityCard key={plan.id} plan={plan} />)
+          plans.map((plan, i) => (
+            <FadeInUp key={plan.id} index={i}>
+              <CommunityCard plan={plan} />
+            </FadeInUp>
+          ))
         )}
       </ScrollView>
     </View>

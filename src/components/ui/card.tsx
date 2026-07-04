@@ -7,11 +7,13 @@ export interface CardProps {
   children: ReactNode;
   onPress?: () => void;
   padded?: boolean;
+  /** Hero cards sit higher — a deeper, warmer shadow for more premium depth. */
+  elevated?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
 /** Warm surface card — radius 28, padding 24, soft warm shadow (08_COMPONENTS). */
-export function Card({ children, onPress, padded = true, style }: CardProps) {
+export function Card({ children, onPress, padded = true, elevated = false, style }: CardProps) {
   const t = useTheme();
   const scale = useRef(new Animated.Value(1)).current;
 
@@ -21,7 +23,7 @@ export function Card({ children, onPress, padded = true, style }: CardProps) {
       borderRadius: t.radius.card,
       padding: padded ? t.spacing.lg : 0,
     },
-    t.shadows.sm,
+    elevated ? t.shadows.md : t.shadows.sm,
     style,
   ];
 
