@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, Share, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button, Card, FadeInUp, Input, Text } from '@/components/ui';
+import { Button, Card, FadeInUp, Input, StarRating, Text } from '@/components/ui';
 import { formatAlbumDate } from '@/features/albums/MemoryCard';
 import { shade } from '@/utils/color';
 import { useAlbumsStore } from '@/features/albums/albums-store';
@@ -14,6 +14,7 @@ import { getAlbumPhotos, pickPhotos, uploadAlbumPhotos, type AlbumPhoto } from '
 import { confirmDialog } from '@/lib/confirm';
 import { haptics } from '@/lib/haptics';
 import { publishPlan } from '@/lib/publish';
+import { getPlanRating, savePlanRating } from '@/lib/ratings';
 import { toast } from '@/store/toast-store';
 import { optionLabel, useT } from '@/lib/i18n';
 import { useTheme } from '@/theme';
@@ -31,6 +32,7 @@ export default function AlbumDetail() {
   const deleteAlbum = useAlbumsStore((s) => s.deleteAlbum);
   const [photos, setPhotos] = useState<AlbumPhoto[]>([]);
   const [heroFailed, setHeroFailed] = useState(false);
+  const [rating, setRating] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [editingNote, setEditingNote] = useState(false);
   const [noteDraft, setNoteDraft] = useState('');
@@ -40,6 +42,10 @@ export default function AlbumDetail() {
   useEffect(() => {
     if (id) void getAlbumPhotos(id).then(setPhotos);
   }, [id]);
+
+  useEffect(() => {
+    if (album?.planId) void getPlanRating(album.planId).then(setRating);
+  }, [album?.planId]);
 
   const addPhotos = useCallback(async () => {
     if (!album) return;
@@ -194,6 +200,21 @@ export default function AlbumDetail() {
             <Text variant="small" color="textSecondary">
               {optionLabel(album.mood)}
             </Text>
+          </View>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.md }}>
+            <Text variant="small" color="textSecondary">
+              {tr('albums.yourRating')}
+            </Text>
+            <StarRating
+              value={rating}
+              size={22}
+              onChange={(v) => {
+                haptics.selection();
+                setRating(v);
+                void savePlanRating(album.planId ?? null, v);
+              }}
+            />
           </View>
 
           {editingNote ? (

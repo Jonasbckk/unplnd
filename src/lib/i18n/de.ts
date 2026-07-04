@@ -265,6 +265,7 @@ export const de = {
   albums: {
     title: 'Erinnerungen',
     subtitle: 'Deine schönsten Abende, festgehalten.',
+    yourRating: 'Deine Bewertung',
     emptyTitle: 'Deine Erinnerungen warten.',
     emptyBody: 'Erlebe deinen ersten Abend, um dein erstes Album zu erstellen.',
     planTonight: 'Plane heute Abend',

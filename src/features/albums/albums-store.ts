@@ -39,6 +39,7 @@ interface AlbumRow {
   photo_count: number | null;
   favorite: boolean | null;
   note: string | null;
+  plan_id: string | null;
 }
 
 function rowToAlbum(row: AlbumRow): Album {
@@ -54,6 +55,7 @@ function rowToAlbum(row: AlbumRow): Album {
     photoCount: row.photo_count ?? 0,
     favorite: Boolean(row.favorite),
     note: row.note ?? undefined,
+    planId: row.plan_id ?? undefined,
   };
 }
 

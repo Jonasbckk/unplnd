@@ -14,4 +14,6 @@ export interface Album {
   photoCount: number;
   favorite: boolean;
   note?: string;
+  /** The plans row this album came from — carries the user's self-rating (Feature C). */
+  planId?: string;
 }

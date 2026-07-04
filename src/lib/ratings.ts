@@ -1,6 +1,13 @@
 import { useAuthStore } from '@/features/auth/auth-store';
 import { supabase } from '@/lib/supabase';
 
+/** The user's own rating for a plan (0 if none) — to show + edit it on the album. */
+export async function getPlanRating(planRowId: string | null): Promise<number> {
+  if (!planRowId) return 0;
+  const { data } = await supabase.from('plans').select('user_rating').eq('id', planRowId).maybeSingle();
+  return (data?.user_rating as number | null) ?? 0;
+}
+
 /** Save the overall rating for a finished evening (the plans row). No-op offline / signed out. */
 export async function savePlanRating(planRowId: string | null, rating: number): Promise<void> {
   if (!planRowId || rating <= 0) return;
