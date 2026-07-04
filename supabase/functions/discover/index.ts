@@ -200,7 +200,7 @@ Deno.serve(async (req) => {
       };
     })
     .sort((a, b) => b.rating * Math.log10(b.ratingCount + 10) - a.rating * Math.log10(a.ratingCount + 10))
-    .slice(0, 12)
+    .slice(0, 20)
     .map(({ photoName: _photoName, ...rest }) => rest);
 
   // Resolve one photo per place in parallel (best effort).

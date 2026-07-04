@@ -309,6 +309,8 @@ export const en = {
     searchEmpty: 'Couldn’t find anything good for that nearby. Try something else.',
     communityTitle: 'Community evenings',
     communitySub: 'Real evenings people published near you.',
+    filterOpen: 'Open now',
+    filterEmpty: 'No matches with these filters. Try loosening them.',
     needLocation: 'Turn on location to discover places near you.',
     categories: {
       all: 'For you',

@@ -345,6 +345,8 @@ export const de = {
     searchEmpty: 'Dazu haben wir gerade nichts Gutes in der Nähe gefunden. Versuch was anderes.',
     communityTitle: 'Community-Abende',
     communitySub: 'Echte Abende, die andere in deiner Nähe veröffentlicht haben.',
+    filterOpen: 'Jetzt offen',
+    filterEmpty: 'Keine Treffer mit diesen Filtern. Lockere sie etwas.',
     needLocation: 'Aktiviere den Standort, um Orte in deiner Nähe zu entdecken.',
     categories: {
       all: 'Für dich',

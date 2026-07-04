@@ -113,6 +113,41 @@ function DiscoverCard({ place }: { place: DiscoverPlace }) {
   );
 }
 
+function FilterChip({
+  label,
+  icon,
+  active,
+  onPress,
+}: {
+  label: string;
+  icon?: IoniconName;
+  active: boolean;
+  onPress: () => void;
+}) {
+  const t = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        paddingHorizontal: t.spacing.base,
+        paddingVertical: t.spacing.sm,
+        borderRadius: t.radius.pill,
+        borderWidth: 1,
+        borderColor: active ? t.colors.primary : t.colors.border,
+        backgroundColor: active ? t.colors.primary : 'transparent',
+      }}
+    >
+      {icon && <Ionicons name={icon} size={14} color={active ? '#FFFFFF' : t.colors.textSecondary} />}
+      <Text variant="small" color={active ? 'onPrimary' : 'textSecondary'} style={{ fontWeight: '600' }}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
 /** Discover — inspire, don't entertain endlessly. Leave with ONE idea (21_DISCOVER). */
 export default function DiscoverScreen() {
   const t = useTheme();
@@ -125,6 +160,9 @@ export default function DiscoverScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [needsLocation, setNeedsLocation] = useState(false);
+  const [onlyOpen, setOnlyOpen] = useState(false);
+  const [prices, setPrices] = useState<Set<string>>(new Set());
+  const [maxKm, setMaxKm] = useState<number | null>(null);
 
   const load = useCallback(async (cat?: string, q?: string) => {
     setLoading(true);
@@ -168,6 +206,22 @@ export default function DiscoverScreen() {
     setNeedsLocation(result.needsLocation);
     setRefreshing(false);
   }, [category, activeQuery]);
+
+  const togglePrice = (p: string) =>
+    setPrices((prev) => {
+      const next = new Set(prev);
+      if (next.has(p)) next.delete(p);
+      else next.add(p);
+      return next;
+    });
+
+  // Filters applied client-side on the fetched places (open-now · price · distance).
+  const shown = places.filter(
+    (p) =>
+      (!onlyOpen || p.openNow === true) &&
+      (prices.size === 0 || (p.priceLevel != null && prices.has(p.priceLevel))) &&
+      (maxKm == null || p.distanceM <= maxKm * 1000),
+  );
 
   return (
     <Screen scroll contentStyle={{ gap: t.spacing.lg }} onRefresh={onRefresh} refreshing={refreshing}>
@@ -252,6 +306,47 @@ export default function DiscoverScreen() {
         })}
       </ScrollView>
 
+      {/* Filters: open-now · price · distance (client-side on the fetched places). */}
+      {!needsLocation && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: t.spacing.sm, paddingRight: t.spacing.lg }}
+        >
+          <FilterChip
+            label={tr('discover.filterOpen')}
+            icon="time-outline"
+            active={onlyOpen}
+            onPress={() => {
+              haptics.selection();
+              setOnlyOpen((v) => !v);
+            }}
+          />
+          {(['€', '€€', '€€€', '€€€€'] as const).map((p) => (
+            <FilterChip
+              key={p}
+              label={p}
+              active={prices.has(p)}
+              onPress={() => {
+                haptics.selection();
+                togglePrice(p);
+              }}
+            />
+          ))}
+          {([1, 3, 5] as const).map((km) => (
+            <FilterChip
+              key={km}
+              label={`≤ ${km} km`}
+              active={maxKm === km}
+              onPress={() => {
+                haptics.selection();
+                setMaxKm((v) => (v === km ? null : km));
+              }}
+            />
+          ))}
+        </ScrollView>
+      )}
+
       {needsLocation ? (
         <View style={{ alignItems: 'center', gap: t.spacing.base, paddingVertical: t.spacing.xxl }}>
           <Ionicons name="location-outline" size={32} color={t.colors.primary} />
@@ -281,10 +376,16 @@ export default function DiscoverScreen() {
             {activeQuery ? tr('discover.searchEmpty') : tr('discover.empty')}
           </Text>
         </View>
+      ) : shown.length === 0 ? (
+        <View style={{ alignItems: 'center', paddingVertical: t.spacing.xxl }}>
+          <Text variant="bodyLarge" color="textSecondary" center>
+            {tr('discover.filterEmpty')}
+          </Text>
+        </View>
       ) : (
         <View style={{ gap: t.spacing.base }}>
           <Text variant="h3">{activeQuery ? `„${activeQuery}"` : tr('discover.nearby')}</Text>
-          {places.map((place) => (
+          {shown.map((place) => (
             <DiscoverCard key={place.id} place={place} />
           ))}
         </View>
