@@ -52,7 +52,7 @@ function Stat({
           width: 40,
           height: 40,
           borderRadius: t.radius.pill,
-          backgroundColor: t.colors.background,
+          backgroundColor: t.colors.surface,
           alignItems: 'center',
           justifyContent: 'center',
         }}
@@ -65,6 +65,17 @@ function Stat({
       <Text variant="caption" color="textSecondary" numberOfLines={1}>
         {label}
       </Text>
+    </View>
+  );
+}
+
+/** Section title with a short accent bar — ties each section to the chosen profile style. */
+function SectionHeading({ title, accent }: { title: string; accent: string }) {
+  const t = useTheme();
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}>
+      <View style={{ width: 4, height: 18, borderRadius: 2, backgroundColor: accent }} />
+      <Text variant="h3">{title}</Text>
     </View>
   );
 }
@@ -160,7 +171,7 @@ export default function ProfileScreen() {
         </View>
       </ProfileBanner>
 
-      <Card style={{ backgroundColor: t.colors.surfaceSecondary }}>
+      <Card style={{ backgroundColor: accent + '1F' }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-around', gap: t.spacing.xs }}>
           <Stat icon="images-outline" value={memories} label={tr('profile.memories')} accent={accent} />
           <Stat icon="navigate-outline" value={cities} label={tr('profile.cities')} accent={accent} />
@@ -171,7 +182,7 @@ export default function ProfileScreen() {
 
       {albums.length > 0 ? (
         <View style={{ gap: t.spacing.md }}>
-          <Text variant="h3">{tr('profile.recentMemories')}</Text>
+          <SectionHeading title={tr('profile.recentMemories')} accent={accent} />
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: t.spacing.base }}>
             {albums.slice(0, 5).map((album) => (
               <Pressable
@@ -204,8 +215,8 @@ export default function ProfileScreen() {
 
       {favorites.length > 0 && (
         <View style={{ gap: t.spacing.md }}>
-          <Text variant="h3">{tr('profile.savedPlaces')}</Text>
-          <Card padded={false} style={{ paddingHorizontal: t.spacing.base }}>
+          <SectionHeading title={tr('profile.savedPlaces')} accent={accent} />
+          <Card padded={false} style={{ paddingHorizontal: t.spacing.base, backgroundColor: accent + '14' }}>
             {favorites.map((place, i) => (
               <View
                 key={place}

@@ -44,7 +44,8 @@ export function ProfileBanner({ style, children }: { style: ProfileStyle; childr
       style={{
         borderRadius: t.radius.card,
         overflow: 'hidden',
-        padding: t.spacing.lg,
+        paddingVertical: t.spacing.xl,
+        paddingHorizontal: t.spacing.lg,
       }}
     >
       <LinearGradient
