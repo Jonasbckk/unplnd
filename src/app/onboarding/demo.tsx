@@ -1,15 +1,16 @@
+import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 
+import { DEMO_PLANS } from '@/features/onboarding/demo-plans';
 import { Button, Card, Chip, Screen, Text } from '@/components/ui';
 import { optionLabel, useT } from '@/lib/i18n';
 import { useTheme } from '@/theme';
 
 const MOODS = ['Stay In', 'Romantic', 'Activities', 'Party'];
-
-const SAMPLE_TIMES = ['19:00', '21:00', '22:30'];
 
 /** Mini interactive demo — show the result, never the technology (16_ONBOARDING). */
 export default function OnboardingDemo() {
@@ -19,10 +20,7 @@ export default function OnboardingDemo() {
   const [mood, setMood] = useState<string | null>(null);
   const [generated, setGenerated] = useState(false);
 
-  const sampleStops =
-    locale === 'de'
-      ? ['Abendessen in einer gemütlichen Trattoria', 'Sonnenuntergangs-Spaziergang am Fluss', 'Cocktails in der Rooftop-Bar']
-      : ['Dinner at a cozy trattoria', 'Sunset walk along the river', 'Cocktails at a rooftop bar'];
+  const stops = mood ? DEMO_PLANS[mood] ?? [] : [];
 
   return (
     <Screen scroll contentStyle={{ gap: t.spacing.base }}>
@@ -57,17 +55,40 @@ export default function OnboardingDemo() {
       ) : (
         <View style={{ gap: t.spacing.lg, marginTop: t.spacing.base }}>
           <Animated.View entering={FadeInDown.duration(350)}>
-            <Card style={{ gap: t.spacing.md }}>
-              <Text variant="h3">{tr('onboarding.demo.yourEvening', { mood: mood ? optionLabel(mood) : '' })}</Text>
-              {sampleStops.map((title, i) => (
-                <View key={title} style={{ flexDirection: 'row', gap: t.spacing.md }}>
-                  <Text variant="body" color="primary" style={{ width: 52 }}>
-                    {SAMPLE_TIMES[i]}
-                  </Text>
-                  <Text variant="body" style={{ flex: 1 }}>
-                    {title}
-                  </Text>
-                </View>
+            <Card style={{ gap: t.spacing.lg }}>
+              <Text variant="h3">
+                {tr('onboarding.demo.yourEvening', { mood: mood ? optionLabel(mood) : '' })}
+              </Text>
+              {stops.map((stop, i) => (
+                <Animated.View
+                  key={stop.de}
+                  entering={FadeInDown.duration(340).delay(80 + i * 90)}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.md }}
+                >
+                  <View
+                    style={{
+                      width: 60,
+                      height: 60,
+                      borderRadius: 16,
+                      overflow: 'hidden',
+                      backgroundColor: t.colors.surfaceSecondary,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {stop.image ? (
+                      <Image source={stop.image} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                    ) : (
+                      <Ionicons name={stop.icon} size={26} color={t.colors.primary} />
+                    )}
+                  </View>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text variant="small" color="primary">
+                      {stop.time}
+                    </Text>
+                    <Text variant="body">{locale === 'de' ? stop.de : stop.en}</Text>
+                  </View>
+                </Animated.View>
               ))}
             </Card>
           </Animated.View>
