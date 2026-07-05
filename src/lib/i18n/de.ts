@@ -255,6 +255,7 @@ export const de = {
     needLocation: 'Aktiviere den Standort, um Abende in deiner Nähe zu sehen.',
     by: 'von %{name}',
     someone: 'jemandem',
+    customBadge: 'Selbst erstellt',
     usePlan: 'Diesen Plan übernehmen',
     creatorRated: 'Ersteller:',
     notFound: 'Dieser Abend ist nicht mehr verfügbar.',

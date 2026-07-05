@@ -3,6 +3,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { useAuthStore } from '@/features/auth/auth-store';
 import type { PlanStop } from '@/features/planner/types';
+import { searchPlaces } from '@/lib/place-search';
 import { supabase } from '@/lib/supabase';
 
 export interface CustomStopInput {
@@ -111,15 +112,31 @@ export async function publishCustomPlan(input: CustomPlanInput): Promise<Publish
 
   if (photos.length === 0) return { ok: false, reason: 'no_photos' };
 
+  // Geocode the city (via the existing place-search Edge Function — the Google key stays
+  // server-side) so the plan can rank in the proximity feed. Best-effort: no match → no coords.
+  const cityText = input.city.trim();
+  let lat: number | null = null;
+  let lng: number | null = null;
+  if (cityText) {
+    const match = (await searchPlaces(cityText))[0];
+    if (match) {
+      lat = match.lat;
+      lng = match.lng;
+    }
+  }
+
   const { error: insErr } = await supabase.from('published_plans').insert({
     id: planId,
     author_id: user.id,
     source_album_id: null,
+    is_custom: true,
     author_name: authorName,
     author_avatar: authorAvatar,
     title,
     summary: input.note.trim() || null,
-    city: input.city.trim() || null,
+    city: cityText || null,
+    lat,
+    lng,
     route,
     photos,
     self_rating: null,

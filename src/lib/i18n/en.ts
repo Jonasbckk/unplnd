@@ -219,6 +219,7 @@ export const en = {
     needLocation: 'Turn on location to see evenings near you.',
     by: 'by %{name}',
     someone: 'someone',
+    customBadge: 'Self-made',
     usePlan: 'Use this plan',
     creatorRated: 'Creator:',
     notFound: 'This evening is no longer available.',

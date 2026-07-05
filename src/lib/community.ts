@@ -18,6 +18,8 @@ export interface CommunityPlan {
   createdAt: string;
   starred: boolean;
   distanceM: number | null;
+  /** True for evenings a user authored from scratch (vs. published from a lived album). */
+  isCustom: boolean;
 }
 
 export interface CommunityResult {
@@ -61,7 +63,7 @@ export async function getCommunityPlans(): Promise<CommunityResult> {
 
   const { data, error } = await supabase
     .from('published_plans')
-    .select('id, author_id, author_name, author_avatar, title, city, summary, lat, lng, photos, star_count, self_rating, route, created_at')
+    .select('id, author_id, author_name, author_avatar, title, city, summary, lat, lng, photos, star_count, self_rating, route, created_at, is_custom')
     .eq('hidden', false)
     .order('created_at', { ascending: false })
     .limit(60);
@@ -99,6 +101,7 @@ export async function getCommunityPlans(): Promise<CommunityResult> {
       createdAt: p.created_at as string,
       starred: starred.has(p.id as string),
       distanceM,
+      isCustom: Boolean(p.is_custom),
     };
   });
 
@@ -122,7 +125,7 @@ export async function getCommunityPlan(id: string): Promise<CommunityPlan | null
   if (!isSupabaseConfigured) return null;
   const { data, error } = await supabase
     .from('published_plans')
-    .select('id, author_id, author_name, author_avatar, title, city, summary, photos, star_count, self_rating, route, created_at')
+    .select('id, author_id, author_name, author_avatar, title, city, summary, photos, star_count, self_rating, route, created_at, is_custom')
     .eq('id', id)
     .maybeSingle();
   if (error || !data) return null;
@@ -155,6 +158,7 @@ export async function getCommunityPlan(id: string): Promise<CommunityPlan | null
     createdAt: p.created_at as string,
     starred,
     distanceM: null,
+    isCustom: Boolean(p.is_custom),
   };
 }
 
@@ -214,7 +218,7 @@ export async function getUserPublishedPlans(userId: string): Promise<CommunityPl
   if (!isSupabaseConfigured) return [];
   const { data, error } = await supabase
     .from('published_plans')
-    .select('id, author_id, author_name, author_avatar, title, city, summary, photos, star_count, self_rating, route, created_at')
+    .select('id, author_id, author_name, author_avatar, title, city, summary, photos, star_count, self_rating, route, created_at, is_custom')
     .eq('author_id', userId)
     .eq('hidden', false)
     .order('created_at', { ascending: false })
@@ -243,6 +247,7 @@ export async function getUserPublishedPlans(userId: string): Promise<CommunityPl
     createdAt: p.created_at as string,
     starred: starred.has(p.id as string),
     distanceM: null,
+    isCustom: Boolean(p.is_custom),
   }));
 }
 

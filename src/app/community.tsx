@@ -68,6 +68,25 @@ function CommunityCard({ plan }: { plan: CommunityPlan }) {
               {` · ${meta}`}
             </Text>
           ) : null}
+          {plan.isCustom ? (
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 3,
+                marginLeft: 6,
+                backgroundColor: t.colors.surfaceSecondary,
+                paddingHorizontal: 8,
+                paddingVertical: 2,
+                borderRadius: t.radius.pill,
+              }}
+            >
+              <Ionicons name="create-outline" size={11} color={t.colors.primary} />
+              <Text variant="caption" style={{ color: t.colors.primary, fontWeight: '600' }}>
+                {tr('community.customBadge')}
+              </Text>
+            </View>
+          ) : null}
         </View>
         <Text variant="h3" numberOfLines={2}>
           {plan.title}

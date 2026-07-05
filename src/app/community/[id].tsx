@@ -197,6 +197,26 @@ export default function CommunityPlanDetail() {
                 {plan.authorId ? <Ionicons name="chevron-forward" size={14} color={t.colors.textSecondary} /> : null}
               </Pressable>
 
+              {plan.isCustom ? (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 5,
+                    alignSelf: 'flex-start',
+                    backgroundColor: t.colors.surfaceSecondary,
+                    paddingHorizontal: 10,
+                    paddingVertical: 5,
+                    borderRadius: t.radius.pill,
+                  }}
+                >
+                  <Ionicons name="create-outline" size={13} color={t.colors.primary} />
+                  <Text variant="small" style={{ color: t.colors.primary, fontWeight: '600' }}>
+                    {tr('community.customBadge')}
+                  </Text>
+                </View>
+              ) : null}
+
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.lg }}>
                 <Pressable onPress={onStar} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                   <Ionicons
