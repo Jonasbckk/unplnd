@@ -107,7 +107,7 @@ function MenuAction({
 }) {
   const t = useTheme();
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => ({ alignItems: 'center', gap: 6, opacity: pressed ? 0.7 : 1 })}>
+    <Pressable onPress={onPress} style={({ pressed }) => ({ flex: 1, alignItems: 'center', gap: 6, opacity: pressed ? 0.7 : 1 })}>
       <View
         style={{
           width: 50,
@@ -140,7 +140,14 @@ function MenuAction({
           </View>
         ) : null}
       </View>
-      <Text variant="caption" center style={{ fontWeight: '600' }}>
+      <Text
+        variant="caption"
+        center
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.8}
+        style={{ fontWeight: '600' }}
+      >
         {label}
       </Text>
     </Pressable>
@@ -337,11 +344,7 @@ export default function ProfileScreen() {
         </View>
       </Card>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: t.spacing.md, paddingVertical: t.spacing.xs, paddingHorizontal: 2 }}
-      >
+      <View style={{ flexDirection: 'row', gap: t.spacing.xs, paddingVertical: t.spacing.xs }}>
         <MenuAction
           icon="people-outline"
           label={tr('profile.connections')}
@@ -377,7 +380,7 @@ export default function ProfileScreen() {
             onPress={() => router.push('/stats' as Href)}
           />
         )}
-      </ScrollView>
+      </View>
 
       <EveningDNA albums={albums} accent={accent} />
 
