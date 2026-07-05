@@ -557,6 +557,9 @@ export const en = {
     startVote: 'Start a vote',
     voteActive: 'Vote running · End',
   },
+  attach: {
+    sticker: 'Stickers',
+  },
   messages: {
     title: 'Messages',
     shareTitle: 'Share to a chat',

@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/ui';
 import { useAuthStore } from '@/features/auth/auth-store';
+import { AttachSheet } from '@/features/messaging/AttachSheet';
 import { PlanPreviewSheet } from '@/features/messaging/PlanPreviewSheet';
 import { blockUser, getBlockedIds, type PublicProfile } from '@/lib/community';
 import { confirmDialog } from '@/lib/confirm';
@@ -47,6 +48,19 @@ import { useTheme } from '@/theme';
 function formatTime(iso: string): string {
   const d = new Date(iso);
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+// A message that is only emoji (a sticker, or a bare "👍") renders big, without a bubble.
+// Hermes-safe heuristic (no \p{} Unicode property escapes): short, no letters/digits,
+// and at least one non-ASCII character.
+function isEmojiOnly(text: string): boolean {
+  const s = text.trim();
+  if (!s || s.length > 12) return false;
+  if (/[a-zA-Z0-9]/.test(s)) return false;
+  for (let i = 0; i < s.length; i++) {
+    if (s.charCodeAt(i) > 127) return true;
+  }
+  return false;
 }
 
 function PlanCard({
@@ -117,6 +131,7 @@ function Bubble({
   isFavorite?: boolean;
 }) {
   const t = useTheme();
+  const sticker = !!message.body && !message.sharedPlan && isEmojiOnly(message.body);
   return (
     <Animated.View
       entering={FadeIn.duration(200)}
@@ -132,18 +147,22 @@ function Bubble({
         delayLongPress={350}
         style={{
           maxWidth: '82%',
-          paddingVertical: t.spacing.sm,
-          paddingHorizontal: t.spacing.base,
+          paddingVertical: sticker ? 0 : t.spacing.sm,
+          paddingHorizontal: sticker ? 0 : t.spacing.base,
           borderRadius: t.radius.lg,
           borderBottomRightRadius: mine ? 4 : t.radius.lg,
           borderBottomLeftRadius: mine ? t.radius.lg : 4,
-          backgroundColor: mine ? t.colors.primary : t.colors.surfaceSecondary,
+          backgroundColor: sticker ? 'transparent' : mine ? t.colors.primary : t.colors.surfaceSecondary,
         }}
       >
         {message.body ? (
-          <Text variant="body" style={{ color: mine ? '#FFFFFF' : t.colors.textPrimary }}>
-            {message.body}
-          </Text>
+          sticker ? (
+            <Text style={{ fontSize: 52, lineHeight: 60 }}>{message.body}</Text>
+          ) : (
+            <Text variant="body" style={{ color: mine ? '#FFFFFF' : t.colors.textPrimary }}>
+              {message.body}
+            </Text>
+          )
         ) : null}
         {message.sharedPlan ? (
           <PlanCard
@@ -262,6 +281,7 @@ export default function ChatScreen() {
   const [rsvps, setRsvps] = useState<Record<string, RsvpTally>>({});
   const [preview, setPreview] = useState<SharedPlan | null>(null);
   const [votingActive, setVotingActive] = useState(false);
+  const [attachOpen, setAttachOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -325,6 +345,15 @@ export default function ChatScreen() {
     setPreview(null);
     router.push(`/community/${sourceId}` as Href);
   };
+
+  const sendSticker = useCallback(
+    (emoji: string) => {
+      if (!id) return;
+      haptics.light();
+      void sendMessage(id, emoji);
+    },
+    [id],
+  );
 
   const onRsvp = useCallback(
     async (messageId: string, status: RsvpStatus) => {
@@ -522,7 +551,7 @@ export default function ChatScreen() {
           )}
         </ScrollView>
 
-        {sharedPlanMsgs.length >= 2 ? (
+        {votingActive ? (
           <Pressable
             onPress={toggleVoting}
             style={{
@@ -530,25 +559,13 @@ export default function ChatScreen() {
               alignItems: 'center',
               justifyContent: 'center',
               gap: 6,
-              marginHorizontal: t.spacing.lg,
-              marginBottom: t.spacing.sm,
-              paddingVertical: 9,
-              borderRadius: t.radius.pill,
-              backgroundColor: votingActive ? t.colors.accentOrange + '22' : t.colors.surfaceSecondary,
-              borderWidth: 1,
-              borderColor: votingActive ? t.colors.accentOrange : t.colors.border,
+              paddingVertical: 7,
+              backgroundColor: t.colors.accentOrange + '18',
             }}
           >
-            <Ionicons
-              name={votingActive ? 'trophy' : 'podium-outline'}
-              size={15}
-              color={votingActive ? t.colors.accentOrange : t.colors.textSecondary}
-            />
-            <Text
-              variant="small"
-              style={{ fontWeight: '700', color: votingActive ? t.colors.accentOrange : t.colors.textSecondary }}
-            >
-              {votingActive ? tr('rsvp.voteActive') : tr('rsvp.startVote')}
+            <Ionicons name="trophy" size={13} color={t.colors.accentOrange} />
+            <Text variant="caption" style={{ fontWeight: '700', color: t.colors.accentOrange }}>
+              {tr('rsvp.voteActive')}
             </Text>
           </Pressable>
         ) : null}
@@ -566,6 +583,22 @@ export default function ChatScreen() {
             backgroundColor: t.colors.background,
           }}
         >
+          <Pressable
+            onPress={() => {
+              haptics.selection();
+              setAttachOpen(true);
+            }}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: t.radius.pill,
+              backgroundColor: t.colors.surfaceSecondary,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Ionicons name="add" size={24} color={t.colors.textPrimary} />
+          </Pressable>
           <TextInput
             value={draft}
             onChangeText={setDraft}
@@ -644,6 +677,15 @@ export default function ChatScreen() {
       </Modal>
 
       <PlanPreviewSheet plan={preview} onClose={() => setPreview(null)} onOpenFull={openFull} />
+
+      <AttachSheet
+        visible={attachOpen}
+        canVote={sharedPlanMsgs.length >= 2}
+        votingActive={votingActive}
+        onClose={() => setAttachOpen(false)}
+        onSticker={sendSticker}
+        onToggleVote={toggleVoting}
+      />
     </View>
   );
 }

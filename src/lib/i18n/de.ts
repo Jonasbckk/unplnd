@@ -593,6 +593,9 @@ export const de = {
     startVote: 'Abstimmung starten',
     voteActive: 'Abstimmung läuft · Beenden',
   },
+  attach: {
+    sticker: 'Sticker',
+  },
   messages: {
     title: 'Nachrichten',
     shareTitle: 'In Chat teilen',
