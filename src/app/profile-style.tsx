@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -83,6 +84,19 @@ export default function ProfileStyleScreen() {
                     end={{ x: 1, y: 1 }}
                     style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
                   />
+                  {style.image ? (
+                    <>
+                      <Image
+                        source={style.image}
+                        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                        contentFit="cover"
+                      />
+                      <LinearGradient
+                        colors={['rgba(0,0,0,0.15)', 'rgba(0,0,0,0.45)']}
+                        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                      />
+                    </>
+                  ) : null}
                   <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
                     {locked ? (
                       <View

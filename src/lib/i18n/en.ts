@@ -574,6 +574,11 @@ export const en = {
       midnight: 'Midnight',
       aurora: 'Aurora',
       neon: 'Neon',
+      photoSunset: 'Sunset Sky',
+      photoSkyline: 'Skyline',
+      photoOcean: 'Coast',
+      photoForest: 'Forest',
+      photoCity: 'City Lights',
     },
     premiumTitle: 'UNPLND Premium',
     premiumBody:

@@ -12,9 +12,11 @@ import Animated, {
 
 import { Card, Text } from '@/components/ui';
 import type { Album } from '@/features/albums/types';
-import { useT } from '@/lib/i18n';
+import { optionIcon } from '@/features/planner/optionIcons';
+import { optionLabel, useT } from '@/lib/i18n';
 import { useTheme } from '@/theme';
 import { computeBadges, computeDNA } from './evening-dna';
+import { RadarChart } from './RadarChart';
 
 function Heading({ title, accent }: { title: string; accent: string }) {
   const t = useTheme();
@@ -54,37 +56,74 @@ export function EveningDNA({ albums, accent }: { albums: Album[]; accent: string
     <View style={{ gap: t.spacing.lg }}>
       <View style={{ gap: t.spacing.md }}>
         <Heading title={tr('dna.title')} accent={accent} />
-        <Card style={{ gap: t.spacing.md }}>
-          {dna.map((trait) => {
-            const color = accent;
-            return (
-              <View key={trait.mood} style={{ gap: 6 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}>
-                    <View
-                      style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: t.radius.pill,
-                        backgroundColor: color + '26',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Ionicons name={trait.icon} size={15} color={color} />
-                    </View>
-                    <Text variant="small" style={{ fontWeight: '600' }}>
-                      {tr(`dna.${trait.mood.toLowerCase()}`)}
+        <Card style={{ gap: t.spacing.lg }}>
+          {dna.length >= 3 ? (
+            <>
+              <RadarChart traits={dna.slice(0, 6)} accent={accent} />
+              <View
+                style={{
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  gap: t.spacing.sm,
+                  justifyContent: 'center',
+                }}
+              >
+                {dna.map((trait) => (
+                  <View
+                    key={trait.mood}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                      backgroundColor: t.colors.surfaceSecondary,
+                      paddingHorizontal: t.spacing.base,
+                      paddingVertical: 6,
+                      borderRadius: t.radius.pill,
+                    }}
+                  >
+                    <Ionicons name={optionIcon(trait.mood)} size={14} color={accent} />
+                    <Text variant="caption" style={{ fontWeight: '600' }}>
+                      {optionLabel(trait.mood)}
+                    </Text>
+                    <Text variant="caption" style={{ color: accent, fontWeight: '700' }}>
+                      {`${trait.pct}%`}
                     </Text>
                   </View>
-                  <Text variant="small" style={{ color, fontWeight: '700' }}>
-                    {`${trait.pct}%`}
-                  </Text>
-                </View>
-                <DnaBar pct={trait.pct} color={color} />
+                ))}
               </View>
-            );
-          })}
+            </>
+          ) : (
+            dna.map((trait) => {
+              const color = accent;
+              return (
+                <View key={trait.mood} style={{ gap: 6 }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}>
+                      <View
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: t.radius.pill,
+                          backgroundColor: color + '26',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Ionicons name={trait.icon} size={15} color={color} />
+                      </View>
+                      <Text variant="small" style={{ fontWeight: '600' }}>
+                        {tr(`dna.${trait.mood.toLowerCase()}`)}
+                      </Text>
+                    </View>
+                    <Text variant="small" style={{ color, fontWeight: '700' }}>
+                      {`${trait.pct}%`}
+                    </Text>
+                  </View>
+                  <DnaBar pct={trait.pct} color={color} />
+                </View>
+              );
+            })
+          )}
         </Card>
       </View>
 

@@ -85,6 +85,52 @@ export const PROFILE_STYLES: readonly ProfileStyle[] = [
     premium: true,
     animated: true,
   },
+  // Photo headers — a real image behind the header (shown under a dark scrim for legibility).
+  {
+    id: 'photoSunset',
+    accent: '#E8895A',
+    gradient: ['#F6B27A', '#E86A8C'],
+    onGradient: '#FFFFFF',
+    premium: true,
+    animated: false,
+    image: require('../../../assets/profile-headers/sunset.jpg'),
+  },
+  {
+    id: 'photoSkyline',
+    accent: '#6E7BD6',
+    gradient: ['#2A3550', '#141C2E'],
+    onGradient: '#FFFFFF',
+    premium: true,
+    animated: false,
+    image: require('../../../assets/profile-headers/skyline.jpg'),
+  },
+  {
+    id: 'photoOcean',
+    accent: '#3E9FB6',
+    gradient: ['#2E6E8E', '#123448'],
+    onGradient: '#FFFFFF',
+    premium: true,
+    animated: false,
+    image: require('../../../assets/profile-headers/ocean.jpg'),
+  },
+  {
+    id: 'photoForest',
+    accent: '#5E9A6A',
+    gradient: ['#2E5A3A', '#14301C'],
+    onGradient: '#FFFFFF',
+    premium: true,
+    animated: false,
+    image: require('../../../assets/profile-headers/forest.jpg'),
+  },
+  {
+    id: 'photoCity',
+    accent: '#E255A1',
+    gradient: ['#3A1C71', '#5B2A86'],
+    onGradient: '#FFFFFF',
+    premium: true,
+    animated: false,
+    image: require('../../../assets/profile-headers/city-lights.jpg'),
+  },
 ];
 
 export const DEFAULT_PROFILE_STYLE = PROFILE_STYLES[0];

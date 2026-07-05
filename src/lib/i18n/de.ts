@@ -610,6 +610,11 @@ export const de = {
       midnight: 'Mitternacht',
       aurora: 'Aurora',
       neon: 'Neon',
+      photoSunset: 'Abendhimmel',
+      photoSkyline: 'Skyline',
+      photoOcean: 'Küste',
+      photoForest: 'Wald',
+      photoCity: 'Nachtleben',
     },
     premiumTitle: 'UNPLND Premium',
     premiumBody:
