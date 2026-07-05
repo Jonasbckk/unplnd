@@ -3,6 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import {
   AppleLogoIcon,
   CheckCircleIcon,
+  GiftIcon,
   GooglePlayLogoIcon,
 } from '@phosphor-icons/react';
 import { Reveal } from './ui/Reveal';
@@ -165,7 +166,28 @@ export function EarlyAccess() {
               )}
             </AnimatePresence>
 
-            <div className="mt-8 flex items-center gap-2 text-[#4A362E]">
+            {/* giveaway — visible before and after signing up */}
+            <div className="mt-8 max-w-md rounded-2xl bg-white/25 p-4 ring-1 ring-white/40 backdrop-blur-sm">
+              <div className="flex items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#33241E] text-[#F2B84B]">
+                  <GiftIcon size={22} weight="fill" aria-hidden />
+                </span>
+                <div>
+                  <p className="text-[15.5px] font-bold tracking-tight text-[#33241E]">
+                    5× 50 € Guthaben zu gewinnen
+                  </p>
+                  <p className="mt-1 text-[13.5px] font-medium leading-relaxed text-[#4A362E]">
+                    Sobald 500 Leute auf der Liste stehen, verlosen wir unter allen
+                    Angemeldeten fünfmal 50 € Guthaben für den App-Start.
+                  </p>
+                  <p className="mt-1.5 text-[11.5px] font-medium text-[#4A362E]/80">
+                    Gewinner werden per E-Mail benachrichtigt. Keine Barauszahlung.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center gap-2 text-[#4A362E]">
               <AppleLogoIcon size={18} weight="fill" aria-hidden />
               <GooglePlayLogoIcon size={16} weight="fill" aria-hidden />
               <span className="text-[13.5px] font-semibold">Bald für iOS & Android</span>
