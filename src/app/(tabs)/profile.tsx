@@ -13,11 +13,14 @@ import { EveningDNA } from '@/features/profile/EveningDNA';
 import { ProfileBanner } from '@/features/profile/ProfileBanner';
 import { ProfileExtras } from '@/features/profile/ProfileExtras';
 import { useProfileStyle } from '@/features/profile/profile-styles';
+import { VerifyBadge } from '@/features/verify/VerifyBadge';
+import { currentTierLevel, getVerifyMetrics, tierByLevel } from '@/features/verify/verification';
 import { getPublicProfile } from '@/lib/community';
 import { getPendingCount } from '@/lib/connections';
 import { haptics } from '@/lib/haptics';
 import { setPinnedPlaces } from '@/lib/profile';
 import { optionLabel, useT } from '@/lib/i18n';
+import { useAppStore } from '@/store/app-store';
 import { useTheme } from '@/theme';
 
 function mostCommon(items: string[]): string | undefined {
@@ -170,6 +173,9 @@ export default function ProfileScreen() {
 
   const [pending, setPending] = useState(0);
   const [isFounder, setIsFounder] = useState(false);
+  const [verifyLevel, setVerifyLevel] = useState(0);
+  const showVerifyBadge = useAppStore((s) => s.showVerifyBadge);
+  const verifyTier = tierByLevel(verifyLevel);
 
   useEffect(() => {
     void loadAlbums();
@@ -185,6 +191,9 @@ export default function ProfileScreen() {
     });
     void getPublicProfile(userId).then((p) => {
       if (active) setIsFounder(Boolean(p?.isFounder));
+    });
+    void getVerifyMetrics().then((m) => {
+      if (active) setVerifyLevel(currentTierLevel(m));
     });
     return () => {
       active = false;
@@ -274,9 +283,14 @@ export default function ProfileScreen() {
               </View>
             </View>
             <View style={{ flex: 1 }}>
-              <Text variant="h1" style={{ color: style.onGradient }}>
-                {name}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text variant="h1" style={{ color: style.onGradient }} numberOfLines={1}>
+                  {name}
+                </Text>
+                {showVerifyBadge && verifyTier ? (
+                  <VerifyBadge color={verifyTier.color} size={22} animated={false} />
+                ) : null}
+              </View>
               {isFounder && (
                 <View
                   style={{
@@ -356,6 +370,12 @@ export default function ProfileScreen() {
           label={tr('profile.style')}
           accent={accent}
           onPress={() => router.push('/profile-style' as Href)}
+        />
+        <MenuTile
+          icon="shield-checkmark-outline"
+          label={tr('profile.verify')}
+          accent={accent}
+          onPress={() => router.push('/verify' as Href)}
         />
         {albums.length > 0 && (
           <MenuTile

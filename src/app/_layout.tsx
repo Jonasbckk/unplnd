@@ -17,6 +17,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { NetworkBanner, Toast } from '@/components/ui';
+import { recordActivity } from '@/lib/activity';
 import { useAuthStore } from '@/features/auth/auth-store';
 import { useAppStore } from '@/store/app-store';
 import { useConnectivityStore } from '@/store/connectivity-store';
@@ -78,6 +79,8 @@ export default function RootLayout() {
   useEffect(() => {
     if (ready) {
       SplashScreen.hideAsync();
+      // Count today's visit toward the daily-use streak (best-effort, no-op if signed out).
+      void recordActivity();
     }
   }, [ready]);
 
