@@ -16,7 +16,9 @@ let client: PostHog | null = null;
 
 export function initAnalytics(): void {
   if (!KEY || client) return;
-  client = new PostHog(KEY, { host: HOST, captureAppLifecycleEvents: true });
+  // flushAt: 1 → send each event right away instead of batching, so nothing is lost when a
+  // testing session is short (low volume pre-launch; can be raised later).
+  client = new PostHog(KEY, { host: HOST, captureAppLifecycleEvents: true, flushAt: 1 });
 }
 
 export function track(event: AnalyticsEvent, props?: AnalyticsProps): void {
