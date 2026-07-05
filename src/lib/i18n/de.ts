@@ -583,6 +583,7 @@ export const de = {
     members: '%{count} Mitglieder',
     empty: 'Sagt Hallo und plant euren nächsten Abend zusammen.',
     placeholder: 'Nachricht schreiben…',
+    photoFailed: 'Foto konnte nicht gesendet werden.',
   },
   rsvp: {
     in: 'Dabei',
@@ -595,12 +596,14 @@ export const de = {
   },
   attach: {
     sticker: 'Sticker',
+    photo: 'Foto',
   },
   messages: {
     title: 'Nachrichten',
     shareTitle: 'In Chat teilen',
     shareHint: 'Wähle einen Chat, um diesen Plan zu teilen.',
     sharedPlan: '📍 Plan geteilt',
+    sharedPhoto: '📷 Foto',
     noMessages: 'Noch keine Nachrichten',
     emptyTitle: 'Noch keine Chats',
     emptyBody: 'Verbinde dich mit jemandem und starte ein Gespräch, um zusammen zu planen.',

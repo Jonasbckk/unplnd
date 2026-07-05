@@ -16,8 +16,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/ui';
 import { useAuthStore } from '@/features/auth/auth-store';
+import { pickPhotos } from '@/features/albums/photos';
 import { AttachSheet } from '@/features/messaging/AttachSheet';
 import { PlanPreviewSheet } from '@/features/messaging/PlanPreviewSheet';
+import { getChatImageUrl, uploadChatImage } from '@/lib/chat-media';
 import { blockUser, getBlockedIds, type PublicProfile } from '@/lib/community';
 import { confirmDialog } from '@/lib/confirm';
 import { haptics } from '@/lib/haptics';
@@ -131,6 +133,35 @@ function ReactionChips({
   );
 }
 
+/** A chat photo — resolves a short-lived signed URL for the private image on mount. */
+function ChatImage({ path }: { path: string }) {
+  const t = useTheme();
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    void getChatImageUrl(path).then((u) => active && setUrl(u));
+    return () => {
+      active = false;
+    };
+  }, [path]);
+  return (
+    <View
+      style={{
+        width: 220,
+        height: 220,
+        borderRadius: t.radius.md,
+        overflow: 'hidden',
+        backgroundColor: t.colors.surfaceSecondary,
+        marginTop: 4,
+      }}
+    >
+      {url ? (
+        <Image source={{ uri: url }} style={{ width: '100%', height: '100%' }} contentFit="cover" transition={200} />
+      ) : null}
+    </View>
+  );
+}
+
 function PlanCard({
   plan,
   onPress,
@@ -200,6 +231,7 @@ function Bubble({
 }) {
   const t = useTheme();
   const sticker = !!message.body && !message.sharedPlan && isEmojiOnly(message.body);
+  const bare = sticker || (!!message.imagePath && !message.body && !message.sharedPlan);
   return (
     <Animated.View
       entering={FadeIn.duration(200)}
@@ -215,12 +247,12 @@ function Bubble({
         delayLongPress={300}
         style={{
           maxWidth: '82%',
-          paddingVertical: sticker ? 0 : t.spacing.sm,
-          paddingHorizontal: sticker ? 0 : t.spacing.base,
+          paddingVertical: bare ? 0 : t.spacing.sm,
+          paddingHorizontal: bare ? 0 : t.spacing.base,
           borderRadius: t.radius.lg,
           borderBottomRightRadius: mine ? 4 : t.radius.lg,
           borderBottomLeftRadius: mine ? t.radius.lg : 4,
-          backgroundColor: sticker ? 'transparent' : mine ? t.colors.primary : t.colors.surfaceSecondary,
+          backgroundColor: bare ? 'transparent' : mine ? t.colors.primary : t.colors.surfaceSecondary,
         }}
       >
         {message.body ? (
@@ -232,6 +264,7 @@ function Bubble({
             </Text>
           )
         ) : null}
+        {message.imagePath ? <ChatImage path={message.imagePath} /> : null}
         {message.sharedPlan ? (
           <PlanCard
             plan={message.sharedPlan}
@@ -430,6 +463,17 @@ export default function ChatScreen() {
     },
     [id],
   );
+
+  const sendPhotos = useCallback(async () => {
+    if (!id) return;
+    const assets = await pickPhotos();
+    if (assets.length === 0) return;
+    for (const asset of assets) {
+      const path = await uploadChatImage(id, asset);
+      if (path) await sendMessage(id, '', null, path);
+      else toast(tr('chat.photoFailed'));
+    }
+  }, [id, tr]);
 
   const onRsvp = useCallback(
     async (messageId: string, status: RsvpStatus) => {
@@ -785,6 +829,7 @@ export default function ChatScreen() {
         onClose={() => setAttachOpen(false)}
         onSticker={sendSticker}
         onToggleVote={toggleVoting}
+        onPhoto={sendPhotos}
       />
 
       <Modal visible={!!reactTarget} transparent animationType="fade" onRequestClose={() => setReactTarget(null)}>

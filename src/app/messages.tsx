@@ -19,7 +19,11 @@ function Row({ conv, onPress }: { conv: ConversationSummary; onPress: () => void
     ? conv.title ?? tr('chat.group')
     : conv.other?.name ?? tr('community.someone');
   const avatar = conv.isGroup ? null : conv.other?.avatar ?? null;
-  const preview = conv.lastIsPlan ? tr('messages.sharedPlan') : conv.lastBody ?? tr('messages.noMessages');
+  const preview = conv.lastIsPlan
+    ? tr('messages.sharedPlan')
+    : conv.lastIsImage
+      ? tr('messages.sharedPhoto')
+      : conv.lastBody ?? tr('messages.noMessages');
   return (
     <Pressable
       onPress={onPress}

@@ -547,6 +547,7 @@ export const en = {
     members: '%{count} members',
     empty: 'Say hi and plan your next evening together.',
     placeholder: 'Write a message…',
+    photoFailed: 'Couldn’t send photo.',
   },
   rsvp: {
     in: "I'm in",
@@ -559,12 +560,14 @@ export const en = {
   },
   attach: {
     sticker: 'Stickers',
+    photo: 'Photo',
   },
   messages: {
     title: 'Messages',
     shareTitle: 'Share to a chat',
     shareHint: 'Pick a chat to share this plan with.',
     sharedPlan: '📍 Shared a plan',
+    sharedPhoto: '📷 Photo',
     noMessages: 'No messages yet',
     emptyTitle: 'No chats yet',
     emptyBody: 'Connect with someone and start a conversation to plan together.',

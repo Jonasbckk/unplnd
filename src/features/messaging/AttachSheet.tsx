@@ -59,6 +59,7 @@ export function AttachSheet({
   onClose,
   onSticker,
   onToggleVote,
+  onPhoto,
 }: {
   visible: boolean;
   canVote: boolean;
@@ -66,6 +67,7 @@ export function AttachSheet({
   onClose: () => void;
   onSticker: (emoji: string) => void;
   onToggleVote: () => void;
+  onPhoto: () => void;
 }) {
   const t = useTheme();
   const { t: tr } = useT();
@@ -99,6 +101,14 @@ export function AttachSheet({
 
           {mode === 'menu' ? (
             <View>
+              <MenuRow
+                icon="image-outline"
+                label={tr('attach.photo')}
+                onPress={() => {
+                  onClose();
+                  onPhoto();
+                }}
+              />
               <MenuRow
                 icon="happy-outline"
                 label={tr('attach.sticker')}
