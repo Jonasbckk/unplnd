@@ -353,6 +353,7 @@ export default function ChatScreen() {
   const [reactions, setReactions] = useState<ReactionMap>({});
   const [reactTarget, setReactTarget] = useState<Message | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [headerH, setHeaderH] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -539,7 +540,7 @@ export default function ChatScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: t.colors.background }}>
-      <SafeAreaView edges={['top']}>
+      <SafeAreaView edges={['top']} onLayout={(e) => setHeaderH(e.nativeEvent.layout.height)}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm, paddingHorizontal: t.spacing.lg, paddingVertical: t.spacing.md }}>
           <Pressable onPress={() => router.back()} hitSlop={8}>
             <Ionicons name="chevron-back" size={26} color={t.colors.textPrimary} />
@@ -593,7 +594,7 @@ export default function ChatScreen() {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? headerH : 0}
       >
         <ScrollView
           ref={scrollRef}

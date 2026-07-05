@@ -131,8 +131,11 @@ export function AttachSheet({
                   {tr('attach.sticker')}
                 </Text>
               </Pressable>
-              <ScrollView showsVerticalScrollIndicator={false}>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: t.spacing.sm }}>
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: t.spacing.md }}
+              >
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: t.spacing.md }}>
                   {STICKERS.map((emoji) => (
                     <Pressable
                       key={emoji}
@@ -150,7 +153,7 @@ export function AttachSheet({
                         backgroundColor: t.colors.surfaceSecondary,
                       }}
                     >
-                      <Text style={{ fontSize: 30 }}>{emoji}</Text>
+                      <Text style={{ fontSize: 32, lineHeight: 40 }}>{emoji}</Text>
                     </Pressable>
                   ))}
                 </View>
