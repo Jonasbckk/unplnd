@@ -10,7 +10,7 @@ import { Button, Card, FadeInUp, Input, StarRating, Text } from '@/components/ui
 import { formatAlbumDate } from '@/features/albums/MemoryCard';
 import { shade } from '@/utils/color';
 import { useAlbumsStore } from '@/features/albums/albums-store';
-import { getAlbumPhotos, pickPhotos, type AlbumPhoto } from '@/features/albums/photos';
+import { deleteAlbumPhoto, getAlbumPhotos, pickPhotos, type AlbumPhoto } from '@/features/albums/photos';
 import { usePhotoQueue } from '@/features/albums/photo-queue';
 import { choiceDialog, confirmDialog } from '@/lib/confirm';
 import { haptics } from '@/lib/haptics';
@@ -31,6 +31,7 @@ export default function AlbumDetail() {
   const toggleFavorite = useAlbumsStore((s) => s.toggleFavorite);
   const updateNote = useAlbumsStore((s) => s.updateNote);
   const deleteAlbum = useAlbumsStore((s) => s.deleteAlbum);
+  const loadAlbums = useAlbumsStore((s) => s.loadAlbums);
   const [photos, setPhotos] = useState<AlbumPhoto[]>([]);
   const [heroFailed, setHeroFailed] = useState(false);
   const [rating, setRating] = useState(0);
@@ -62,11 +63,33 @@ export default function AlbumDetail() {
     await usePhotoQueue.getState().flush();
     const fresh = await getAlbumPhotos(album.id);
     setPhotos(fresh);
+    void loadAlbums(); // resync photo_count so covers/counts refresh app-wide
     setUploading(false);
     haptics.success();
     const stillQueued = usePhotoQueue.getState().jobs.some((j) => j.albumId === album.id);
     toast(stillQueued ? tr('albums.photosQueued') : tr('toast.photosAdded'));
-  }, [album, tr]);
+  }, [album, loadAlbums, tr]);
+
+  const removePhoto = useCallback(
+    async (photo: AlbumPhoto) => {
+      if (!album) return;
+      const ok = await confirmDialog(
+        tr('albums.removePhotoTitle'),
+        tr('albums.removePhotoBody'),
+        tr('albums.removePhoto'),
+        tr('common2.cancel'),
+      );
+      if (!ok) return;
+      setPhotos((cur) => cur.filter((p) => p.id !== photo.id));
+      await deleteAlbumPhoto(album.id, photo.id, photo.path, album.photoCount ?? photos.length);
+      void loadAlbums();
+      haptics.success();
+      toast(tr('toast.photoRemoved'));
+      // tr is stable per language; album + photo list are the real deps
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    },
+    [album, loadAlbums, photos.length],
+  );
 
   const shareAlbum = useCallback(async () => {
     if (!album) return;
@@ -363,13 +386,31 @@ export default function AlbumDetail() {
                 {photos.map((photo) => {
                   const size = (width - t.spacing.lg * 2 - t.spacing.sm) / 2;
                   return (
-                    <Image
-                      key={photo.id}
-                      source={{ uri: photo.url }}
-                      style={{ width: size, height: size, borderRadius: t.radius.md }}
-                      contentFit="cover"
-                      transition={200}
-                    />
+                    <View key={photo.id} style={{ width: size, height: size }}>
+                      <Image
+                        source={{ uri: photo.url }}
+                        style={{ width: size, height: size, borderRadius: t.radius.md }}
+                        contentFit="cover"
+                        transition={200}
+                      />
+                      <Pressable
+                        onPress={() => removePhoto(photo)}
+                        hitSlop={6}
+                        style={{
+                          position: 'absolute',
+                          top: 6,
+                          right: 6,
+                          width: 26,
+                          height: 26,
+                          borderRadius: 13,
+                          backgroundColor: 'rgba(0,0,0,0.5)',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Ionicons name="close" size={15} color="#FFFFFF" />
+                      </Pressable>
+                    </View>
                   );
                 })}
               </View>

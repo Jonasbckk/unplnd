@@ -24,6 +24,7 @@ export default function EveningComplete() {
   const finishEvening = useEveningStore((s) => s.finishEvening);
   const createFromPlan = useAlbumsStore((s) => s.createFromPlan);
   const [saving, setSaving] = useState(false);
+  const [savingLater, setSavingLater] = useState(false);
   const [planRating, setPlanRating] = useState(0);
   const [stopRatings, setStopRatings] = useState<Record<string, number>>({});
 
@@ -131,9 +132,17 @@ export default function EveningComplete() {
         <Button
           title={tr('complete.maybeLater')}
           variant="secondary"
+          loading={savingLater}
           onPress={async () => {
+            // A finished evening is never lost — save the memory even without photos.
+            // You can always add photos later from the album.
+            setSavingLater(true);
             await persistRatings();
+            const location = await getCurrentLocation();
+            await createFromPlan(evening.plan, evening.mood, location?.city ?? '', evening.planRowId);
+            track('memory_created');
             await finishEvening();
+            setSavingLater(false);
             router.replace('/');
           }}
         />

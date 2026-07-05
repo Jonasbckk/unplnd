@@ -150,17 +150,21 @@ export default function EveningScreen() {
             </Text>
 
             <View style={{ gap: t.spacing.md, marginTop: t.spacing.sm }}>
-              <Button
-                title={tr('evening.navigate')}
-                onPress={async () => {
-                  if (current.placeId) {
-                    openInMaps(current.title, current.placeId);
-                    return;
-                  }
-                  const loc = await getCurrentLocation();
-                  openInMaps(loc?.city ? `${current.title}, ${loc.city}` : current.title);
-                }}
-              />
+              {/* Navigate only for real, physical places — an at-home step ("Chill Zone on the
+                  sofa") has no placeId/coordinates, so we never send it to Maps to search nothing. */}
+              {current.placeId || (current.lat != null && current.lng != null) || current.address ? (
+                <Button
+                  title={tr('evening.navigate')}
+                  onPress={async () => {
+                    if (current.placeId) {
+                      openInMaps(current.title, current.placeId);
+                      return;
+                    }
+                    const loc = await getCurrentLocation();
+                    openInMaps(loc?.city ? `${current.title}, ${loc.city}` : current.title);
+                  }}
+                />
+              ) : null}
               <Button
                 title={tr('evening.doneNext')}
                 variant="secondary"

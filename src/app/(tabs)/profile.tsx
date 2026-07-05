@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useRouter, type Href } from 'expo-router';
-import { useEffect, useState, type ComponentProps } from 'react';
+import { useFocusEffect, useRouter, type Href } from 'expo-router';
+import { useCallback, useEffect, useState, type ComponentProps } from 'react';
 import { Pressable, ScrollView, Share, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
@@ -184,18 +184,31 @@ export default function ProfileScreen() {
   const showVerifyBadge = useAppStore((s) => s.showVerifyBadge);
   const verifyTier = tierByLevel(verifyLevel);
 
-  useEffect(() => {
-    void loadAlbums();
-    void loadFavorites();
-  }, [loadAlbums, loadFavorites]);
+  // Re-fetch on every focus (not just mount) so a memory finished or a plan published
+  // elsewhere shows the moment you return to the tab — Expo Router keeps tabs mounted.
+  useFocusEffect(
+    useCallback(() => {
+      void loadAlbums();
+      void loadFavorites();
+      const userId = user?.id;
+      if (!userId) return;
+      let active = true;
+      void getPendingCount().then((n) => {
+        if (active) setPending(n);
+      });
+      void getUserPublishedPlans(userId).then((pl) => {
+        if (active) setMyPlans(pl);
+      });
+      return () => {
+        active = false;
+      };
+    }, [user?.id, loadAlbums, loadFavorites]),
+  );
 
   useEffect(() => {
     const userId = user?.id;
     if (!userId) return;
     let active = true;
-    void getPendingCount().then((n) => {
-      if (active) setPending(n);
-    });
     void getPublicProfile(userId).then((p) => {
       if (active) setIsFounder(Boolean(p?.isFounder));
     });
@@ -205,9 +218,6 @@ export default function ProfileScreen() {
       setMetrics(m);
       setVerifyLevel(lvl);
       maybeCelebrateTier(lvl);
-    });
-    void getUserPublishedPlans(userId).then((pl) => {
-      if (active) setMyPlans(pl);
     });
     return () => {
       active = false;

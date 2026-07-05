@@ -7,6 +7,8 @@ export interface AlbumPhoto {
   id: string;
   /** Short-lived signed URL — the bucket is private (Memory Album Spec: photos never public). */
   url: string;
+  /** Storage path, needed to delete the file from the private bucket. */
+  path: string;
 }
 
 const SIGNED_URL_TTL_SECONDS = 60 * 60;
@@ -96,6 +98,25 @@ export async function getAlbumPhotos(albumId: string): Promise<AlbumPhoto[]> {
   if (signError || !signed) return [];
 
   return data
-    .map((row, i) => ({ id: row.id as string, url: signed[i]?.signedUrl ?? '' }))
+    .map((row, i) => ({
+      id: row.id as string,
+      url: signed[i]?.signedUrl ?? '',
+      path: row.storage_path as string,
+    }))
     .filter((photo) => photo.url.length > 0);
+}
+
+/** Deletes one photo (storage file + row) and decrements the album's photo_count. Returns the new count. */
+export async function deleteAlbumPhoto(
+  albumId: string,
+  photoId: string,
+  path: string,
+  currentCount: number,
+): Promise<number> {
+  await supabase.storage.from('photos').remove([path]);
+  const { error } = await supabase.from('album_photos').delete().eq('id', photoId);
+  if (error) return currentCount;
+  const newCount = Math.max(0, currentCount - 1);
+  await supabase.from('albums').update({ photo_count: newCount }).eq('id', albumId);
+  return newCount;
 }

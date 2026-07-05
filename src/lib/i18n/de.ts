@@ -11,6 +11,7 @@ export const de = {
   toast: {
     albumDeleted: 'Album gelöscht',
     photosAdded: 'Fotos hinzugefügt',
+    photoRemoved: 'Foto entfernt',
     noteSaved: 'Notiz gespeichert',
   },
   tabs: {
@@ -342,6 +343,9 @@ export const de = {
     photosFrom: '%{count} Fotos von diesem Abend.',
     addPhotos: 'Fotos hinzufügen',
     noPhotosYet: 'Noch keine Fotos — füg eure schönsten Momente hinzu.',
+    removePhotoTitle: 'Foto entfernen?',
+    removePhotoBody: 'Dieses Foto wird aus der Erinnerung gelöscht.',
+    removePhoto: 'Entfernen',
     share: 'Album teilen',
     done: 'Fertig',
     deleteTitle: 'Album löschen?',
