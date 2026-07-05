@@ -494,6 +494,32 @@ function curationUserPrompt(req: PlanRequest, candidates: Candidate[]): string {
   return parts.join('\n');
 }
 
+function homeSystemPrompt(language: 'de' | 'en'): string {
+  return [
+    ...baseRules(language),
+    '- This is an evening spent AT HOME — no venues, no travel, no opening hours, and NEVER a place_id. Never send anyone out or name a business.',
+    '- Build 3–4 stops that flow like a real cozy night in, tailored to what they asked: a quick prep (what to have ready), the food (cook together or order in — suggest something concrete and fitting), the main event (the film/series/genre, the game, the activity), and a sweet wind-down.',
+    '- Be genuinely helpful and SPECIFIC to the request: a film night → suggest a concrete genre or a couple of title vibes plus a snack/drink pairing; a cooking night → a concrete, easy dish. Real suggestions, never vague filler.',
+    "- Anchor stop times to the user's current local time (given below); a night in can start soon. Give each stop a sensible length.",
+    '- NEVER return no_options — an evening at home always works. Always return a full plan with stops.',
+    '- Each stop: time (HH:MM), a short category (e.g. "Vorbereitung", "Essen", "Film", "Ausklang" / "Prep", "Food", "Movie", "Wind-down"), a title, and a reason (one punchy line in the UNPLND voice).',
+  ].join('\n');
+}
+
+function homeUserPrompt(req: PlanRequest): string {
+  const parts: string[] = [];
+  if (req.request) parts.push(`The user asked, in their own words: "${req.request}" — honor this above all.`);
+  parts.push(`Current local time: ${req.now ?? 'unknown'} — schedule from here; never put a stop in the past.`);
+  if (req.mood) parts.push(`Mood: ${req.mood}`);
+  parts.push(`Group: ${req.group ?? '2'}`);
+  if (req.budget) parts.push(`Budget: ${req.budget}`);
+  parts.push(`Available time: ${req.time ?? 'Whole evening'}`);
+  if (req.preferences?.length) parts.push(`Preferences: ${req.preferences.join(', ')}`);
+  parts.push('');
+  parts.push('Plan this cozy evening at home now.');
+  return parts.join('\n');
+}
+
 // ---------------- AI callers ----------------
 
 interface RawStop {
@@ -660,6 +686,8 @@ interface Intent {
   budget?: string;
   transport?: string;
   time?: string;
+  /** True when the evening is at home and needs no venues (movie night in, cooking at home, …). */
+  at_home?: boolean;
 }
 
 function extractSystemPrompt(city?: string): string {
@@ -670,6 +698,7 @@ function extractSystemPrompt(city?: string): string {
     'Use text_query for specific things that are not a clean type — e.g. "all you can eat buffet", "rooftop bar", "escape room", "sushi", "vegan brunch".',
     'If the user names specific kinds of stops or an order (e.g. cafés first, then all-you-can-eat), make ONE search per stop, in that order.',
     'If the user is vague (e.g. "we are bored, two of us"), infer a fun, varied evening: an activity, food, and drinks.',
+    'THINK FIRST — does this evening even need venues? If the user wants a night AT HOME that needs no going out (a movie/series night in, cooking or a dinner at home, a cozy games night, a chill night on the couch — e.g. "Filmabend", "zuhause chillen", "Netflix und was dazu", "kochen zu zweit"), set at_home=true and return an EMPTY searches array. Do NOT invent venues for that. Only build searches when the user actually wants to go OUT.',
     'Fill group, budget, transport, time ONLY if the user clearly stated them; otherwise leave them empty.',
   ].join('\n');
 }
@@ -689,7 +718,7 @@ const EXTRACT_TOOL = {
     properties: {
       searches: {
         type: 'array',
-        minItems: 2,
+        minItems: 0,
         maxItems: 4,
         items: {
           type: 'object',
@@ -701,6 +730,7 @@ const EXTRACT_TOOL = {
           required: ['category'],
         },
       },
+      at_home: { type: 'boolean', description: 'True if the evening is at home and needs no venues — then searches is empty.' },
       group: { type: 'string' },
       budget: { type: 'string' },
       transport: { type: 'string' },
@@ -725,6 +755,7 @@ const EXTRACT_SCHEMA = {
         required: ['category'],
       },
     },
+    at_home: { type: 'BOOLEAN' },
     group: { type: 'STRING' },
     budget: { type: 'STRING' },
     transport: { type: 'STRING' },
@@ -855,14 +886,69 @@ Deno.serve(async (req) => {
     }
   }
 
+  // ---- Intent (free-text): tells us WHAT to search AND whether this is an at-home night.
+  //      Runs even without Google — a home evening needs no location.
+  let intent: Intent | null = null;
+  if (body.request && body.request.trim() && (anthropicKey || geminiKey)) {
+    try {
+      intent = await extractIntent(body, anthropicKey, geminiKey);
+    } catch (e) {
+      if (e instanceof RateLimitError) rateLimited = true;
+      else console.error('intent_error', String(e).slice(0, 200));
+    }
+  }
+  if (rateLimited) return rateLimitedResponse();
+
+  // ---- At-home evenings: no venues, no opening hours, never "nothing open". The AI decides
+  //      whether venues are even needed (or the user picked the "Stay In" mood).
+  if (body.mood === 'Stay In' || intent?.at_home) {
+    let plan = await runAI(homeSystemPrompt(language), homeUserPrompt(body), false);
+    if (!validate(plan) && !rateLimited) {
+      plan = await runAI(homeSystemPrompt(language), homeUserPrompt(body), false);
+    }
+    if (rateLimited) return rateLimitedResponse();
+    if (validate(plan)) {
+      const stops: StopOut[] = plan.stops.map((s) => ({
+        time: s.time,
+        category: s.category,
+        title: s.title,
+        reason: s.reason,
+        memoryMoment: Boolean(s.memory_moment),
+      }));
+      if (!stops.some((s) => s.memoryMoment) && stops.length > 1) stops[stops.length - 2].memoryMoment = true;
+      // Count this successful generation against the user's daily limit (best effort).
+      if (admin && userId) {
+        try {
+          await admin.from('plan_generations').insert({ user_id: userId });
+        } catch (e) {
+          console.error('record_generation_error', String(e).slice(0, 200));
+        }
+      }
+      const score = Math.min(96, 84 + stops.length * 2);
+      return Response.json(
+        {
+          plan: {
+            title: plan.title,
+            summary: plan.summary,
+            stops,
+            estimatedCost: plan.estimated_cost,
+            duration: plan.duration,
+            score,
+          },
+        },
+        { headers: CORS },
+      );
+    }
+    return generationFailedResponse();
+  }
+
   // ---- Phase A + B: real places, when we have Google + a location ----
   const canSearchReal = Boolean(googleKey) && typeof body.latitude === 'number' && typeof body.longitude === 'number';
   let candidates: Candidate[] = [];
   if (canSearchReal) {
     try {
       if (body.request && body.request.trim()) {
-        // Free-text path: the AI works out WHAT to search for, then we search it.
-        const intent = await extractIntent(body, anthropicKey, geminiKey);
+        // Free-text path: reuse the intent already extracted above; we search what it worked out.
         const groups = intent ? toSearchGroups(intent) : [];
         if (groups.length >= 2) {
           // Adopt any constraints the user stated in their own words (don't override explicit ones).

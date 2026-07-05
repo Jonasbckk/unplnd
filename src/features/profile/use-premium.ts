@@ -5,9 +5,9 @@ import { supabase } from '@/lib/supabase';
 
 /**
  * Whether the current user has UNPLND Premium.
- * Reads profiles.premium (set by the RevenueCat webhook once billing is live).
- * Until then it stays false for everyone — set your own row's `premium = true`
- * in Supabase to preview premium-only features.
+ * Reads profiles.premium (set by the RevenueCat webhook once billing is live). Founders
+ * (is_founder) always count as premium — they get everything unlocked. Otherwise it's false for
+ * everyone until billing is live — set your own row's `premium = true` to preview.
  */
 export function usePremium(): boolean {
   const userId = useAuthStore((s) => s.user?.id);
@@ -21,11 +21,11 @@ export function usePremium(): boolean {
     let active = true;
     void supabase
       .from('profiles')
-      .select('premium')
+      .select('premium, is_founder')
       .eq('id', userId)
       .single()
       .then(({ data }) => {
-        if (active) setPremium(Boolean(data?.premium));
+        if (active) setPremium(Boolean(data?.premium || data?.is_founder));
       });
     return () => {
       active = false;

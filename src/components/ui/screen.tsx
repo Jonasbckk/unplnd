@@ -35,6 +35,10 @@ export function Screen({
           <ScrollView
             contentContainerStyle={[pad, { paddingBottom: t.spacing.xxl }, contentStyle]}
             showsVerticalScrollIndicator={false}
+            // Keep focused inputs visible above the keyboard, and let a drag dismiss it.
+            automaticallyAdjustKeyboardInsets
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
             refreshControl={
               onRefresh ? (
                 <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.colors.primary} colors={[t.colors.primary]} />

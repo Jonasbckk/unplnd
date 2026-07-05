@@ -48,8 +48,8 @@ export default function AppThemeScreen() {
 
   const isAvailable = (th: AppTheme): boolean =>
     th.tier === 'default' ||
-    (th.tier === 'unlock' && publishedCount >= UNLOCK_PUBLISHED_REQUIRED) ||
-    (th.tier === 'premium' && isPremium);
+    isPremium || // Premium (and founders) unlock every theme, including the achievement ones
+    (th.tier === 'unlock' && publishedCount >= UNLOCK_PUBLISHED_REQUIRED);
 
   const onPick = (th: AppTheme) => {
     if (!isAvailable(th)) {
