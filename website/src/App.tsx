@@ -25,7 +25,13 @@ function useHashRoute() {
 export default function App() {
   const hash = useHashRoute();
   const legal =
-    hash === '#/impressum' ? 'impressum' : hash === '#/datenschutz' ? 'datenschutz' : null;
+    hash === '#/impressum'
+      ? 'impressum'
+      : hash === '#/datenschutz'
+        ? 'datenschutz'
+        : hash === '#/teilnahmebedingungen'
+          ? 'teilnahmebedingungen'
+          : null;
 
   // Legal pages open at the top; anchor hashes scroll once the landing has rendered.
   useEffect(() => {
