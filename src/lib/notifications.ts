@@ -61,6 +61,35 @@ export async function cancelEveningReminders(): Promise<void> {
   await Notifications.cancelAllScheduledNotificationsAsync();
 }
 
+const STREAK_REMINDER_ID = 'streak-reminder';
+
+/**
+ * One gentle reminder the evening BEFORE the streak would lapse — rescheduled every time the user
+ * opens the app, so it only ever fires if they've gone quiet. Warm, never guilt-tripping
+ * (Constitution: no dark patterns / no fake urgency). Uses a stable id so it never touches the
+ * evening-stop reminders.
+ */
+export async function scheduleStreakReminder(streak: number): Promise<void> {
+  if (!isNative || streak < 1) return;
+  await Notifications.cancelScheduledNotificationAsync(STREAK_REMINDER_ID).catch(() => {});
+  const at = new Date();
+  at.setDate(at.getDate() + 1);
+  at.setHours(19, 0, 0, 0); // tomorrow evening — a nudge while the streak is still savable
+  await Notifications.scheduleNotificationAsync({
+    identifier: STREAK_REMINDER_ID,
+    content: {
+      title: i18n.t('notifs.streakTitle'),
+      body: i18n.t('notifs.streakBody', { n: streak }),
+    },
+    trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: at },
+  });
+}
+
+export async function cancelStreakReminder(): Promise<void> {
+  if (!isNative) return;
+  await Notifications.cancelScheduledNotificationAsync(STREAK_REMINDER_ID).catch(() => {});
+}
+
 /** One notification only, never remind again (33_NOTIFICATIONS: Albums). */
 export async function notifyAlbumReady(): Promise<void> {
   if (!isNative) return;

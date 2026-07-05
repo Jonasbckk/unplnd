@@ -99,6 +99,7 @@ export default function SettingsScreen() {
     { key: 'eveningReminders', label: tr('settings.eveningReminders') },
     { key: 'albumReady', label: tr('settings.albumReady') },
     { key: 'weatherChanges', label: tr('settings.weatherChanges') },
+    { key: 'streakReminders', label: tr('settings.streakReminders') },
   ];
 
   return (

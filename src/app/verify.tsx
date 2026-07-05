@@ -18,6 +18,7 @@ import {
   type Tier,
   type VerifyMetrics,
 } from '@/features/verify/verification';
+import { maybeCelebrateTier } from '@/features/celebrate/celebrate-store';
 import { useT } from '@/lib/i18n';
 import { useAppStore } from '@/store/app-store';
 import { useTheme } from '@/theme';
@@ -41,7 +42,10 @@ export default function VerifyScreen() {
   const [metrics, setMetrics] = useState<VerifyMetrics | null>(null);
 
   useEffect(() => {
-    void getVerifyMetrics().then(setMetrics);
+    void getVerifyMetrics().then((m) => {
+      setMetrics(m);
+      maybeCelebrateTier(currentTierLevel(m));
+    });
   }, []);
 
   const level = metrics ? currentTierLevel(metrics) : 0;

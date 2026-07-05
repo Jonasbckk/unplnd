@@ -17,6 +17,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { NetworkBanner, Toast } from '@/components/ui';
+import { CelebrationOverlay } from '@/features/celebrate/CelebrationOverlay';
+import { useCelebrateStore } from '@/features/celebrate/celebrate-store';
 import { recordActivity } from '@/lib/activity';
 import { useAuthStore } from '@/features/auth/auth-store';
 import { useAppStore } from '@/store/app-store';
@@ -77,11 +79,20 @@ export default function RootLayout() {
   const ready = (fontsLoaded || !!fontError) && hasHydrated && authInitialized;
 
   useEffect(() => {
-    if (ready) {
-      SplashScreen.hideAsync();
-      // Count today's visit toward the daily-use streak (best-effort, no-op if signed out).
-      void recordActivity();
-    }
+    if (!ready) return;
+    SplashScreen.hideAsync();
+    // Count today's visit toward the daily-use streak, then celebrate it once per day.
+    void (async () => {
+      const streak = await recordActivity();
+      if (streak <= 0) return;
+      const now = new Date();
+      const today = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+      const { lastStreakCelebrationDate, setLastStreakCelebrationDate } = useAppStore.getState();
+      if (lastStreakCelebrationDate !== today) {
+        setLastStreakCelebrationDate(today);
+        useCelebrateStore.getState().showStreak(streak);
+      }
+    })();
   }, [ready]);
 
   if (!ready) {
@@ -107,6 +118,7 @@ function AppShell() {
       <RootNavigator />
       <NetworkBanner />
       <Toast />
+      <CelebrationOverlay />
       <StatusBar style="auto" />
     </View>
   );

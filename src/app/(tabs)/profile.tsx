@@ -13,6 +13,7 @@ import { EveningDNA } from '@/features/profile/EveningDNA';
 import { ProfileBanner } from '@/features/profile/ProfileBanner';
 import { ProfileExtras } from '@/features/profile/ProfileExtras';
 import { useProfileStyle } from '@/features/profile/profile-styles';
+import { maybeCelebrateTier } from '@/features/celebrate/celebrate-store';
 import { VerifyBadge } from '@/features/verify/VerifyBadge';
 import { currentTierLevel, getVerifyMetrics, tierByLevel } from '@/features/verify/verification';
 import { getPublicProfile } from '@/lib/community';
@@ -193,7 +194,10 @@ export default function ProfileScreen() {
       if (active) setIsFounder(Boolean(p?.isFounder));
     });
     void getVerifyMetrics().then((m) => {
-      if (active) setVerifyLevel(currentTierLevel(m));
+      if (!active) return;
+      const lvl = currentTierLevel(m);
+      setVerifyLevel(lvl);
+      maybeCelebrateTier(lvl);
     });
     return () => {
       active = false;
