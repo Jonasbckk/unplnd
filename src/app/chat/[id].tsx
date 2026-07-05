@@ -1,18 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  TextInput,
-  View,
-} from 'react-native';
+import { Keyboard, Modal, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { Image } from 'expo-image';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/ui';
 import { useAuthStore } from '@/features/auth/auth-store';
@@ -386,7 +378,8 @@ export default function ChatScreen() {
   const [reactions, setReactions] = useState<ReactionMap>({});
   const [reactTarget, setReactTarget] = useState<Message | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [headerH, setHeaderH] = useState(0);
+  const [kbHeight, setKbHeight] = useState(0);
+  const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -439,6 +432,22 @@ export default function ChatScreen() {
     const timer = setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 60);
     return () => clearTimeout(timer);
   }, [messages.length]);
+
+  // Track the real keyboard height and pad the composer above it — more reliable across
+  // devices than KeyboardAvoidingView's offset guessing.
+  useEffect(() => {
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const show = Keyboard.addListener(showEvt, (e) => {
+      setKbHeight(e.endCoordinates.height);
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 40);
+    });
+    const hide = Keyboard.addListener(hideEvt, () => setKbHeight(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   const send = useCallback(async () => {
     if (!id) return;
@@ -584,7 +593,7 @@ export default function ChatScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: t.colors.background }}>
-      <SafeAreaView edges={['top']} onLayout={(e) => setHeaderH(e.nativeEvent.layout.height)}>
+      <SafeAreaView edges={['top']}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm, paddingHorizontal: t.spacing.lg, paddingVertical: t.spacing.md }}>
           <Pressable onPress={() => router.back()} hitSlop={8}>
             <Ionicons name="chevron-back" size={26} color={t.colors.textPrimary} />
@@ -635,11 +644,7 @@ export default function ChatScreen() {
         </View>
       </SafeAreaView>
 
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? headerH : 0}
-      >
+      <View style={{ flex: 1, paddingBottom: kbHeight > 0 ? kbHeight : insets.bottom }}>
         <ScrollView
           ref={scrollRef}
           style={{ flex: 1 }}
@@ -722,7 +727,7 @@ export default function ChatScreen() {
             gap: t.spacing.sm,
             paddingHorizontal: t.spacing.lg,
             paddingTop: t.spacing.sm,
-            paddingBottom: t.spacing.base,
+            paddingBottom: t.spacing.sm,
             borderTopWidth: 1,
             borderTopColor: t.colors.divider,
             backgroundColor: t.colors.background,
@@ -778,7 +783,7 @@ export default function ChatScreen() {
             <Ionicons name="arrow-up" size={22} color="#FFFFFF" />
           </Pressable>
         </View>
-      </KeyboardAvoidingView>
+      </View>
 
       <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
         <Pressable
