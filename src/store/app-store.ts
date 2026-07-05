@@ -2,6 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
+import { track } from '@/lib/analytics';
+
 export type ThemePreference = 'light' | 'dark' | 'system';
 export type LanguagePreference = 'de' | 'en' | 'system';
 
@@ -55,7 +57,10 @@ export const useAppStore = create<AppState>()(
       lastSeenTier: 0,
       notificationPrefs: { eveningReminders: true, albumReady: true, weatherChanges: true, streakReminders: true },
       hasHydrated: false,
-      completeOnboarding: () => set({ hasOnboarded: true }),
+      completeOnboarding: () => {
+        set({ hasOnboarded: true });
+        track('onboarding_completed');
+      },
       resetOnboarding: () => set({ hasOnboarded: false }),
       setThemePreference: (preference) => set({ themePreference: preference }),
       setLanguagePreference: (preference) => set({ languagePreference: preference }),

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+import { track } from '@/lib/analytics';
 import { useAppStore } from '@/store/app-store';
 
 interface CelebrateState {
@@ -30,6 +31,9 @@ export function maybeCelebrateTier(level: number): void {
   const { lastSeenTier, setLastSeenTier } = useAppStore.getState();
   if (level > lastSeenTier) {
     setLastSeenTier(level);
-    if (level > 0) useCelebrateStore.getState().showTier(level);
+    if (level > 0) {
+      useCelebrateStore.getState().showTier(level);
+      track('tier_reached', { level });
+    }
   }
 }

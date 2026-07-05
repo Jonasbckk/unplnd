@@ -4,6 +4,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { useAuthStore } from '@/features/auth/auth-store';
 import type { GeneratedPlan, PlanStop } from '@/features/planner/types';
+import { track } from '@/lib/analytics';
 import { cancelEveningReminders, scheduleStopReminders } from '@/lib/notifications';
 import { supabase } from '@/lib/supabase';
 import { useAppStore } from '@/store/app-store';
@@ -63,6 +64,7 @@ export const useEveningStore = create<EveningState>()(
           status: i === 0 ? 'current' : 'upcoming',
         }));
         set({ evening: { plan, mood, planRowId: null, startedAt, stops } });
+        track('evening_started', { stops: stops.length });
 
         // Gentle stop reminders — only if the user wants them (23_SETTINGS toggle).
         if (useAppStore.getState().notificationPrefs.eveningReminders) {

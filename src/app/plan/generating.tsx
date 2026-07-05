@@ -16,6 +16,7 @@ import Animated, {
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { Button, Logo, Text } from '@/components/ui';
+import { track } from '@/lib/analytics';
 import { generateEvening } from '@/features/planner/generate-service';
 import { usePlannerStore } from '@/features/planner/planner-store';
 import { useT } from '@/lib/i18n';
@@ -109,6 +110,7 @@ export default function GeneratingScreen() {
   const run = useCallback(async () => {
     setPhase('generating');
     setMessageIndex(0);
+    track('planner_started');
 
     // No location → no plan. Never fall back to a default city (Constitution Rule 5: trust).
     // Uses the user's chosen location if they picked one, else their GPS.
@@ -127,6 +129,7 @@ export default function GeneratingScreen() {
       setPhase(result.kind === 'limit' ? 'limitReached' : result.kind === 'no_options' ? 'noOptions' : 'failed');
       return;
     }
+    track('plan_generated', { stops: result.plan.stops.length });
     setPlan(result.plan);
     router.replace('/plan/route');
     // Answers are stable for this screen's lifetime.

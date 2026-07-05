@@ -6,6 +6,7 @@ import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { Button, Card, Logo, Screen, StarRating, Text } from '@/components/ui';
 import { useAlbumsStore } from '@/features/albums/albums-store';
 import { useEveningStore } from '@/features/evening/evening-store';
+import { track } from '@/lib/analytics';
 import { haptics } from '@/lib/haptics';
 import { useT } from '@/lib/i18n';
 import { getCurrentLocation } from '@/lib/location';
@@ -28,6 +29,9 @@ export default function EveningComplete() {
 
   useEffect(() => {
     haptics.success();
+    if (evening) track('evening_completed');
+    // Once, on reaching the summary.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!evening) {
@@ -111,6 +115,7 @@ export default function EveningComplete() {
             await persistRatings();
             const location = await getCurrentLocation();
             const id = await createFromPlan(evening.plan, evening.mood, location?.city ?? '', evening.planRowId);
+            track('memory_created');
             await finishEvening();
             setSaving(false);
             if (id) {

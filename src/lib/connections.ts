@@ -1,4 +1,5 @@
 import { useAuthStore } from '@/features/auth/auth-store';
+import { track } from '@/lib/analytics';
 import { getPublicProfile, type PublicProfile } from '@/lib/community';
 import { supabase } from '@/lib/supabase';
 
@@ -37,7 +38,9 @@ export async function sendRequest(otherId: string): Promise<ConnectionState> {
   const { error } = await supabase
     .from('connections')
     .insert({ requester_id: me, addressee_id: otherId, status: 'pending' });
-  return error ? 'none' : 'outgoing';
+  if (error) return 'none';
+  track('connection_requested');
+  return 'outgoing';
 }
 
 export async function acceptRequest(rowId: string): Promise<boolean> {

@@ -1,3 +1,4 @@
+import { track } from '@/lib/analytics';
 import { supabase } from '@/lib/supabase';
 
 /** Whether this album currently has a published version in the community feed. */
@@ -32,7 +33,10 @@ export async function publishPlan(albumId: string): Promise<PublishResult> {
       body: { albumId },
     });
     if (error || !data) return { ok: false, reason: 'failed' };
-    if (data.ok && data.id) return { ok: true, id: data.id, alreadyPublished: Boolean(data.already) };
+    if (data.ok && data.id) {
+      if (!data.already) track('plan_published');
+      return { ok: true, id: data.id, alreadyPublished: Boolean(data.already) };
+    }
     if (data.error?.code === 'NO_PHOTOS') return { ok: false, reason: 'no_photos' };
     return { ok: false, reason: 'failed' };
   } catch {

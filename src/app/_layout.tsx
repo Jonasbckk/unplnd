@@ -20,6 +20,7 @@ import { NetworkBanner, Toast } from '@/components/ui';
 import { useAlbumsStore } from '@/features/albums/albums-store';
 import { usePhotoQueue } from '@/features/albums/photo-queue';
 import { CelebrationOverlay } from '@/features/celebrate/CelebrationOverlay';
+import { initAnalytics } from '@/lib/analytics';
 import { initMonitoring, wrapWithMonitoring } from '@/lib/monitoring';
 import { useRatingsQueue } from '@/lib/ratings-queue';
 import { useCelebrateStore } from '@/features/celebrate/celebrate-store';
@@ -31,8 +32,9 @@ import { ThemeProvider, useTheme } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
 
-// Start crash/error reporting as early as possible (no-op until a DSN is configured).
+// Start crash/error reporting + analytics as early as possible (both no-op until configured).
 initMonitoring();
+initAnalytics();
 
 // Gate: onboarding → auth → app.
 function RootNavigator() {

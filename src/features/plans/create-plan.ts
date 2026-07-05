@@ -3,6 +3,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { useAuthStore } from '@/features/auth/auth-store';
 import type { PlanStop } from '@/features/planner/types';
+import { track } from '@/lib/analytics';
 import { searchPlaces } from '@/lib/place-search';
 import { supabase } from '@/lib/supabase';
 
@@ -143,5 +144,6 @@ export async function publishCustomPlan(input: CustomPlanInput): Promise<Publish
   });
   if (insErr) return { ok: false, reason: 'failed' };
 
+  track('custom_plan_published');
   return { ok: true, id: planId };
 }

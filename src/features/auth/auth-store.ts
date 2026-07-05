@@ -3,6 +3,7 @@ import { makeRedirectUri } from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { create } from 'zustand';
 
+import { identifyUser, resetAnalytics } from '@/lib/analytics';
 import { supabase } from '@/lib/supabase';
 
 // Finish any pending auth session (web popups). No-op on native.
@@ -34,9 +35,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   init: () => {
     void supabase.auth.getSession().then(({ data }) => {
       set({ session: data.session, user: data.session?.user ?? null, initialized: true });
+      if (data.session?.user) identifyUser(data.session.user.id);
     });
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       set({ session, user: session?.user ?? null, initialized: true });
+      if (session?.user) identifyUser(session.user.id);
+      else resetAnalytics();
     });
     return () => data.subscription.unsubscribe();
   },
