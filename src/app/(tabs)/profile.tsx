@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { useRouter, type Href } from 'expo-router';
 import { useEffect, useState, type ComponentProps } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
-import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeInUp, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { Card, Screen, Text, useCountUp } from '@/components/ui';
 import { MemoryCard } from '@/features/albums/MemoryCard';
@@ -48,12 +48,12 @@ function Stat({
   icon,
   value,
   label,
-  accent,
+  color,
 }: {
   icon: IoniconName;
   value: string | number;
   label: string;
-  accent: string;
+  color: string;
 }) {
   const t = useTheme();
   const counted = useCountUp(typeof value === 'number' ? value : 0);
@@ -64,12 +64,12 @@ function Stat({
           width: 40,
           height: 40,
           borderRadius: t.radius.pill,
-          backgroundColor: t.colors.surface,
+          backgroundColor: color + '26',
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <Ionicons name={icon} size={20} color={accent} />
+        <Ionicons name={icon} size={20} color={color} />
       </View>
       <Text variant="h2" color="textHeading" numberOfLines={1}>
         {typeof value === 'number' ? counted : value}
@@ -345,14 +345,16 @@ export default function ProfileScreen() {
         </View>
       </ProfileBanner>
 
-      <Card style={{ backgroundColor: accent + '1F' }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-around', gap: t.spacing.xs }}>
-          <Stat icon="images-outline" value={memories} label={tr('profile.memories')} accent={accent} />
-          <Stat icon="navigate-outline" value={cities} label={tr('profile.cities')} accent={accent} />
-          <Stat icon="heart-outline" value={favorites.length} label={tr('profile.saved')} accent={accent} />
-          <Stat icon="sparkles-outline" value={favoriteMood} label={tr('profile.topMood')} accent={accent} />
-        </View>
-      </Card>
+      <Animated.View entering={FadeInUp.duration(400).delay(60)}>
+        <Card style={{ backgroundColor: accent + '1F' }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-around', gap: t.spacing.xs }}>
+            <Stat icon="images-outline" value={memories} label={tr('profile.memories')} color="#4C9BE8" />
+            <Stat icon="navigate-outline" value={cities} label={tr('profile.cities')} color="#48C4D3" />
+            <Stat icon="heart-outline" value={favorites.length} label={tr('profile.saved')} color="#E06B8B" />
+            <Stat icon="sparkles-outline" value={favoriteMood} label={tr('profile.topMood')} color="#9B7BE8" />
+          </View>
+        </Card>
+      </Animated.View>
 
       <View style={{ flexDirection: 'row', gap: t.spacing.sm, paddingVertical: t.spacing.sm }}>
         <MenuAction
@@ -397,9 +399,12 @@ export default function ProfileScreen() {
         )}
       </View>
 
-      <EveningDNA albums={albums} accent={accent} />
+      <Animated.View entering={FadeInUp.duration(400).delay(240)}>
+        <EveningDNA albums={albums} accent={accent} />
+      </Animated.View>
 
-      {albums.length > 0 ? (
+      <Animated.View entering={FadeInUp.duration(400).delay(300)}>
+        {albums.length > 0 ? (
         <View style={{ gap: t.spacing.md }}>
           <SectionHeading title={tr('profile.recentMemories')} accent={accent} />
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: t.spacing.base }}>
@@ -419,6 +424,7 @@ export default function ProfileScreen() {
           {tr('profile.emptyStory')}
         </Text>
       )}
+      </Animated.View>
 
       {favorites.length > 0 && (
         <View style={{ gap: t.spacing.md }}>
@@ -465,7 +471,9 @@ export default function ProfileScreen() {
         </View>
       )}
 
-      <ProfileExtras interests={interests} prompts={prompts} accent={accent} />
+      <Animated.View entering={FadeInUp.duration(400).delay(380)}>
+        <ProfileExtras interests={interests} prompts={prompts} accent={accent} />
+      </Animated.View>
     </Screen>
   );
 }

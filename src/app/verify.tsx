@@ -153,41 +153,43 @@ export default function VerifyScreen() {
             {TIERS.map((tier) => {
               const reached = level >= tier.level;
               const isCurrent = level === tier.level;
+              const progress = tierProgress(metrics, tier);
+              const met = progress.filter((p) => p.done).length;
               return (
                 <Card
                   key={tier.id}
                   style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
                     gap: t.spacing.md,
                     borderWidth: isCurrent ? 2 : 1,
                     borderColor: reached ? tier.color : t.colors.border,
                   }}
                 >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.md }}>
-                    <VerifyBadge color={tier.color} size={46} animated={false} locked={!reached} />
-                    <View style={{ flex: 1 }}>
-                      <Text variant="h3">{tierName(tier)}</Text>
-                      <Text variant="small" color="textSecondary" numberOfLines={2}>
-                        {tierTag(tier)}
+                  <VerifyBadge color={tier.color} size={40} animated={false} locked={!reached} />
+                  <View style={{ flex: 1, gap: 5 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text variant="body" style={{ fontWeight: '700', flex: 1 }} numberOfLines={1}>
+                        {tierName(tier)}
                       </Text>
+                      {reached ? (
+                        <Ionicons name="checkmark-circle" size={18} color={tier.color} />
+                      ) : (
+                        <Text variant="caption" color="textSecondary">{`${met}/${progress.length}`}</Text>
+                      )}
                     </View>
-                    {reached ? <Ionicons name="checkmark-circle" size={22} color={tier.color} /> : null}
-                  </View>
-                  <View style={{ gap: 6 }}>
-                    {tierProgress(metrics, tier).map((p) => (
-                      <View key={p.key} style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}>
-                        <Ionicons
-                          name={p.done ? 'checkmark-circle' : 'ellipse-outline'}
-                          size={15}
-                          color={p.done ? tier.color : t.colors.textSecondary}
+                    {/* Requirement progress at a glance — a filled dot per met requirement. */}
+                    <View style={{ flexDirection: 'row', gap: 4 }}>
+                      {progress.map((p) => (
+                        <View
+                          key={p.key}
+                          style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: p.done ? tier.color : t.colors.border }}
                         />
-                        <Text variant="small" style={{ flex: 1 }}>
-                          {metricLabel(p.key)}
-                        </Text>
-                        <Text variant="small" color="textSecondary">
-                          {fmt(p.need)}
-                        </Text>
-                      </View>
-                    ))}
+                      ))}
+                    </View>
+                    <Text variant="caption" color="textSecondary" numberOfLines={1}>
+                      {tierTag(tier)}
+                    </Text>
                   </View>
                 </Card>
               );
