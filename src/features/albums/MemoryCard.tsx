@@ -92,8 +92,28 @@ export function MemoryCard({ album, onPress, compact = false, width }: MemoryCar
               />
             </>
           )}
-          <View style={{ alignItems: 'flex-end', minHeight: 18 }}>
-            {album.favorite && <Ionicons name="heart" size={18} color="#FFFFFF" />}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', minHeight: 18 }}>
+            {album.pending ? (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                  backgroundColor: 'rgba(0,0,0,0.35)',
+                  paddingHorizontal: 8,
+                  paddingVertical: 3,
+                  borderRadius: 999,
+                }}
+              >
+                <Ionicons name="cloud-offline-outline" size={11} color="#FFFFFF" />
+                <Text variant="caption" style={{ color: '#FFFFFF' }}>
+                  {i18n.t('albums.pendingBadge')}
+                </Text>
+              </View>
+            ) : (
+              <View />
+            )}
+            {album.favorite ? <Ionicons name="heart" size={18} color="#FFFFFF" /> : <View />}
           </View>
           <Text
             variant={compact ? 'h3' : 'h2'}

@@ -49,6 +49,10 @@ export default function AlbumDetail() {
 
   const addPhotos = useCallback(async () => {
     if (!album) return;
+    if (album.pending) {
+      toast(tr('albums.pendingSync'));
+      return;
+    }
     const assets = await pickPhotos();
     if (assets.length === 0) return;
     setUploading(true);
@@ -73,6 +77,10 @@ export default function AlbumDetail() {
 
   const publish = useCallback(async () => {
     if (!album) return;
+    if (album.pending) {
+      toast(tr('albums.pendingSync'));
+      return;
+    }
     if (photos.length === 0) {
       toast(tr('publish.needPhotos'));
       return;
@@ -197,6 +205,26 @@ export default function AlbumDetail() {
                   {formatAlbumDate(album.date)}
                   {album.city ? ` · ${album.city}` : ''}
                 </Text>
+                {album.pending ? (
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 5,
+                      alignSelf: 'flex-start',
+                      backgroundColor: 'rgba(0,0,0,0.32)',
+                      paddingHorizontal: 10,
+                      paddingVertical: 4,
+                      borderRadius: t.radius.pill,
+                      marginTop: 4,
+                    }}
+                  >
+                    <Ionicons name="cloud-offline-outline" size={13} color="#FFFFFF" />
+                    <Text variant="caption" color="onPrimary">
+                      {tr('albums.pendingBadge')}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
             </View>
           </SafeAreaView>

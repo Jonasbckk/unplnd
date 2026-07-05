@@ -17,6 +17,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { NetworkBanner, Toast } from '@/components/ui';
+import { useAlbumsStore } from '@/features/albums/albums-store';
 import { CelebrationOverlay } from '@/features/celebrate/CelebrationOverlay';
 import { useCelebrateStore } from '@/features/celebrate/celebrate-store';
 import { recordActivity } from '@/lib/activity';
@@ -74,6 +75,14 @@ export default function RootLayout() {
   useEffect(() => {
     const unsubscribe = useConnectivityStore.getState().init();
     return unsubscribe;
+  }, []);
+
+  // Sync any evenings that were finished offline — now, and whenever connectivity returns.
+  useEffect(() => {
+    void useAlbumsStore.getState().flushOutbox();
+    return useConnectivityStore.subscribe((s, prev) => {
+      if (s.isOnline && !prev.isOnline) void useAlbumsStore.getState().flushOutbox();
+    });
   }, []);
 
   const ready = (fontsLoaded || !!fontError) && hasHydrated && authInitialized;

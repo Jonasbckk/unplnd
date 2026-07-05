@@ -16,4 +16,6 @@ export interface Album {
   note?: string;
   /** The plans row this album came from — carries the user's self-rating (Feature C). */
   planId?: string;
+  /** True while this album exists only locally and is waiting to sync to the server (offline). */
+  pending?: boolean;
 }

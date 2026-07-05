@@ -315,6 +315,8 @@ export const en = {
     deletePublishedBody: 'This evening is also published in the community. Delete it there too?',
     deleteBoth: 'Delete both',
     deleteMemoryOnly: 'Memory only',
+    pendingBadge: 'Saving',
+    pendingSync: 'This memory is still saving — it’ll sync once you’re back online.',
     addNote: 'Add a note',
     notePlaceholder: 'How was your evening?',
     saveNote: 'Save',

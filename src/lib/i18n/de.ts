@@ -351,6 +351,8 @@ export const de = {
     deletePublishedBody: 'Dieser Abend ist auch in der Community veröffentlicht. Auch dort löschen?',
     deleteBoth: 'Beides löschen',
     deleteMemoryOnly: 'Nur Erinnerung',
+    pendingBadge: 'Wird gesichert',
+    pendingSync: 'Diese Erinnerung wird noch gesichert — sobald du online bist, geht das.',
     addNote: 'Notiz hinzufügen',
     notePlaceholder: 'Wie war euer Abend?',
     saveNote: 'Speichern',
