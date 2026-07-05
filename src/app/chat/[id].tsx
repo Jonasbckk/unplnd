@@ -27,6 +27,8 @@ import {
   leaveConversation,
   reportMessage,
   sendMessage,
+  setConversationVoting,
+  subscribeToConversation,
   subscribeToMessages,
   type Message,
   type SharedPlan,
@@ -259,6 +261,7 @@ export default function ChatScreen() {
   const [blocked, setBlocked] = useState<Set<string>>(new Set());
   const [rsvps, setRsvps] = useState<Record<string, RsvpTally>>({});
   const [preview, setPreview] = useState<SharedPlan | null>(null);
+  const [votingActive, setVotingActive] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -272,6 +275,7 @@ export default function ChatScreen() {
     void getConversationMeta(id).then((meta) => {
       if (!active || !meta) return;
       setIsGroup(meta.isGroup);
+      setVotingActive(meta.votingActive);
       const map: Record<string, string> = {};
       for (const p of meta.participants) map[p.id] = p.name ?? tr('community.someone');
       setNames(map);
@@ -291,10 +295,14 @@ export default function ChatScreen() {
     const unsubRsvps = subscribeToRsvps(id, () => {
       void getConversationRsvps(id).then((r) => active && setRsvps(r));
     });
+    const unsubConv = subscribeToConversation(id, (va) => {
+      if (active) setVotingActive(va);
+    });
     return () => {
       active = false;
       unsub();
       unsubRsvps();
+      unsubConv();
     };
   }, [id, tr, me]);
 
@@ -383,11 +391,11 @@ export default function ChatScreen() {
 
   const visible = messages.filter((m) => !blocked.has(m.senderId));
 
-  // V2 — with two or more shared plans in the chat, the one with the most "Dabei" is
-  // the group's pick and gets a Favourite badge (implicit vote, no extra step).
+  // V2 — a favourite is only crowned while a vote is explicitly running (never automatic).
+  // Then the shared plan with the most "Dabei" wins.
   const sharedPlanMsgs = visible.filter((m) => m.sharedPlan);
   let favoriteMessageId: string | null = null;
-  if (sharedPlanMsgs.length >= 2) {
+  if (votingActive && sharedPlanMsgs.length >= 2) {
     let best = 0;
     for (const m of sharedPlanMsgs) {
       const n = rsvps[m.id]?.in.length ?? 0;
@@ -398,6 +406,14 @@ export default function ChatScreen() {
     }
     if (best === 0) favoriteMessageId = null; // no votes yet → no favourite
   }
+
+  const toggleVoting = useCallback(async () => {
+    if (!id) return;
+    haptics.light();
+    const next = !votingActive;
+    setVotingActive(next); // optimistic; realtime confirms for everyone
+    await setConversationVoting(id, next);
+  }, [id, votingActive]);
 
   return (
     <View style={{ flex: 1, backgroundColor: t.colors.background }}>
@@ -505,6 +521,37 @@ export default function ChatScreen() {
             ))
           )}
         </ScrollView>
+
+        {sharedPlanMsgs.length >= 2 ? (
+          <Pressable
+            onPress={toggleVoting}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              marginHorizontal: t.spacing.lg,
+              marginBottom: t.spacing.sm,
+              paddingVertical: 9,
+              borderRadius: t.radius.pill,
+              backgroundColor: votingActive ? t.colors.accentOrange + '22' : t.colors.surfaceSecondary,
+              borderWidth: 1,
+              borderColor: votingActive ? t.colors.accentOrange : t.colors.border,
+            }}
+          >
+            <Ionicons
+              name={votingActive ? 'trophy' : 'podium-outline'}
+              size={15}
+              color={votingActive ? t.colors.accentOrange : t.colors.textSecondary}
+            />
+            <Text
+              variant="small"
+              style={{ fontWeight: '700', color: votingActive ? t.colors.accentOrange : t.colors.textSecondary }}
+            >
+              {votingActive ? tr('rsvp.voteActive') : tr('rsvp.startVote')}
+            </Text>
+          </Pressable>
+        ) : null}
 
         <View
           style={{

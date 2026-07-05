@@ -590,6 +590,8 @@ export const de = {
     going: '%{count} dabei',
     favorite: 'Gruppen-Favorit',
     openFull: 'Ganzen Plan öffnen',
+    startVote: 'Abstimmung starten',
+    voteActive: 'Abstimmung läuft · Beenden',
   },
   messages: {
     title: 'Nachrichten',

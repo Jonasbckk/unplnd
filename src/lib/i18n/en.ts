@@ -554,6 +554,8 @@ export const en = {
     going: '%{count} going',
     favorite: 'Group favourite',
     openFull: 'Open full plan',
+    startVote: 'Start a vote',
+    voteActive: 'Vote running · End',
   },
   messages: {
     title: 'Messages',

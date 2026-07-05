@@ -33,6 +33,7 @@ export interface ConversationMeta {
   isGroup: boolean;
   title: string | null;
   participants: PublicProfile[];
+  votingActive: boolean;
 }
 
 function mapMessage(row: Record<string, unknown>): Message {
@@ -95,13 +96,43 @@ export function subscribeToMessages(convId: string, onInsert: (m: Message) => vo
 }
 
 export async function getConversationMeta(convId: string): Promise<ConversationMeta | null> {
-  const { data: c } = await supabase.from('conversations').select('is_group, title').eq('id', convId).maybeSingle();
+  const { data: c } = await supabase
+    .from('conversations')
+    .select('is_group, title, voting_active')
+    .eq('id', convId)
+    .maybeSingle();
   if (!c) return null;
   const { data: parts } = await supabase.from('conversation_participants').select('user_id').eq('conversation_id', convId);
   const profiles = (
     await Promise.all((parts ?? []).map((p) => getPublicProfile(p.user_id as string)))
   ).filter((p): p is PublicProfile => p !== null);
-  return { isGroup: Boolean(c.is_group), title: (c.title as string | null) ?? null, participants: profiles };
+  return {
+    isGroup: Boolean(c.is_group),
+    title: (c.title as string | null) ?? null,
+    participants: profiles,
+    votingActive: Boolean(c.voting_active),
+  };
+}
+
+/** Start or stop the vote for a conversation (any participant). */
+export async function setConversationVoting(convId: string, active: boolean): Promise<boolean> {
+  const { error } = await supabase.rpc('set_conversation_voting', { conv: convId, active });
+  return !error;
+}
+
+/** Live updates to a conversation row (e.g. the vote being started/stopped). */
+export function subscribeToConversation(convId: string, onChange: (votingActive: boolean) => void): () => void {
+  const channel = supabase
+    .channel(`conversation:${convId}`)
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'conversations', filter: `id=eq.${convId}` },
+      (payload) => onChange(Boolean((payload.new as { voting_active?: boolean }).voting_active)),
+    )
+    .subscribe();
+  return () => {
+    void supabase.removeChannel(channel);
+  };
 }
 
 /** The inbox — every conversation you're in, most-recent first. */
