@@ -20,6 +20,7 @@ import { NetworkBanner, Toast } from '@/components/ui';
 import { useAlbumsStore } from '@/features/albums/albums-store';
 import { usePhotoQueue } from '@/features/albums/photo-queue';
 import { CelebrationOverlay } from '@/features/celebrate/CelebrationOverlay';
+import { initMonitoring, wrapWithMonitoring } from '@/lib/monitoring';
 import { useRatingsQueue } from '@/lib/ratings-queue';
 import { useCelebrateStore } from '@/features/celebrate/celebrate-store';
 import { recordActivity } from '@/lib/activity';
@@ -29,6 +30,9 @@ import { useConnectivityStore } from '@/store/connectivity-store';
 import { ThemeProvider, useTheme } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
+
+// Start crash/error reporting as early as possible (no-op until a DSN is configured).
+initMonitoring();
 
 // Gate: onboarding → auth → app.
 function RootNavigator() {
@@ -58,7 +62,7 @@ function RootNavigator() {
   );
 }
 
-export default function RootLayout() {
+function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     Inter_300Light,
     Inter_400Regular,
@@ -140,3 +144,6 @@ function AppShell() {
     </View>
   );
 }
+
+// Wrapping the root adds Sentry's error boundary + context (pass-through until a DSN is set).
+export default wrapWithMonitoring(RootLayout);
