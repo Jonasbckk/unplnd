@@ -526,6 +526,20 @@ export const de = {
     memoryMaker: 'Memory Maker',
     regular: 'Stammgast',
   },
+  badgeDesc: {
+    firstEvening: 'Erstelle deinen ersten Abend.',
+    regular: 'Erlebe 5 Abende.',
+    cityHopper: 'Sei in 3 verschiedenen Städten unterwegs.',
+    sunsetCollector: 'Erlebe 3 romantische Abende.',
+    nightExplorer: 'Erlebe 3 Party-Nächte.',
+    cafeExpert: 'Erlebe 3 entspannte Café-Abende.',
+    memoryMaker: 'Halte 12 Fotos in deinen Erinnerungen fest.',
+  },
+  badgeSheet: {
+    unlocked: 'Freigeschaltet',
+    unlockedCount: 'freigeschaltet',
+    close: 'Schließen',
+  },
   publicProfile: {
     notFound: 'Dieses Profil gibt es nicht mehr.',
     published: 'Abende',

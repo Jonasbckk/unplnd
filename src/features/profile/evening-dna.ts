@@ -43,18 +43,7 @@ interface BadgeCtx {
   moods: Record<string, number>;
 }
 
-// Earned from real activity — stylish, not over-gamified.
-const BADGE_DEFS: { key: string; icon: IoniconName; test: (c: BadgeCtx) => boolean }[] = [
-  { key: 'firstEvening', icon: 'sparkles-outline', test: (c) => c.evenings >= 1 },
-  { key: 'cityHopper', icon: 'map-outline', test: (c) => c.cities >= 3 },
-  { key: 'sunsetCollector', icon: 'partly-sunny-outline', test: (c) => (c.moods.Romantic ?? 0) >= 3 },
-  { key: 'nightExplorer', icon: 'moon-outline', test: (c) => (c.moods.Party ?? 0) >= 3 },
-  { key: 'cafeExpert', icon: 'cafe-outline', test: (c) => (c.moods.Relaxed ?? 0) >= 3 },
-  { key: 'memoryMaker', icon: 'images-outline', test: (c) => c.photos >= 12 },
-  { key: 'regular', icon: 'trophy-outline', test: (c) => c.evenings >= 5 },
-];
-
-export function computeBadges(albums: Album[]): EarnedBadge[] {
+function buildCtx(albums: Album[]): BadgeCtx {
   const moods: Record<string, number> = {};
   const cities = new Set<string>();
   let photos = 0;
@@ -63,6 +52,50 @@ export function computeBadges(albums: Album[]): EarnedBadge[] {
     if (a.city) cities.add(a.city);
     photos += a.photoCount ?? 0;
   }
-  const ctx: BadgeCtx = { evenings: albums.length, cities: cities.size, photos, moods };
-  return BADGE_DEFS.filter((b) => b.test(ctx)).map((b) => ({ key: b.key, icon: b.icon }));
+  return { evenings: albums.length, cities: cities.size, photos, moods };
+}
+
+export interface BadgeDef {
+  key: string;
+  icon: IoniconName;
+  /** How many are needed to earn it. */
+  target: number;
+  /** Your current count toward it, from real activity. */
+  value: (c: BadgeCtx) => number;
+}
+
+// Earned from real activity — stylish, not over-gamified. Order = collection order.
+export const BADGE_DEFS: BadgeDef[] = [
+  { key: 'firstEvening', icon: 'sparkles-outline', target: 1, value: (c) => c.evenings },
+  { key: 'regular', icon: 'trophy-outline', target: 5, value: (c) => c.evenings },
+  { key: 'cityHopper', icon: 'map-outline', target: 3, value: (c) => c.cities },
+  { key: 'sunsetCollector', icon: 'partly-sunny-outline', target: 3, value: (c) => c.moods.Romantic ?? 0 },
+  { key: 'nightExplorer', icon: 'moon-outline', target: 3, value: (c) => c.moods.Party ?? 0 },
+  { key: 'cafeExpert', icon: 'cafe-outline', target: 3, value: (c) => c.moods.Relaxed ?? 0 },
+  { key: 'memoryMaker', icon: 'images-outline', target: 12, value: (c) => c.photos },
+];
+
+export interface BadgeProgress {
+  key: string;
+  icon: IoniconName;
+  /** Current progress, capped at target (so an earned badge reads target/target). */
+  current: number;
+  target: number;
+  earned: boolean;
+}
+
+/** Every badge with its progress — earned and still-locked — for the collection view. */
+export function computeAllBadges(albums: Album[]): BadgeProgress[] {
+  const ctx = buildCtx(albums);
+  return BADGE_DEFS.map((b) => {
+    const raw = b.value(ctx);
+    return { key: b.key, icon: b.icon, current: Math.min(raw, b.target), target: b.target, earned: raw >= b.target };
+  });
+}
+
+/** Only the earned badges. */
+export function computeBadges(albums: Album[]): EarnedBadge[] {
+  return computeAllBadges(albums)
+    .filter((b) => b.earned)
+    .map((b) => ({ key: b.key, icon: b.icon }));
 }

@@ -10,6 +10,7 @@ import { MemoryCard } from '@/features/albums/MemoryCard';
 import { useAlbumsStore } from '@/features/albums/albums-store';
 import { useAuthStore } from '@/features/auth/auth-store';
 import { useFavoritesStore } from '@/features/favorites/favorites-store';
+import { BadgesCollection } from '@/features/profile/BadgesCollection';
 import { EveningDNA } from '@/features/profile/EveningDNA';
 import { ProfileBanner } from '@/features/profile/ProfileBanner';
 import { ProfileExtras } from '@/features/profile/ProfileExtras';
@@ -420,6 +421,12 @@ export default function ProfileScreen() {
       <Animated.View entering={FadeInUp.duration(400).delay(240)}>
         <EveningDNA albums={albums} accent={accent} />
       </Animated.View>
+
+      {albums.length > 0 && (
+        <Animated.View entering={FadeInUp.duration(400).delay(270)}>
+          <BadgesCollection albums={albums} accent={accent} />
+        </Animated.View>
+      )}
 
       <Animated.View entering={FadeInUp.duration(400).delay(300)}>
         {albums.length > 0 ? (

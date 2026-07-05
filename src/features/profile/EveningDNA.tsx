@@ -15,7 +15,7 @@ import type { Album } from '@/features/albums/types';
 import { optionIcon } from '@/features/planner/optionIcons';
 import { optionLabel, useT } from '@/lib/i18n';
 import { useTheme } from '@/theme';
-import { computeBadges, computeDNA } from './evening-dna';
+import { computeDNA } from './evening-dna';
 import { RadarChart } from './RadarChart';
 
 function Heading({ title, accent }: { title: string; accent: string }) {
@@ -44,12 +44,11 @@ function DnaBar({ pct, color }: { pct: number; color: string }) {
   );
 }
 
-/** Evening DNA (mood affinity, from real evenings) + earned badges. Own profile only (private albums). */
+/** Evening DNA — mood affinity as a radar, from real evenings. Own profile only (private albums). */
 export function EveningDNA({ albums, accent }: { albums: Album[]; accent: string }) {
   const t = useTheme();
   const { t: tr } = useT();
   const dna = computeDNA(albums);
-  const badges = computeBadges(albums);
   if (dna.length === 0) return null;
 
   return (
@@ -126,33 +125,6 @@ export function EveningDNA({ albums, accent }: { albums: Album[]; accent: string
           )}
         </Card>
       </View>
-
-      {badges.length > 0 && (
-        <View style={{ gap: t.spacing.md }}>
-          <Heading title={tr('dna.badges')} accent={accent} />
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: t.spacing.sm }}>
-            {badges.map((b) => (
-              <View
-                key={b.key}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 6,
-                  backgroundColor: t.colors.surfaceSecondary,
-                  paddingHorizontal: t.spacing.base,
-                  paddingVertical: t.spacing.sm,
-                  borderRadius: t.radius.pill,
-                }}
-              >
-                <Ionicons name={b.icon} size={15} color={accent} />
-                <Text variant="small" style={{ fontWeight: '600' }}>
-                  {tr(`badges.${b.key}`)}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      )}
     </View>
   );
 }

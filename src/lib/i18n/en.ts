@@ -490,6 +490,20 @@ export const en = {
     memoryMaker: 'Memory Maker',
     regular: 'Regular',
   },
+  badgeDesc: {
+    firstEvening: 'Create your first evening.',
+    regular: 'Live five evenings.',
+    cityHopper: 'Explore three different cities.',
+    sunsetCollector: 'Live three romantic evenings.',
+    nightExplorer: 'Live three party nights.',
+    cafeExpert: 'Live three relaxed café evenings.',
+    memoryMaker: 'Capture twelve photos in your memories.',
+  },
+  badgeSheet: {
+    unlocked: 'Unlocked',
+    unlockedCount: 'unlocked',
+    close: 'Close',
+  },
   publicProfile: {
     notFound: 'This profile no longer exists.',
     published: 'Evenings',
