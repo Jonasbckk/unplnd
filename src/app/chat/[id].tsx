@@ -642,7 +642,8 @@ export default function ChatScreen() {
       >
         <ScrollView
           ref={scrollRef}
-          contentContainerStyle={{ padding: t.spacing.lg, gap: 0 }}
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: t.spacing.lg, gap: 0, flexGrow: 1 }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}

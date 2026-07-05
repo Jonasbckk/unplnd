@@ -105,8 +105,10 @@ export function AttachSheet({
                 icon="image-outline"
                 label={tr('attach.photo')}
                 onPress={() => {
+                  // Close the sheet first, then open the picker — presenting the OS picker while
+                  // this modal is still dismissing silently fails on iOS.
                   onClose();
-                  onPhoto();
+                  setTimeout(onPhoto, 320);
                 }}
               />
               <MenuRow
