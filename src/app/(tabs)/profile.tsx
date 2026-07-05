@@ -94,18 +94,18 @@ function SectionHeading({ title, accent }: { title: string; accent: string }) {
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-/** A compact profile action — a coloured icon circle + label. Springs on tap, fades in on load. */
-function MenuAction({
+/** A compact profile tile — accent icon circle + full label, two per row. Springs on tap, fades in. */
+function MenuTile({
   icon,
   label,
-  color,
+  accent,
   badge,
   index,
   onPress,
 }: {
   icon: IoniconName;
   label: string;
-  color: string;
+  accent: string;
   badge?: number;
   index: number;
   onPress: () => void;
@@ -115,27 +115,39 @@ function MenuAction({
   const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   return (
     <AnimatedPressable
-      entering={FadeInDown.duration(340).delay(140 + index * 55)}
+      entering={FadeInDown.duration(320).delay(140 + index * 55)}
       onPress={onPress}
       onPressIn={() => {
-        scale.value = withSpring(0.9, { damping: 14, stiffness: 220 });
+        scale.value = withSpring(0.96, { damping: 15, stiffness: 220 });
       }}
       onPressOut={() => {
-        scale.value = withSpring(1, { damping: 14, stiffness: 220 });
+        scale.value = withSpring(1, { damping: 15, stiffness: 220 });
       }}
-      style={[{ flex: 1, alignItems: 'center', gap: 6 }, pressStyle]}
+      style={[
+        {
+          width: '48%',
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: t.spacing.sm,
+          backgroundColor: t.colors.surfaceSecondary,
+          borderRadius: t.radius.lg,
+          paddingVertical: t.spacing.md,
+          paddingHorizontal: t.spacing.md,
+        },
+        pressStyle,
+      ]}
     >
       <View
         style={{
-          width: 48,
-          height: 48,
-          borderRadius: 24,
-          backgroundColor: color + '26',
+          width: 38,
+          height: 38,
+          borderRadius: 19,
+          backgroundColor: accent + '26',
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <Ionicons name={icon} size={22} color={color} />
+        <Ionicons name={icon} size={19} color={accent} />
         {badge && badge > 0 ? (
           <View
             style={{
@@ -157,7 +169,7 @@ function MenuAction({
           </View>
         ) : null}
       </View>
-      <Text center numberOfLines={1} style={{ fontWeight: '600', fontSize: 10.5 }}>
+      <Text variant="small" style={{ flex: 1, fontWeight: '600' }} numberOfLines={1}>
         {label}
       </Text>
     </AnimatedPressable>
@@ -348,50 +360,50 @@ export default function ProfileScreen() {
       <Animated.View entering={FadeInUp.duration(400).delay(60)}>
         <Card style={{ backgroundColor: accent + '1F' }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-around', gap: t.spacing.xs }}>
-            <Stat icon="images-outline" value={memories} label={tr('profile.memories')} color="#4C9BE8" />
-            <Stat icon="navigate-outline" value={cities} label={tr('profile.cities')} color="#48C4D3" />
-            <Stat icon="heart-outline" value={favorites.length} label={tr('profile.saved')} color="#E06B8B" />
-            <Stat icon="sparkles-outline" value={favoriteMood} label={tr('profile.topMood')} color="#9B7BE8" />
+            <Stat icon="images-outline" value={memories} label={tr('profile.memories')} color={accent} />
+            <Stat icon="navigate-outline" value={cities} label={tr('profile.cities')} color={accent} />
+            <Stat icon="heart-outline" value={favorites.length} label={tr('profile.saved')} color={accent} />
+            <Stat icon="sparkles-outline" value={favoriteMood} label={tr('profile.topMood')} color={accent} />
           </View>
         </Card>
       </Animated.View>
 
-      <View style={{ flexDirection: 'row', gap: t.spacing.sm, paddingVertical: t.spacing.sm }}>
-        <MenuAction
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: t.spacing.sm }}>
+        <MenuTile
           index={0}
           icon="people-outline"
           label={tr('profile.connections')}
-          color="#4C9BE8"
+          accent={accent}
           badge={pending}
           onPress={() => router.push('/connections' as Href)}
         />
-        <MenuAction
+        <MenuTile
           index={1}
           icon="chatbubbles-outline"
           label={tr('profile.messages')}
-          color="#48C4D3"
+          accent={accent}
           onPress={() => router.push('/messages' as Href)}
         />
-        <MenuAction
+        <MenuTile
           index={2}
           icon="color-palette-outline"
           label={tr('profile.style')}
-          color="#9B7BE8"
+          accent={accent}
           onPress={() => router.push('/profile-style' as Href)}
         />
-        <MenuAction
+        <MenuTile
           index={3}
           icon="shield-checkmark-outline"
-          label={tr('profile.verifyShort')}
-          color="#E5A93C"
+          label={tr('profile.verify')}
+          accent={accent}
           onPress={() => router.push('/verify' as Href)}
         />
         {albums.length > 0 && (
-          <MenuAction
+          <MenuTile
             index={4}
             icon="stats-chart-outline"
             label={tr('profile.statsShort')}
-            color="#5EA97E"
+            accent={accent}
             /* '/stats' is a real route; cast only because the dev server's typed-route file
                regenerates on next `expo start`. */
             onPress={() => router.push('/stats' as Href)}

@@ -16,16 +16,6 @@ import { useT } from '@/lib/i18n';
 import { useTheme } from '@/theme';
 import { computeBadges, computeDNA } from './evening-dna';
 
-/** Each mood gets its own colour, so the DNA reads at a glance and feels alive. */
-const MOOD_TINT: Record<string, string> = {
-  Romantic: '#C97B63',
-  Relaxed: '#5EA97E',
-  Party: '#9B7BE8',
-  Cozy: '#E5A93C',
-  Adventure: '#4C9BE8',
-  Luxury: '#B08D57',
-};
-
 function Heading({ title, accent }: { title: string; accent: string }) {
   const t = useTheme();
   return (
@@ -60,15 +50,13 @@ export function EveningDNA({ albums, accent }: { albums: Album[]; accent: string
   const badges = computeBadges(albums);
   if (dna.length === 0) return null;
 
-  const tint = (mood: string) => MOOD_TINT[mood] ?? accent;
-
   return (
     <View style={{ gap: t.spacing.lg }}>
       <View style={{ gap: t.spacing.md }}>
         <Heading title={tr('dna.title')} accent={accent} />
         <Card style={{ gap: t.spacing.md }}>
           {dna.map((trait) => {
-            const color = tint(trait.mood);
+            const color = accent;
             return (
               <View key={trait.mood} style={{ gap: 6 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>

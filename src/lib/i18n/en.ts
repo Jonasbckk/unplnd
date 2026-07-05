@@ -361,7 +361,6 @@ export const en = {
     statistics: 'Your evenings in numbers',
     statsShort: 'Statistics',
     verify: 'Verification',
-    verifyShort: 'Verified',
     emptyStory: 'Your story starts tonight. Plan your first evening to begin.',
   },
   verify: {
