@@ -6,6 +6,7 @@ import React, { createContext, useContext, useMemo } from 'react';
 import { useColorScheme } from 'react-native';
 
 import { useAppStore } from '@/store/app-store';
+import { applyAppTheme } from './app-themes';
 import { darkColors, lightColors, type ColorTokens } from './colors';
 import { motion, radius, shadows, spacing, typography } from './tokens';
 
@@ -24,20 +25,21 @@ const ThemeContext = createContext<Theme | null>(null);
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const system = useColorScheme();
   const preference = useAppStore((s) => s.themePreference);
+  const appThemeId = useAppStore((s) => s.appThemeId);
   const scheme: 'light' | 'dark' =
     preference === 'system' ? (system === 'dark' ? 'dark' : 'light') : preference;
 
   const theme = useMemo<Theme>(
     () => ({
       scheme,
-      colors: scheme === 'dark' ? darkColors : lightColors,
+      colors: applyAppTheme(scheme === 'dark' ? darkColors : lightColors, appThemeId),
       spacing,
       radius,
       typography,
       motion,
       shadows,
     }),
-    [scheme],
+    [scheme, appThemeId],
   );
 
   return <ThemeContext.Provider value={theme}>{children}</ThemeContext.Provider>;

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { useState, type ComponentProps, type ReactNode } from 'react';
 import { Alert, Linking, Platform, Pressable, ScrollView, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -128,6 +128,16 @@ export default function SettingsScreen() {
                 ]}
               />
             </View>
+            <Row
+              label={tr('settings.appColor')}
+              onPress={() => router.push('/app-theme' as Href)}
+              right={
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}>
+                  <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: t.colors.primary }} />
+                  <Ionicons name={'chevron-forward' as IoniconName} size={18} color={t.colors.textSecondary} />
+                </View>
+              }
+            />
           </Section>
 
           <Section title={tr('settings.language')}>
