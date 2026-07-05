@@ -36,10 +36,15 @@ export const de = {
       },
     },
     demo: {
-      title: 'Fühl, wie es ist.',
+      title: 'Teste es, bevor du loslegst.',
       body: 'Wähl eine Stimmung — wir skizzieren dir einen Abend. Ganz ohne Konto.',
       create: 'Erstell meinen Abend',
-      yourEvening: 'Dein Abend: %{mood}',
+      eyebrow: 'Dein Abend',
+      route: 'Route starten',
+      afterwards: 'Und danach – deine Erinnerung',
+      rate: 'Wie war dein Abend?',
+      share: 'Teilen',
+      stopsCount: '%{count} Stops',
     },
     permissions: {
       title: 'Noch zwei Dinge.',

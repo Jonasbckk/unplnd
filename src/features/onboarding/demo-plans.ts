@@ -14,6 +14,21 @@ export interface DemoStop {
   image?: ImageSourcePropType;
 }
 
+export interface DemoMeta {
+  /** Per-mood accent that tints the preview gradient, route line and navigate button. */
+  accent: string;
+  /** Playful (not real) total route distance — this is a teaser, not a live plan. */
+  distanceKm: string;
+}
+
+/** Visual identity per mood, so each sample evening feels distinct (onboarding flourish only). */
+export const DEMO_META: Record<string, DemoMeta> = {
+  'Stay In': { accent: '#D4884A', distanceKm: '0,8 km' },
+  Romantic: { accent: '#C56B87', distanceKm: '2,4 km' },
+  Activities: { accent: '#5E9179', distanceKm: '3,6 km' },
+  Party: { accent: '#9265C4', distanceKm: '4,2 km' },
+};
+
 /**
  * The four onboarding sample evenings — one per mood chip. Titles are intentionally generic
  * (no real venues): onboarding runs before location permission, so we never promise a specific

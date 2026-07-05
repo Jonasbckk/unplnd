@@ -36,10 +36,15 @@ export const en = {
       },
     },
     demo: {
-      title: 'See how it feels.',
+      title: 'Try it before you dive in.',
       body: 'Pick a vibe — we’ll sketch a sample evening. No account needed.',
       create: 'Create my evening',
-      yourEvening: 'Your %{mood} evening',
+      eyebrow: 'Your evening',
+      route: 'Start route',
+      afterwards: 'And after – your memory',
+      rate: 'How was your evening?',
+      share: 'Share',
+      stopsCount: '%{count} stops',
     },
     permissions: {
       title: 'A couple of things.',
