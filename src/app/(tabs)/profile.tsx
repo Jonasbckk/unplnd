@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { useRouter, type Href } from 'expo-router';
 import { useEffect, useState, type ComponentProps } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
+import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { Card, Screen, Text, useCountUp } from '@/components/ui';
 import { MemoryCard } from '@/features/albums/MemoryCard';
@@ -91,34 +92,50 @@ function SectionHeading({ title, accent }: { title: string; accent: string }) {
   );
 }
 
-/** A compact profile action — small icon circle + label, sits in a horizontal row (Instagram-style). */
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+/** A compact profile action — a coloured icon circle + label. Springs on tap, fades in on load. */
 function MenuAction({
   icon,
   label,
-  accent,
+  color,
   badge,
+  index,
   onPress,
 }: {
   icon: IoniconName;
   label: string;
-  accent: string;
+  color: string;
   badge?: number;
+  index: number;
   onPress: () => void;
 }) {
   const t = useTheme();
+  const scale = useSharedValue(1);
+  const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => ({ flex: 1, alignItems: 'center', gap: 6, opacity: pressed ? 0.7 : 1 })}>
+    <AnimatedPressable
+      entering={FadeInDown.duration(340).delay(140 + index * 55)}
+      onPress={onPress}
+      onPressIn={() => {
+        scale.value = withSpring(0.9, { damping: 14, stiffness: 220 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 14, stiffness: 220 });
+      }}
+      style={[{ flex: 1, alignItems: 'center', gap: 6 }, pressStyle]}
+    >
       <View
         style={{
-          width: 50,
-          height: 50,
-          borderRadius: t.radius.pill,
-          backgroundColor: accent + '1F',
+          width: 48,
+          height: 48,
+          borderRadius: 24,
+          backgroundColor: color + '26',
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <Ionicons name={icon} size={22} color={accent} />
+        <Ionicons name={icon} size={22} color={color} />
         {badge && badge > 0 ? (
           <View
             style={{
@@ -140,17 +157,10 @@ function MenuAction({
           </View>
         ) : null}
       </View>
-      <Text
-        variant="caption"
-        center
-        numberOfLines={1}
-        adjustsFontSizeToFit
-        minimumFontScale={0.8}
-        style={{ fontWeight: '600' }}
-      >
+      <Text center numberOfLines={1} style={{ fontWeight: '600', fontSize: 10.5 }}>
         {label}
       </Text>
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
@@ -344,37 +354,42 @@ export default function ProfileScreen() {
         </View>
       </Card>
 
-      <View style={{ flexDirection: 'row', gap: t.spacing.xs, paddingVertical: t.spacing.xs }}>
+      <View style={{ flexDirection: 'row', gap: t.spacing.sm, paddingVertical: t.spacing.sm }}>
         <MenuAction
+          index={0}
           icon="people-outline"
           label={tr('profile.connections')}
-          accent={accent}
+          color="#4C9BE8"
           badge={pending}
           onPress={() => router.push('/connections' as Href)}
         />
         <MenuAction
+          index={1}
           icon="chatbubbles-outline"
           label={tr('profile.messages')}
-          accent={accent}
+          color="#48C4D3"
           onPress={() => router.push('/messages' as Href)}
         />
         <MenuAction
+          index={2}
           icon="color-palette-outline"
           label={tr('profile.style')}
-          accent={accent}
+          color="#9B7BE8"
           onPress={() => router.push('/profile-style' as Href)}
         />
         <MenuAction
+          index={3}
           icon="shield-checkmark-outline"
-          label={tr('profile.verify')}
-          accent={accent}
+          label={tr('profile.verifyShort')}
+          color="#E5A93C"
           onPress={() => router.push('/verify' as Href)}
         />
         {albums.length > 0 && (
           <MenuAction
+            index={4}
             icon="stats-chart-outline"
             label={tr('profile.statsShort')}
-            accent={accent}
+            color="#5EA97E"
             /* '/stats' is a real route; cast only because the dev server's typed-route file
                regenerates on next `expo start`. */
             onPress={() => router.push('/stats' as Href)}

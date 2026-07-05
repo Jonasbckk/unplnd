@@ -397,6 +397,7 @@ export const de = {
     statistics: 'Deine Abende in Zahlen',
     statsShort: 'Statistiken',
     verify: 'Verifizierung',
+    verifyShort: 'Verifiziert',
     emptyStory: 'Deine Geschichte beginnt heute Abend. Plane deinen ersten Abend.',
   },
   verify: {
