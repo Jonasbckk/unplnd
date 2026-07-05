@@ -184,6 +184,14 @@ export default function SettingsScreen() {
             />
           </Section>
 
+          <Section title={tr('settings.content')}>
+            <View style={{ paddingVertical: t.spacing.base }}>
+              <Text variant="small" color="textSecondary">
+                {tr('settings.contentBody')}
+              </Text>
+            </View>
+          </Section>
+
           {__DEV__ && (
             <Section title="Developer">
               <Row

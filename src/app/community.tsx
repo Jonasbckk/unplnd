@@ -141,7 +141,14 @@ export default function CommunityScreen() {
           <Pressable onPress={() => router.back()} hitSlop={8}>
             <Ionicons name="chevron-back" size={26} color={t.colors.textPrimary} />
           </Pressable>
-          <Text variant="h2">{tr('community.title')}</Text>
+          <Text variant="h2" style={{ flex: 1 }}>{tr('community.title')}</Text>
+          <Pressable
+            onPress={() => router.push('/plan/create' as Href)}
+            hitSlop={8}
+            accessibilityLabel={tr('createPlan.title')}
+          >
+            <Ionicons name="add-circle-outline" size={28} color={t.colors.primary} />
+          </Pressable>
         </View>
       </SafeAreaView>
 
