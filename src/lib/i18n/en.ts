@@ -552,6 +552,8 @@ export const en = {
     in: "I'm in",
     out: 'Out',
     going: '%{count} going',
+    favorite: 'Group favourite',
+    openFull: 'Open full plan',
   },
   messages: {
     title: 'Messages',

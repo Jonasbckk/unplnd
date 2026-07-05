@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/ui';
 import { useAuthStore } from '@/features/auth/auth-store';
+import { PlanPreviewSheet } from '@/features/messaging/PlanPreviewSheet';
 import { blockUser, getBlockedIds, type PublicProfile } from '@/lib/community';
 import { confirmDialog } from '@/lib/confirm';
 import { haptics } from '@/lib/haptics';
@@ -46,8 +47,19 @@ function formatTime(iso: string): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
-function PlanCard({ plan, onPress, onDark }: { plan: SharedPlan; onPress?: () => void; onDark: boolean }) {
+function PlanCard({
+  plan,
+  onPress,
+  onDark,
+  isFavorite,
+}: {
+  plan: SharedPlan;
+  onPress?: () => void;
+  onDark: boolean;
+  isFavorite?: boolean;
+}) {
   const t = useTheme();
+  const { t: tr } = useT();
   const fg = onDark ? '#FFFFFF' : t.colors.textPrimary;
   const sub = onDark ? 'rgba(255,255,255,0.8)' : t.colors.textSecondary;
   const stops = plan.route.map((s) => s.title).slice(0, 3).join(' · ');
@@ -62,11 +74,20 @@ function PlanCard({ plan, onPress, onDark }: { plan: SharedPlan; onPress?: () =>
         gap: 3,
       }}
     >
+      {isFavorite ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 1 }}>
+          <Ionicons name="trophy" size={12} color={t.colors.accentOrange} />
+          <Text variant="caption" style={{ color: t.colors.accentOrange, fontWeight: '700' }}>
+            {tr('rsvp.favorite')}
+          </Text>
+        </View>
+      ) : null}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
         <Ionicons name="map-outline" size={14} color={fg} />
         <Text variant="small" style={{ color: fg, fontWeight: '700', flex: 1 }} numberOfLines={1}>
           {plan.title}
         </Text>
+        <Ionicons name="chevron-expand" size={13} color={sub} />
       </View>
       {stops ? (
         <Text variant="caption" style={{ color: sub }} numberOfLines={1}>
@@ -84,12 +105,14 @@ function Bubble({
   senderName,
   onPlan,
   onLongPress,
+  isFavorite,
 }: {
   message: Message;
   mine: boolean;
   senderName?: string;
   onPlan?: (p: SharedPlan) => void;
   onLongPress?: () => void;
+  isFavorite?: boolean;
 }) {
   const t = useTheme();
   return (
@@ -121,7 +144,12 @@ function Bubble({
           </Text>
         ) : null}
         {message.sharedPlan ? (
-          <PlanCard plan={message.sharedPlan} onDark={mine} onPress={() => message.sharedPlan && onPlan?.(message.sharedPlan)} />
+          <PlanCard
+            plan={message.sharedPlan}
+            onDark={mine}
+            isFavorite={isFavorite}
+            onPress={() => message.sharedPlan && onPlan?.(message.sharedPlan)}
+          />
         ) : null}
       </Pressable>
       <Text variant="caption" color="textSecondary" style={{ marginTop: 2, marginHorizontal: 6, opacity: 0.7 }}>
@@ -230,6 +258,7 @@ export default function ChatScreen() {
   const [draft, setDraft] = useState('');
   const [blocked, setBlocked] = useState<Set<string>>(new Set());
   const [rsvps, setRsvps] = useState<Record<string, RsvpTally>>({});
+  const [preview, setPreview] = useState<SharedPlan | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -284,8 +313,9 @@ export default function ChatScreen() {
     // realtime echoes it back; nothing else to do
   }, [id, draft]);
 
-  const openPlan = (plan: SharedPlan) => {
-    if (plan.sourceId) router.push(`/community/${plan.sourceId}` as Href);
+  const openFull = (sourceId: string) => {
+    setPreview(null);
+    router.push(`/community/${sourceId}` as Href);
   };
 
   const onRsvp = useCallback(
@@ -352,6 +382,22 @@ export default function ChatScreen() {
   };
 
   const visible = messages.filter((m) => !blocked.has(m.senderId));
+
+  // V2 — with two or more shared plans in the chat, the one with the most "Dabei" is
+  // the group's pick and gets a Favourite badge (implicit vote, no extra step).
+  const sharedPlanMsgs = visible.filter((m) => m.sharedPlan);
+  let favoriteMessageId: string | null = null;
+  if (sharedPlanMsgs.length >= 2) {
+    let best = 0;
+    for (const m of sharedPlanMsgs) {
+      const n = rsvps[m.id]?.in.length ?? 0;
+      if (n > best) {
+        best = n;
+        favoriteMessageId = m.id;
+      }
+    }
+    if (best === 0) favoriteMessageId = null; // no votes yet → no favourite
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: t.colors.background }}>
@@ -443,8 +489,9 @@ export default function ChatScreen() {
                   message={m}
                   mine={m.senderId === me}
                   senderName={isGroup ? names[m.senderId] : undefined}
-                  onPlan={openPlan}
+                  onPlan={(p) => setPreview(p)}
                   onLongPress={() => reportMsg(m)}
+                  isFavorite={m.id === favoriteMessageId}
                 />
                 {m.sharedPlan ? (
                   <RsvpBar
@@ -548,6 +595,8 @@ export default function ChatScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      <PlanPreviewSheet plan={preview} onClose={() => setPreview(null)} onOpenFull={openFull} />
     </View>
   );
 }

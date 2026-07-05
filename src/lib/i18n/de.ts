@@ -588,6 +588,8 @@ export const de = {
     in: 'Dabei',
     out: 'Raus',
     going: '%{count} dabei',
+    favorite: 'Gruppen-Favorit',
+    openFull: 'Ganzen Plan öffnen',
   },
   messages: {
     title: 'Nachrichten',
