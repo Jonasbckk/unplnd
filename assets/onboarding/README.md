@@ -12,14 +12,14 @@ Order matches the three stops of each mood, top to bottom.
 - `zuhause-3.jpg` — 22:00 · Filmabend mit Decke und Snacks (movie night)
 
 ## Romantic (Romantisch)
-- `romantisch-1.jpg` — 19:00 · Abendessen in einer Trattoria
-- `romantisch-2.jpg` — 21:00 · Sonnenuntergangs-Spaziergang am Fluss
-- `romantisch-3.jpg` — 22:30 · Cocktails in der Rooftop-Bar
+- `romantic-1.jpg` — 19:00 · Abendessen in einer Trattoria
+- `romantic-2.jpg` — 21:00 · Sonnenuntergangs-Spaziergang am Fluss
+- `romantic-3.jpg` — 22:30 · Cocktails in der Rooftop-Bar
 
 ## Activities (Aktivitäten)
-- `aktivitaeten-1.jpg` — 18:30 · Bouldern oder Minigolf
-- `aktivitaeten-2.jpg` — 20:30 · Streetfood-Markt
-- `aktivitaeten-3.jpg` — 22:00 · Craft-Beer-Bar
+- `activity-1.jpg` — 18:30 · Bouldern oder Minigolf
+- `activity-2.jpg` — 20:30 · Streetfood-Markt
+- `activity-3.jpg` — 22:00 · Craft-Beer-Bar
 
 ## Party
 - `party-1.jpg` — 20:00 · Vorglühen in einer Cocktailbar
