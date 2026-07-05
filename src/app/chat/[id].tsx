@@ -30,6 +30,14 @@ import {
   type Message,
   type SharedPlan,
 } from '@/lib/messaging';
+import {
+  getConversationRsvps,
+  removeRsvp,
+  setRsvp,
+  subscribeToRsvps,
+  type RsvpStatus,
+  type RsvpTally,
+} from '@/lib/plan-rsvp';
 import { toast } from '@/store/toast-store';
 import { useTheme } from '@/theme';
 
@@ -123,6 +131,89 @@ function Bubble({
   );
 }
 
+function RsvpButton({
+  label,
+  icon,
+  active,
+  activeColor,
+  onPress,
+}: {
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  active: boolean;
+  activeColor: string;
+  onPress: () => void;
+}) {
+  const t = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={6}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        paddingHorizontal: t.spacing.md,
+        paddingVertical: 7,
+        borderRadius: t.radius.pill,
+        backgroundColor: active ? activeColor : t.colors.surfaceSecondary,
+        borderWidth: 1,
+        borderColor: active ? activeColor : t.colors.border,
+      }}
+    >
+      <Ionicons name={icon} size={15} color={active ? '#FFFFFF' : t.colors.textSecondary} />
+      <Text variant="small" style={{ fontWeight: '700', color: active ? '#FFFFFF' : t.colors.textSecondary }}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+/** "Are we going?" — a Dabei/Raus row under a shared plan, with a live tally. */
+function RsvpBar({
+  tally,
+  mine,
+  myId,
+  onSet,
+}: {
+  tally?: RsvpTally;
+  mine: boolean;
+  myId?: string;
+  onSet: (status: RsvpStatus) => void;
+}) {
+  const t = useTheme();
+  const { t: tr } = useT();
+  const going = tally?.in ?? [];
+  const out = tally?.out ?? [];
+  const myStatus = myId && going.includes(myId) ? 'in' : myId && out.includes(myId) ? 'out' : null;
+
+  return (
+    <View style={{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '82%', marginBottom: t.spacing.sm, gap: 6 }}>
+      <View style={{ flexDirection: 'row', gap: t.spacing.sm }}>
+        <RsvpButton
+          label={tr('rsvp.in')}
+          icon="checkmark-circle"
+          active={myStatus === 'in'}
+          activeColor={t.colors.success}
+          onPress={() => onSet('in')}
+        />
+        <RsvpButton
+          label={tr('rsvp.out')}
+          icon="close-circle"
+          active={myStatus === 'out'}
+          activeColor={t.colors.textSecondary}
+          onPress={() => onSet('out')}
+        />
+      </View>
+      {going.length > 0 ? (
+        <Text variant="caption" color="textSecondary" style={{ marginHorizontal: 4 }}>
+          {tr('rsvp.going', { count: going.length })}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
 /** Chat — 1:1 or group. Live via Supabase Realtime. */
 export default function ChatScreen() {
   const t = useTheme();
@@ -138,6 +229,7 @@ export default function ChatScreen() {
   const [names, setNames] = useState<Record<string, string>>({});
   const [draft, setDraft] = useState('');
   const [blocked, setBlocked] = useState<Set<string>>(new Set());
+  const [rsvps, setRsvps] = useState<Record<string, RsvpTally>>({});
   const [menuOpen, setMenuOpen] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -163,12 +255,17 @@ export default function ChatScreen() {
         setTitle(other?.name ?? tr('community.someone'));
       }
     });
+    void getConversationRsvps(id).then((r) => active && setRsvps(r));
     const unsub = subscribeToMessages(id, (m) => {
       setMessages((cur) => (cur.some((x) => x.id === m.id) ? cur : [...cur, m]));
+    });
+    const unsubRsvps = subscribeToRsvps(id, () => {
+      void getConversationRsvps(id).then((r) => active && setRsvps(r));
     });
     return () => {
       active = false;
       unsub();
+      unsubRsvps();
     };
   }, [id, tr, me]);
 
@@ -190,6 +287,27 @@ export default function ChatScreen() {
   const openPlan = (plan: SharedPlan) => {
     if (plan.sourceId) router.push(`/community/${plan.sourceId}` as Href);
   };
+
+  const onRsvp = useCallback(
+    async (messageId: string, status: RsvpStatus) => {
+      if (!id || !me) return;
+      haptics.light();
+      const cur = rsvps[messageId];
+      const already = cur?.in.includes(me) ? 'in' : cur?.out.includes(me) ? 'out' : null;
+      // Optimistic — RSVP must feel instant; realtime reconciles for everyone.
+      setRsvps((prev) => {
+        const next: RsvpTally = {
+          in: (prev[messageId]?.in ?? []).filter((u) => u !== me),
+          out: (prev[messageId]?.out ?? []).filter((u) => u !== me),
+        };
+        if (already !== status) next[status].push(me);
+        return { ...prev, [messageId]: next };
+      });
+      if (already === status) await removeRsvp(messageId);
+      else await setRsvp(messageId, id, status);
+    },
+    [id, me, rsvps],
+  );
 
   const reportMsg = async (m: Message) => {
     const ok = await confirmDialog(
@@ -320,14 +438,23 @@ export default function ChatScreen() {
             </View>
           ) : (
             visible.map((m) => (
-              <Bubble
-                key={m.id}
-                message={m}
-                mine={m.senderId === me}
-                senderName={isGroup ? names[m.senderId] : undefined}
-                onPlan={openPlan}
-                onLongPress={() => reportMsg(m)}
-              />
+              <View key={m.id}>
+                <Bubble
+                  message={m}
+                  mine={m.senderId === me}
+                  senderName={isGroup ? names[m.senderId] : undefined}
+                  onPlan={openPlan}
+                  onLongPress={() => reportMsg(m)}
+                />
+                {m.sharedPlan ? (
+                  <RsvpBar
+                    tally={rsvps[m.id]}
+                    mine={m.senderId === me}
+                    myId={me}
+                    onSet={(status) => onRsvp(m.id, status)}
+                  />
+                ) : null}
+              </View>
             ))
           )}
         </ScrollView>

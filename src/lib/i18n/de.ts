@@ -584,6 +584,11 @@ export const de = {
     empty: 'Sagt Hallo und plant euren nächsten Abend zusammen.',
     placeholder: 'Nachricht schreiben…',
   },
+  rsvp: {
+    in: 'Dabei',
+    out: 'Raus',
+    going: '%{count} dabei',
+  },
   messages: {
     title: 'Nachrichten',
     shareTitle: 'In Chat teilen',

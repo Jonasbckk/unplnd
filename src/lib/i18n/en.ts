@@ -548,6 +548,11 @@ export const en = {
     empty: 'Say hi and plan your next evening together.',
     placeholder: 'Write a message…',
   },
+  rsvp: {
+    in: "I'm in",
+    out: 'Out',
+    going: '%{count} going',
+  },
   messages: {
     title: 'Messages',
     shareTitle: 'Share to a chat',
