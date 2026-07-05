@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
@@ -44,8 +45,9 @@ export function ProfileBanner({ style, children }: { style: ProfileStyle; childr
       style={{
         borderRadius: t.radius.card,
         overflow: 'hidden',
-        paddingVertical: t.spacing.xl,
+        paddingVertical: t.spacing.xxl,
         paddingHorizontal: t.spacing.lg,
+        minHeight: 180,
       }}
     >
       <LinearGradient
@@ -54,6 +56,19 @@ export function ProfileBanner({ style, children }: { style: ProfileStyle; childr
         end={{ x: 1, y: 1 }}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       />
+      {style.image ? (
+        <>
+          <Image
+            source={style.image}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+            contentFit="cover"
+          />
+          <LinearGradient
+            colors={['rgba(0,0,0,0.12)', 'rgba(0,0,0,0.55)']}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+          />
+        </>
+      ) : null}
       {animate && width > 0 && (
         <Animated.View
           pointerEvents="none"

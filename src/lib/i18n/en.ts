@@ -571,6 +571,8 @@ export const en = {
       olive: 'Olive',
       sunset: 'Sunset',
       midnight: 'Midnight',
+      aurora: 'Aurora',
+      neon: 'Neon',
     },
     premiumTitle: 'UNPLND Premium',
     premiumBody:

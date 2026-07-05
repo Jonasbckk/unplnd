@@ -16,6 +16,8 @@ export interface ProfileStyle {
   premium: boolean;
   /** Subtle light sweep across the banner (respects Reduce Motion). */
   animated: boolean;
+  /** Optional bundled header photo (require(...)). Shown behind a scrim instead of the flat gradient. */
+  image?: number;
 }
 
 export const PROFILE_STYLES: readonly ProfileStyle[] = [
@@ -64,6 +66,22 @@ export const PROFILE_STYLES: readonly ProfileStyle[] = [
     accent: '#9B8CF0',
     gradient: ['#3A3170', '#1C1838'],
     onGradient: '#EDE9FF',
+    premium: true,
+    animated: true,
+  },
+  {
+    id: 'aurora',
+    accent: '#3FB6A8',
+    gradient: ['#12324A', '#1E6A6E', '#4A3F7A'],
+    onGradient: '#FFFFFF',
+    premium: true,
+    animated: true,
+  },
+  {
+    id: 'neon',
+    accent: '#E255A1',
+    gradient: ['#3A1C71', '#D76D77', '#5B6BE8'],
+    onGradient: '#FFFFFF',
     premium: true,
     animated: true,
   },

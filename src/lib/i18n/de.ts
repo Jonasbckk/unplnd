@@ -607,6 +607,8 @@ export const de = {
       olive: 'Olive',
       sunset: 'Sonnenuntergang',
       midnight: 'Mitternacht',
+      aurora: 'Aurora',
+      neon: 'Neon',
     },
     premiumTitle: 'UNPLND Premium',
     premiumBody:

@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter, type Href } from 'expo-router';
 import { useEffect, useState, type ComponentProps } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, Share, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { Card, Screen, Text, useCountUp } from '@/components/ui';
@@ -256,6 +256,11 @@ export default function ProfileScreen() {
   const favoriteMoodValue = mostCommon(albums.map((a) => a.mood));
   const favoriteMood = favoriteMoodValue ? optionLabel(favoriteMoodValue) : '—';
 
+  const shareProfile = () => {
+    const uid = user?.id;
+    void Share.share({ message: uid ? `${name} auf UNPLND\nunplnd://user/${uid}` : `${name} auf UNPLND` });
+  };
+
   return (
     <Screen scroll contentStyle={{ gap: t.spacing.lg }}>
       <ProfileBanner style={style}>
@@ -264,11 +269,11 @@ export default function ProfileScreen() {
             onPress={() => router.push('/profile-edit' as Href)}
             style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.base, flex: 1 }}
           >
-            <View style={{ width: 64, height: 64 }}>
+            <View style={{ width: 80, height: 80 }}>
               <View
                 style={{
-                  width: 64,
-                  height: 64,
+                  width: 80,
+                  height: 80,
                   borderRadius: t.radius.pill,
                   backgroundColor: accent,
                   alignItems: 'center',
@@ -351,14 +356,27 @@ export default function ProfileScreen() {
               ) : null}
             </View>
           </Pressable>
-          <Pressable onPress={() => router.push('/settings')} hitSlop={8}>
-            <Ionicons name="settings-outline" size={24} color={style.onGradient} />
-          </Pressable>
+          <View style={{ flexDirection: 'row', gap: t.spacing.sm, alignSelf: 'flex-start' }}>
+            <Pressable
+              onPress={shareProfile}
+              hitSlop={6}
+              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Ionicons name="share-outline" size={19} color={style.onGradient} />
+            </Pressable>
+            <Pressable
+              onPress={() => router.push('/settings')}
+              hitSlop={6}
+              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Ionicons name="settings-outline" size={19} color={style.onGradient} />
+            </Pressable>
+          </View>
         </View>
       </ProfileBanner>
 
       <Animated.View entering={FadeInUp.duration(400).delay(60)}>
-        <Card style={{ backgroundColor: accent + '1F' }}>
+        <Card style={{ backgroundColor: accent + '1F', paddingVertical: t.spacing.md }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-around', gap: t.spacing.xs }}>
             <Stat icon="images-outline" value={memories} label={tr('profile.memories')} color={accent} />
             <Stat icon="navigate-outline" value={cities} label={tr('profile.cities')} color={accent} />
