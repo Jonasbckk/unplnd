@@ -360,6 +360,7 @@ export const en = {
     settings: 'Settings',
     statistics: 'Your evenings in numbers',
     statsShort: 'Statistics',
+    streakStat: 'Streak',
     verify: 'Verification',
     emptyStory: 'Your story starts tonight. Plan your first evening to begin.',
   },

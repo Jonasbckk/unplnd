@@ -396,6 +396,7 @@ export const de = {
     settings: 'Einstellungen',
     statistics: 'Deine Abende in Zahlen',
     statsShort: 'Statistiken',
+    streakStat: 'Serie',
     verify: 'Verifizierung',
     emptyStory: 'Deine Geschichte beginnt heute Abend. Plane deinen ersten Abend.',
   },

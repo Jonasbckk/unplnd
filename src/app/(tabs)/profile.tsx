@@ -16,31 +16,14 @@ import { ProfileExtras } from '@/features/profile/ProfileExtras';
 import { useProfileStyle } from '@/features/profile/profile-styles';
 import { maybeCelebrateTier } from '@/features/celebrate/celebrate-store';
 import { VerifyBadge } from '@/features/verify/VerifyBadge';
-import { currentTierLevel, getVerifyMetrics, tierByLevel } from '@/features/verify/verification';
+import { currentTierLevel, getVerifyMetrics, tierByLevel, type VerifyMetrics } from '@/features/verify/verification';
 import { getPublicProfile } from '@/lib/community';
 import { getPendingCount } from '@/lib/connections';
 import { haptics } from '@/lib/haptics';
 import { setPinnedPlaces } from '@/lib/profile';
-import { optionLabel, useT } from '@/lib/i18n';
+import { useT } from '@/lib/i18n';
 import { useAppStore } from '@/store/app-store';
 import { useTheme } from '@/theme';
-
-function mostCommon(items: string[]): string | undefined {
-  const counts = new Map<string, number>();
-  for (const item of items) {
-    if (!item) continue;
-    counts.set(item, (counts.get(item) ?? 0) + 1);
-  }
-  let best: string | undefined;
-  let bestCount = 0;
-  for (const [key, count] of counts) {
-    if (count > bestCount) {
-      best = key;
-      bestCount = count;
-    }
-  }
-  return best;
-}
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -193,6 +176,7 @@ export default function ProfileScreen() {
   const [pending, setPending] = useState(0);
   const [isFounder, setIsFounder] = useState(false);
   const [verifyLevel, setVerifyLevel] = useState(0);
+  const [metrics, setMetrics] = useState<VerifyMetrics | null>(null);
   const showVerifyBadge = useAppStore((s) => s.showVerifyBadge);
   const verifyTier = tierByLevel(verifyLevel);
 
@@ -214,6 +198,7 @@ export default function ProfileScreen() {
     void getVerifyMetrics().then((m) => {
       if (!active) return;
       const lvl = currentTierLevel(m);
+      setMetrics(m);
       setVerifyLevel(lvl);
       maybeCelebrateTier(lvl);
     });
@@ -253,9 +238,6 @@ export default function ProfileScreen() {
   const memberSince = user?.created_at ? new Date(user.created_at).getFullYear() : new Date().getFullYear();
   const memories = albums.length;
   const cities = new Set(albums.map((a) => a.city).filter(Boolean)).size;
-  const favoriteMoodValue = mostCommon(albums.map((a) => a.mood));
-  const favoriteMood = favoriteMoodValue ? optionLabel(favoriteMoodValue) : '—';
-
   const shareProfile = () => {
     const uid = user?.id;
     void Share.share({ message: uid ? `${name} auf UNPLND\nunplnd://user/${uid}` : `${name} auf UNPLND` });
@@ -264,10 +246,26 @@ export default function ProfileScreen() {
   return (
     <Screen scroll contentStyle={{ gap: t.spacing.lg }}>
       <ProfileBanner style={style}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.base }}>
+        <View style={{ gap: t.spacing.md }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: t.spacing.sm }}>
+            <Pressable
+              onPress={shareProfile}
+              hitSlop={6}
+              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Ionicons name="share-outline" size={19} color={style.onGradient} />
+            </Pressable>
+            <Pressable
+              onPress={() => router.push('/settings')}
+              hitSlop={6}
+              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Ionicons name="settings-outline" size={19} color={style.onGradient} />
+            </Pressable>
+          </View>
           <Pressable
             onPress={() => router.push('/profile-edit' as Href)}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.base, flex: 1 }}
+            style={{ flexDirection: 'row', alignItems: 'flex-start', gap: t.spacing.base }}
           >
             <View style={{ width: 80, height: 80 }}>
               <View
@@ -309,9 +307,9 @@ export default function ProfileScreen() {
                 <Ionicons name="pencil" size={11} color={t.colors.onPrimary} />
               </View>
             </View>
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, gap: 3 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text variant="h1" style={{ color: style.onGradient }} numberOfLines={1}>
+                <Text variant="h1" style={{ color: style.onGradient, flexShrink: 1 }} numberOfLines={1}>
                   {name}
                 </Text>
                 {showVerifyBadge && verifyTier ? (
@@ -346,42 +344,32 @@ export default function ProfileScreen() {
                   </Text>
                 </View>
               ) : null}
-              <Text variant="small" style={{ color: style.onGradient, opacity: 0.85 }}>
-                {tr('profile.memberSince', { year: memberSince })}
-              </Text>
-              {bio ? (
-                <Text variant="small" style={{ color: style.onGradient, opacity: 0.85, marginTop: 2 }} numberOfLines={2}>
-                  {bio}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                <Ionicons name="calendar-outline" size={13} color={style.onGradient} style={{ opacity: 0.9 }} />
+                <Text variant="small" style={{ color: style.onGradient, opacity: 0.9 }}>
+                  {tr('profile.memberSince', { year: memberSince })}
                 </Text>
+              </View>
+              {bio ? (
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 5, marginTop: 2 }}>
+                  <Ionicons name="chatbubble-ellipses-outline" size={13} color={style.onGradient} style={{ marginTop: 2, opacity: 0.85 }} />
+                  <Text variant="small" style={{ color: style.onGradient, opacity: 0.85, flex: 1 }} numberOfLines={3}>
+                    {bio}
+                  </Text>
+                </View>
               ) : null}
             </View>
           </Pressable>
-          <View style={{ flexDirection: 'row', gap: t.spacing.sm, alignSelf: 'flex-start' }}>
-            <Pressable
-              onPress={shareProfile}
-              hitSlop={6}
-              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <Ionicons name="share-outline" size={19} color={style.onGradient} />
-            </Pressable>
-            <Pressable
-              onPress={() => router.push('/settings')}
-              hitSlop={6}
-              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <Ionicons name="settings-outline" size={19} color={style.onGradient} />
-            </Pressable>
-          </View>
         </View>
       </ProfileBanner>
 
       <Animated.View entering={FadeInUp.duration(400).delay(60)}>
         <Card style={{ backgroundColor: accent + '1F', paddingVertical: t.spacing.md }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-around', gap: t.spacing.xs }}>
+            <Stat icon="people-outline" value={metrics?.connections ?? 0} label={tr('profile.connections')} color={accent} />
             <Stat icon="images-outline" value={memories} label={tr('profile.memories')} color={accent} />
-            <Stat icon="navigate-outline" value={cities} label={tr('profile.cities')} color={accent} />
-            <Stat icon="heart-outline" value={favorites.length} label={tr('profile.saved')} color={accent} />
-            <Stat icon="sparkles-outline" value={favoriteMood} label={tr('profile.topMood')} color={accent} />
+            <Stat icon="business-outline" value={cities} label={tr('profile.cities')} color={accent} />
+            <Stat icon="flame-outline" value={metrics?.streakDays ?? 0} label={tr('profile.streakStat')} color={accent} />
           </View>
         </Card>
       </Animated.View>
