@@ -18,7 +18,9 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { NetworkBanner, Toast } from '@/components/ui';
 import { useAlbumsStore } from '@/features/albums/albums-store';
+import { usePhotoQueue } from '@/features/albums/photo-queue';
 import { CelebrationOverlay } from '@/features/celebrate/CelebrationOverlay';
+import { useRatingsQueue } from '@/lib/ratings-queue';
 import { useCelebrateStore } from '@/features/celebrate/celebrate-store';
 import { recordActivity } from '@/lib/activity';
 import { useAuthStore } from '@/features/auth/auth-store';
@@ -77,11 +79,17 @@ export default function RootLayout() {
     return unsubscribe;
   }, []);
 
-  // Sync any evenings that were finished offline — now, and whenever connectivity returns.
+  // Drain everything queued offline — now, and whenever connectivity returns. Order matters:
+  // albums first (temp → real ids), then photos (need the real album row), then ratings.
   useEffect(() => {
-    void useAlbumsStore.getState().flushOutbox();
+    const flushAll = async () => {
+      await useAlbumsStore.getState().flushOutbox();
+      await usePhotoQueue.getState().flush();
+      await useRatingsQueue.getState().flush();
+    };
+    void flushAll();
     return useConnectivityStore.subscribe((s, prev) => {
-      if (s.isOnline && !prev.isOnline) void useAlbumsStore.getState().flushOutbox();
+      if (s.isOnline && !prev.isOnline) void flushAll();
     });
   }, []);
 

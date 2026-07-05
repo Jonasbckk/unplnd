@@ -1,4 +1,5 @@
 import { useAuthStore } from '@/features/auth/auth-store';
+import { useRatingsQueue } from '@/lib/ratings-queue';
 import { supabase } from '@/lib/supabase';
 
 /** The user's own rating for a plan (0 if none) — to show + edit it on the album. */
@@ -8,13 +9,15 @@ export async function getPlanRating(planRowId: string | null): Promise<number> {
   return (data?.user_rating as number | null) ?? 0;
 }
 
-/** Save the overall rating for a finished evening (the plans row). No-op offline / signed out. */
+/** Save the overall rating for a finished evening (the plans row). Queues offline, never lost. */
 export async function savePlanRating(planRowId: string | null, rating: number): Promise<void> {
   if (!planRowId || rating <= 0) return;
   try {
-    await supabase.from('plans').update({ user_rating: rating }).eq('id', planRowId);
+    const { error } = await supabase.from('plans').update({ user_rating: rating }).eq('id', planRowId);
+    if (error) useRatingsQueue.getState().enqueuePlan(planRowId, rating);
   } catch {
-    // Best effort — a rating must never block finishing the evening.
+    // Offline / transient — hold it in the queue and sync on reconnect.
+    useRatingsQueue.getState().enqueuePlan(planRowId, rating);
   }
 }
 
@@ -23,13 +26,13 @@ export async function savePlaceRatings(
   ratings: { placeId: string; placeName?: string; rating: number }[],
 ): Promise<void> {
   const userId = useAuthStore.getState().user?.id;
-  const rows = ratings
-    .filter((r) => r.placeId && r.rating > 0)
-    .map((r) => ({ user_id: userId, place_id: r.placeId, place_name: r.placeName ?? null, rating: r.rating }));
-  if (!userId || !rows.length) return;
+  const valid = ratings.filter((r) => r.placeId && r.rating > 0);
+  if (!userId || !valid.length) return;
+  const rows = valid.map((r) => ({ user_id: userId, place_id: r.placeId, place_name: r.placeName ?? null, rating: r.rating }));
   try {
-    await supabase.from('place_ratings').upsert(rows, { onConflict: 'user_id,place_id' });
+    const { error } = await supabase.from('place_ratings').upsert(rows, { onConflict: 'user_id,place_id' });
+    if (error) valid.forEach((r) => useRatingsQueue.getState().enqueuePlace(r.placeId, r.placeName ?? null, r.rating));
   } catch {
-    // Best effort.
+    valid.forEach((r) => useRatingsQueue.getState().enqueuePlace(r.placeId, r.placeName ?? null, r.rating));
   }
 }

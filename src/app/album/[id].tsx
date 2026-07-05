@@ -10,7 +10,8 @@ import { Button, Card, FadeInUp, Input, StarRating, Text } from '@/components/ui
 import { formatAlbumDate } from '@/features/albums/MemoryCard';
 import { shade } from '@/utils/color';
 import { useAlbumsStore } from '@/features/albums/albums-store';
-import { getAlbumPhotos, pickPhotos, uploadAlbumPhotos, type AlbumPhoto } from '@/features/albums/photos';
+import { getAlbumPhotos, pickPhotos, type AlbumPhoto } from '@/features/albums/photos';
+import { usePhotoQueue } from '@/features/albums/photo-queue';
 import { choiceDialog, confirmDialog } from '@/lib/confirm';
 import { haptics } from '@/lib/haptics';
 import { isAlbumPublished, publishPlan } from '@/lib/publish';
@@ -56,12 +57,15 @@ export default function AlbumDetail() {
     const assets = await pickPhotos();
     if (assets.length === 0) return;
     setUploading(true);
-    await uploadAlbumPhotos(album.id, assets, album.photoCount);
+    // Queue then flush: uploads now if online, waits for reconnect if not — never lost.
+    usePhotoQueue.getState().enqueue(album.id, assets);
+    await usePhotoQueue.getState().flush();
     const fresh = await getAlbumPhotos(album.id);
     setPhotos(fresh);
     setUploading(false);
     haptics.success();
-    toast(tr('toast.photosAdded'));
+    const stillQueued = usePhotoQueue.getState().jobs.some((j) => j.albumId === album.id);
+    toast(stillQueued ? tr('albums.photosQueued') : tr('toast.photosAdded'));
   }, [album, tr]);
 
   const shareAlbum = useCallback(async () => {
@@ -129,6 +133,7 @@ export default function AlbumDetail() {
       if (!ok) return;
       await deleteAlbum(album.id, false);
     }
+    usePhotoQueue.getState().removeForAlbum(album.id); // drop any not-yet-uploaded photos
     haptics.success();
     toast(tr('toast.albumDeleted'));
     router.back();

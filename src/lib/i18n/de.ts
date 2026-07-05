@@ -353,6 +353,7 @@ export const de = {
     deleteMemoryOnly: 'Nur Erinnerung',
     pendingBadge: 'Wird gesichert',
     pendingSync: 'Diese Erinnerung wird noch gesichert — sobald du online bist, geht das.',
+    photosQueued: 'Fotos werden hochgeladen, sobald du wieder online bist.',
     addNote: 'Notiz hinzufügen',
     notePlaceholder: 'Wie war euer Abend?',
     saveNote: 'Speichern',
