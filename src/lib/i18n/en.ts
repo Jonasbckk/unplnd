@@ -220,6 +220,7 @@ export const en = {
     needLocation: 'Turn on location to see evenings near you.',
     by: 'by %{name}',
     someone: 'someone',
+    album: 'Album',
     customBadge: 'Self-made',
     usePlan: 'Use this plan',
     creatorRated: 'Creator:',

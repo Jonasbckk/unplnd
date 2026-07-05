@@ -256,6 +256,7 @@ export const de = {
     needLocation: 'Aktiviere den Standort, um Abende in deiner Nähe zu sehen.',
     by: 'von %{name}',
     someone: 'jemandem',
+    album: 'Album',
     customBadge: 'Selbst erstellt',
     usePlan: 'Diesen Plan übernehmen',
     creatorRated: 'Ersteller:',

@@ -35,6 +35,7 @@ export default function CommunityPlanDetail() {
   const [loading, setLoading] = useState(true);
   const [starred, setStarred] = useState(false);
   const [count, setCount] = useState(0);
+  const [photoIndex, setPhotoIndex] = useState(0);
 
   useEffect(() => {
     if (!id) return;
@@ -157,11 +158,70 @@ export default function CommunityPlanDetail() {
         <>
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
             {plan.photos.length > 0 && (
-              <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
-                {plan.photos.map((uri, i) => (
-                  <Image key={i} source={{ uri }} style={{ width, height: 260 }} contentFit="cover" transition={200} />
-                ))}
-              </ScrollView>
+              <View>
+                <ScrollView
+                  horizontal
+                  pagingEnabled
+                  showsHorizontalScrollIndicator={false}
+                  onMomentumScrollEnd={(e) =>
+                    setPhotoIndex(Math.round(e.nativeEvent.contentOffset.x / width))
+                  }
+                >
+                  {plan.photos.map((uri, i) => (
+                    <Image key={i} source={{ uri }} style={{ width, height: 260 }} contentFit="cover" transition={200} />
+                  ))}
+                </ScrollView>
+
+                {/* "Album" label + counter — makes clear these are the author's own photos and, when
+                    there are several, that you can swipe for more (the dots reinforce it). */}
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: t.spacing.md,
+                    left: t.spacing.md,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 5,
+                    backgroundColor: 'rgba(0,0,0,0.45)',
+                    paddingHorizontal: 10,
+                    paddingVertical: 5,
+                    borderRadius: t.radius.pill,
+                  }}
+                >
+                  <Ionicons name="images-outline" size={13} color="#FFFFFF" />
+                  <Text variant="caption" style={{ color: '#FFFFFF', fontWeight: '700' }}>
+                    {plan.photos.length > 1
+                      ? `${tr('community.album')} · ${photoIndex + 1}/${plan.photos.length}`
+                      : tr('community.album')}
+                  </Text>
+                </View>
+
+                {plan.photos.length > 1 && (
+                  <View
+                    style={{
+                      position: 'absolute',
+                      bottom: t.spacing.md,
+                      left: 0,
+                      right: 0,
+                      flexDirection: 'row',
+                      justifyContent: 'center',
+                      gap: 6,
+                    }}
+                  >
+                    {plan.photos.map((_, i) => (
+                      <View
+                        key={i}
+                        style={{
+                          width: i === photoIndex ? 18 : 6,
+                          height: 6,
+                          borderRadius: 3,
+                          backgroundColor: i === photoIndex ? '#FFFFFF' : 'rgba(255,255,255,0.55)',
+                        }}
+                      />
+                    ))}
+                  </View>
+                )}
+              </View>
             )}
 
             <View style={{ padding: t.spacing.lg, gap: t.spacing.md }}>
