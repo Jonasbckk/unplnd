@@ -21,6 +21,8 @@
     "node_modules",
     "dist",
     "supabase/functions",
-    "website"
+    "website",
+    "**/*.test.ts",
+    "**/*.test.tsx"
   ]
 }
