@@ -42,6 +42,13 @@ import {
   type RsvpStatus,
   type RsvpTally,
 } from '@/lib/plan-rsvp';
+import {
+  getConversationReactions,
+  removeReaction,
+  setReaction,
+  subscribeToReactions,
+  type ReactionMap,
+} from '@/lib/reactions';
 import { toast } from '@/store/toast-store';
 import { useTheme } from '@/theme';
 
@@ -61,6 +68,67 @@ function isEmojiOnly(text: string): boolean {
     if (s.charCodeAt(i) > 127) return true;
   }
   return false;
+}
+
+const QUICK_REACTIONS = ['❤️', '😂', '👍', '🔥', '😮', '🎉'];
+
+/** Grouped reaction chips under a message (e.g. "❤️ 2"). Tap yours to remove it. */
+function ReactionChips({
+  list,
+  myId,
+  mine,
+  onToggle,
+}: {
+  list: { emoji: string; userId: string }[];
+  myId?: string;
+  mine: boolean;
+  onToggle: (emoji: string) => void;
+}) {
+  const t = useTheme();
+  if (list.length === 0) return null;
+  const counts: Record<string, number> = {};
+  for (const r of list) counts[r.emoji] = (counts[r.emoji] ?? 0) + 1;
+  const myEmoji = myId ? list.find((r) => r.userId === myId)?.emoji : undefined;
+
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 4,
+        alignSelf: mine ? 'flex-end' : 'flex-start',
+        marginTop: 2,
+        marginHorizontal: 6,
+        marginBottom: 4,
+      }}
+    >
+      {Object.entries(counts).map(([emoji, count]) => {
+        const isMine = emoji === myEmoji;
+        return (
+          <Pressable
+            key={emoji}
+            onPress={() => onToggle(emoji)}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 3,
+              paddingHorizontal: 7,
+              paddingVertical: 2,
+              borderRadius: t.radius.pill,
+              backgroundColor: isMine ? t.colors.primary + '22' : t.colors.surfaceSecondary,
+              borderWidth: 1,
+              borderColor: isMine ? t.colors.primary : 'transparent',
+            }}
+          >
+            <Text style={{ fontSize: 12 }}>{emoji}</Text>
+            <Text variant="caption" color="textSecondary" style={{ fontWeight: '600' }}>
+              {count}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
 }
 
 function PlanCard({
@@ -143,8 +211,8 @@ function Bubble({
         </Text>
       ) : null}
       <Pressable
-        onLongPress={mine ? undefined : onLongPress}
-        delayLongPress={350}
+        onLongPress={onLongPress}
+        delayLongPress={300}
         style={{
           maxWidth: '82%',
           paddingVertical: sticker ? 0 : t.spacing.sm,
@@ -282,6 +350,8 @@ export default function ChatScreen() {
   const [preview, setPreview] = useState<SharedPlan | null>(null);
   const [votingActive, setVotingActive] = useState(false);
   const [attachOpen, setAttachOpen] = useState(false);
+  const [reactions, setReactions] = useState<ReactionMap>({});
+  const [reactTarget, setReactTarget] = useState<Message | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -309,11 +379,15 @@ export default function ChatScreen() {
       }
     });
     void getConversationRsvps(id).then((r) => active && setRsvps(r));
+    void getConversationReactions(id).then((r) => active && setReactions(r));
     const unsub = subscribeToMessages(id, (m) => {
       setMessages((cur) => (cur.some((x) => x.id === m.id) ? cur : [...cur, m]));
     });
     const unsubRsvps = subscribeToRsvps(id, () => {
       void getConversationRsvps(id).then((r) => active && setRsvps(r));
+    });
+    const unsubReactions = subscribeToReactions(id, () => {
+      void getConversationReactions(id).then((r) => active && setReactions(r));
     });
     const unsubConv = subscribeToConversation(id, (va) => {
       if (active) setVotingActive(va);
@@ -322,6 +396,7 @@ export default function ChatScreen() {
       active = false;
       unsub();
       unsubRsvps();
+      unsubReactions();
       unsubConv();
     };
   }, [id, tr, me]);
@@ -374,6 +449,24 @@ export default function ChatScreen() {
       else await setRsvp(messageId, id, status);
     },
     [id, me, rsvps],
+  );
+
+  const onReact = useCallback(
+    async (messageId: string, emoji: string) => {
+      if (!id || !me) return;
+      haptics.light();
+      const mineReaction = (reactions[messageId] ?? []).find((r) => r.userId === me);
+      const removing = mineReaction?.emoji === emoji;
+      setReactions((prev) => {
+        const list = (prev[messageId] ?? []).filter((r) => r.userId !== me);
+        if (!removing) list.push({ emoji, userId: me });
+        return { ...prev, [messageId]: list };
+      });
+      setReactTarget(null);
+      if (removing) await removeReaction(messageId);
+      else await setReaction(messageId, id, emoji);
+    },
+    [id, me, reactions],
   );
 
   const reportMsg = async (m: Message) => {
@@ -535,8 +628,14 @@ export default function ChatScreen() {
                   mine={m.senderId === me}
                   senderName={isGroup ? names[m.senderId] : undefined}
                   onPlan={(p) => setPreview(p)}
-                  onLongPress={() => reportMsg(m)}
+                  onLongPress={() => setReactTarget(m)}
                   isFavorite={m.id === favoriteMessageId}
+                />
+                <ReactionChips
+                  list={reactions[m.id] ?? []}
+                  myId={me}
+                  mine={m.senderId === me}
+                  onToggle={(emoji) => onReact(m.id, emoji)}
                 />
                 {m.sharedPlan ? (
                   <RsvpBar
@@ -686,6 +785,59 @@ export default function ChatScreen() {
         onSticker={sendSticker}
         onToggleVote={toggleVoting}
       />
+
+      <Modal visible={!!reactTarget} transparent animationType="fade" onRequestClose={() => setReactTarget(null)}>
+        <Pressable
+          onPress={() => setReactTarget(null)}
+          style={{
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: t.colors.overlay,
+            padding: t.spacing.lg,
+          }}
+        >
+          {reactTarget ? (
+            <Pressable onPress={(e) => e.stopPropagation()} style={{ gap: t.spacing.md, alignItems: 'center' }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  gap: t.spacing.sm,
+                  backgroundColor: t.colors.card,
+                  borderRadius: t.radius.pill,
+                  paddingHorizontal: t.spacing.base,
+                  paddingVertical: t.spacing.sm,
+                }}
+              >
+                {QUICK_REACTIONS.map((e) => (
+                  <Pressable key={e} onPress={() => onReact(reactTarget.id, e)} hitSlop={4}>
+                    <Text style={{ fontSize: 30 }}>{e}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              {reactTarget.senderId !== me ? (
+                <Pressable
+                  onPress={() => {
+                    const target = reactTarget;
+                    setReactTarget(null);
+                    void reportMsg(target);
+                  }}
+                  style={{
+                    backgroundColor: t.colors.card,
+                    borderRadius: t.radius.pill,
+                    paddingHorizontal: t.spacing.lg,
+                    paddingVertical: t.spacing.sm,
+                  }}
+                >
+                  <Text variant="small" color="error" style={{ fontWeight: '600' }}>
+                    {tr('chatMod.report')}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </Pressable>
+          ) : null}
+        </Pressable>
+      </Modal>
     </View>
   );
 }
