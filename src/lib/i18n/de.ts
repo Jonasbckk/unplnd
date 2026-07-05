@@ -389,6 +389,8 @@ export const de = {
     topMood: 'Top-Stimmung',
     recentMemories: 'Letzte Erinnerungen',
     savedPlaces: 'Gespeicherte Orte',
+    publishedPlans: 'Veröffentlichte Pläne',
+    pinToProfile: 'Ort auf Profil zeigen',
     style: 'Profil-Stil',
     connections: 'Verbindungen',
     messages: 'Nachrichten',

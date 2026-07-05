@@ -12,13 +12,15 @@ import { useAuthStore } from '@/features/auth/auth-store';
 import { useFavoritesStore } from '@/features/favorites/favorites-store';
 import { BadgesCollection } from '@/features/profile/BadgesCollection';
 import { EveningDNA } from '@/features/profile/EveningDNA';
+import { PublishedPlansGrid } from '@/features/profile/PublishedPlansGrid';
+import { SavedPlaces } from '@/features/profile/SavedPlaces';
 import { ProfileBanner } from '@/features/profile/ProfileBanner';
 import { ProfileExtras } from '@/features/profile/ProfileExtras';
 import { useProfileStyle } from '@/features/profile/profile-styles';
 import { maybeCelebrateTier } from '@/features/celebrate/celebrate-store';
 import { VerifyBadge } from '@/features/verify/VerifyBadge';
 import { currentTierLevel, getVerifyMetrics, tierByLevel, type VerifyMetrics } from '@/features/verify/verification';
-import { getPublicProfile } from '@/lib/community';
+import { getPublicProfile, getUserPublishedPlans, type CommunityPlan } from '@/lib/community';
 import { getPendingCount } from '@/lib/connections';
 import { haptics } from '@/lib/haptics';
 import { setPinnedPlaces } from '@/lib/profile';
@@ -178,6 +180,7 @@ export default function ProfileScreen() {
   const [isFounder, setIsFounder] = useState(false);
   const [verifyLevel, setVerifyLevel] = useState(0);
   const [metrics, setMetrics] = useState<VerifyMetrics | null>(null);
+  const [myPlans, setMyPlans] = useState<CommunityPlan[]>([]);
   const showVerifyBadge = useAppStore((s) => s.showVerifyBadge);
   const verifyTier = tierByLevel(verifyLevel);
 
@@ -202,6 +205,9 @@ export default function ProfileScreen() {
       setMetrics(m);
       setVerifyLevel(lvl);
       maybeCelebrateTier(lvl);
+    });
+    void getUserPublishedPlans(userId).then((pl) => {
+      if (active) setMyPlans(pl);
     });
     return () => {
       active = false;
@@ -451,49 +457,27 @@ export default function ProfileScreen() {
       )}
       </Animated.View>
 
+      {myPlans.length > 0 && (
+        <Animated.View entering={FadeInUp.duration(400).delay(330)}>
+          <PublishedPlansGrid
+            plans={myPlans}
+            accent={accent}
+            onOpen={(id) => router.push(`/community/${id}` as Href)}
+          />
+        </Animated.View>
+      )}
+
       {favorites.length > 0 && (
-        <View style={{ gap: t.spacing.md }}>
-          <SectionHeading title={tr('profile.savedPlaces')} accent={accent} />
-          <Text variant="caption" color="textSecondary">
-            {tr('profile.pinHint')}
-          </Text>
-          <Card padded={false} style={{ paddingHorizontal: t.spacing.base, backgroundColor: accent + '14' }}>
-            {favorites.map((place, i) => (
-              <View
-                key={place}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: t.spacing.md,
-                  paddingVertical: t.spacing.md,
-                  borderTopWidth: i === 0 ? 0 : 1,
-                  borderTopColor: t.colors.divider,
-                }}
-              >
-                <Ionicons name="location-outline" size={18} color={accent} />
-                <Text variant="body" style={{ flex: 1 }} numberOfLines={1}>
-                  {place}
-                </Text>
-                <Pressable hitSlop={8} onPress={() => onTogglePin(place)}>
-                  <Ionicons
-                    name={pinned.includes(place) ? 'pin' : 'pin-outline'}
-                    size={18}
-                    color={pinned.includes(place) ? accent : t.colors.textSecondary}
-                  />
-                </Pressable>
-                <Pressable
-                  hitSlop={8}
-                  onPress={() => {
-                    haptics.light();
-                    void toggleFavorite(place);
-                  }}
-                >
-                  <Ionicons name="heart" size={18} color={accent} />
-                </Pressable>
-              </View>
-            ))}
-          </Card>
-        </View>
+        <Animated.View entering={FadeInUp.duration(400).delay(360)}>
+          <SavedPlaces
+            places={favorites}
+            albums={albums}
+            accent={accent}
+            pinned={pinned}
+            onTogglePin={onTogglePin}
+            onRemove={(place) => void toggleFavorite(place)}
+          />
+        </Animated.View>
       )}
 
       <Animated.View entering={FadeInUp.duration(400).delay(380)}>

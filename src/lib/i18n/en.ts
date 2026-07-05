@@ -353,6 +353,8 @@ export const en = {
     topMood: 'Top mood',
     recentMemories: 'Recent memories',
     savedPlaces: 'Saved places',
+    publishedPlans: 'Published plans',
+    pinToProfile: 'Show place on profile',
     style: 'Profile style',
     connections: 'Connections',
     messages: 'Messages',
