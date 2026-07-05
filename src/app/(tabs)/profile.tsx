@@ -91,8 +91,8 @@ function SectionHeading({ title, accent }: { title: string; accent: string }) {
   );
 }
 
-/** A tappable menu tile — icon medallion + label, with an optional count badge. */
-function MenuTile({
+/** A compact profile action — small icon circle + label, sits in a horizontal row (Instagram-style). */
+function MenuAction({
   icon,
   label,
   accent,
@@ -107,53 +107,42 @@ function MenuTile({
 }) {
   const t = useTheme();
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => ({ width: '48%', opacity: pressed ? 0.85 : 1 })}>
+    <Pressable onPress={onPress} style={({ pressed }) => ({ alignItems: 'center', gap: 6, opacity: pressed ? 0.7 : 1 })}>
       <View
         style={{
+          width: 50,
+          height: 50,
+          borderRadius: t.radius.pill,
+          backgroundColor: accent + '1F',
           alignItems: 'center',
-          gap: t.spacing.sm,
-          backgroundColor: t.colors.surfaceSecondary,
-          borderRadius: t.radius.lg,
-          paddingVertical: t.spacing.base,
-          paddingHorizontal: t.spacing.sm,
+          justifyContent: 'center',
         }}
       >
-        <View
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: t.radius.pill,
-            backgroundColor: accent + '24',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Ionicons name={icon} size={22} color={accent} />
-          {badge && badge > 0 ? (
-            <View
-              style={{
-                position: 'absolute',
-                top: -5,
-                right: -5,
-                minWidth: 18,
-                height: 18,
-                borderRadius: 9,
-                paddingHorizontal: 4,
-                backgroundColor: t.colors.error,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Text variant="caption" style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 10 }}>
-                {badge}
-              </Text>
-            </View>
-          ) : null}
-        </View>
-        <Text variant="small" center style={{ fontWeight: '600' }} numberOfLines={2}>
-          {label}
-        </Text>
+        <Ionicons name={icon} size={22} color={accent} />
+        {badge && badge > 0 ? (
+          <View
+            style={{
+              position: 'absolute',
+              top: -4,
+              right: -4,
+              minWidth: 18,
+              height: 18,
+              borderRadius: 9,
+              paddingHorizontal: 4,
+              backgroundColor: t.colors.error,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Text variant="caption" style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 10 }}>
+              {badge}
+            </Text>
+          </View>
+        ) : null}
       </View>
+      <Text variant="caption" center style={{ fontWeight: '600' }}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -348,41 +337,38 @@ export default function ProfileScreen() {
         </View>
       </Card>
 
-      <View
-        style={{
-          flexDirection: 'row',
-          flexWrap: 'wrap',
-          justifyContent: 'space-between',
-          rowGap: t.spacing.base,
-        }}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ gap: t.spacing.md, paddingVertical: t.spacing.xs, paddingHorizontal: 2 }}
       >
-        <MenuTile
+        <MenuAction
           icon="people-outline"
           label={tr('profile.connections')}
           accent={accent}
           badge={pending}
           onPress={() => router.push('/connections' as Href)}
         />
-        <MenuTile
+        <MenuAction
           icon="chatbubbles-outline"
           label={tr('profile.messages')}
           accent={accent}
           onPress={() => router.push('/messages' as Href)}
         />
-        <MenuTile
+        <MenuAction
           icon="color-palette-outline"
           label={tr('profile.style')}
           accent={accent}
           onPress={() => router.push('/profile-style' as Href)}
         />
-        <MenuTile
+        <MenuAction
           icon="shield-checkmark-outline"
           label={tr('profile.verify')}
           accent={accent}
           onPress={() => router.push('/verify' as Href)}
         />
         {albums.length > 0 && (
-          <MenuTile
+          <MenuAction
             icon="stats-chart-outline"
             label={tr('profile.statsShort')}
             accent={accent}
@@ -391,7 +377,7 @@ export default function ProfileScreen() {
             onPress={() => router.push('/stats' as Href)}
           />
         )}
-      </View>
+      </ScrollView>
 
       <EveningDNA albums={albums} accent={accent} />
 
