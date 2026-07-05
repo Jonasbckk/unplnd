@@ -8,9 +8,11 @@
     "scheme": "unplnd",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.unplnd.app"
     },
     "android": {
+      "package": "com.unplnd.app",
       "adaptiveIcon": {
         "backgroundColor": "#F9F4EF",
         "foregroundImage": "./assets/images/android-icon-foreground.png"
