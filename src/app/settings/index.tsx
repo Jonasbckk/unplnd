@@ -59,6 +59,7 @@ export default function SettingsScreen() {
   const setLanguagePreference = useAppStore((s) => s.setLanguagePreference);
   const notificationPrefs = useAppStore((s) => s.notificationPrefs);
   const setNotificationPref = useAppStore((s) => s.setNotificationPref);
+  const resetOnboarding = useAppStore((s) => s.resetOnboarding);
   const email = useAuthStore((s) => s.user?.email);
   const signOut = useAuthStore((s) => s.signOut);
   const deleteAccount = useAuthStore((s) => s.deleteAccount);
@@ -182,6 +183,19 @@ export default function SettingsScreen() {
               }
             />
           </Section>
+
+          {__DEV__ && (
+            <Section title="Developer">
+              <Row
+                label="Onboarding erneut ansehen"
+                onPress={() => {
+                  resetOnboarding();
+                  router.replace('/onboarding');
+                }}
+                right={<Ionicons name={'refresh-outline' as IoniconName} size={18} color={t.colors.textSecondary} />}
+              />
+            </Section>
+          )}
 
           <Button title={tr('settings.signOut')} variant="secondary" onPress={signOut} />
 
