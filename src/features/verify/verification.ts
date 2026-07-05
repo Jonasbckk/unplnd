@@ -14,7 +14,7 @@ export interface VerifyMetrics {
 export type MetricKey = keyof VerifyMetrics;
 
 /** A published plan counts as a "top plan" once it reaches this many community stars. */
-export const TOP_PLAN_STARS = 25;
+export const TOP_PLAN_STARS = 10;
 
 export interface Tier {
   level: number;
@@ -29,25 +29,25 @@ export interface Tier {
  * constants — tune freely here. Requirements are cumulative (a higher tier meets every lower one).
  */
 export const TIERS: readonly Tier[] = [
-  { level: 1, id: 'verified', color: '#4C9BE8', requirements: { eveningsCreated: 30, published: 10, streakDays: 10 } },
-  { level: 2, id: 'explorer', color: '#48C4D3', requirements: { eveningsCreated: 35, published: 20, streakDays: 30 } },
+  { level: 1, id: 'verified', color: '#4C9BE8', requirements: { eveningsCreated: 2, published: 1, streakDays: 2 } },
+  { level: 2, id: 'explorer', color: '#48C4D3', requirements: { eveningsCreated: 6, published: 3, streakDays: 5 } },
   {
     level: 3,
     id: 'adventurer',
     color: '#9B7BE8',
-    requirements: { eveningsCreated: 40, published: 25, ownPlans: 5, streakDays: 35 },
+    requirements: { eveningsCreated: 12, published: 6, ownPlans: 1, streakDays: 10 },
   },
   {
     level: 4,
     id: 'legend',
     color: '#E5A93C',
     requirements: {
-      eveningsCreated: 60,
-      published: 40,
-      ownPlans: 10,
-      streakDays: 60,
-      connections: 500,
-      ratingsReceived: 250,
+      eveningsCreated: 25,
+      published: 12,
+      ownPlans: 3,
+      streakDays: 21,
+      connections: 15,
+      ratingsReceived: 40,
     },
   },
   {
@@ -55,13 +55,13 @@ export const TIERS: readonly Tier[] = [
     id: 'master',
     color: '#C56B9E',
     requirements: {
-      eveningsCreated: 100,
-      published: 75,
-      ownPlans: 25,
-      streakDays: 100,
-      connections: 1000,
-      ratingsReceived: 1000,
-      topPlans: 10,
+      eveningsCreated: 50,
+      published: 25,
+      ownPlans: 6,
+      streakDays: 45,
+      connections: 60,
+      ratingsReceived: 150,
+      topPlans: 3,
     },
   },
 ];
