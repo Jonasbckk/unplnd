@@ -174,6 +174,15 @@ function Impressum() {
       <H3>Unternehmensform</H3>
       <P>Einzelunternehmen</P>
 
+      <H3>Hinweis zum Projekt UNPLND</H3>
+      <P>
+        UNPLND wird von Jonas Becker und Flavio Ciraci als Mitgründern entwickelt.
+        Betreiber dieser Website ist ausschließlich das oben genannte Einzelunternehmen von
+        Jonas Becker; Flavio Ciraci ist daran nicht beteiligt. Die UNPLND App wird nach
+        Veröffentlichung über eine eigene Gesellschaft betrieben; dieses Impressum wird
+        dann entsprechend aktualisiert.
+      </P>
+
       <H3>Hinweis gemäß § 19 UStG</H3>
       <P>
         Es wird keine Umsatzsteuer berechnet, da das Unternehmen die Kleinunternehmerregelung
