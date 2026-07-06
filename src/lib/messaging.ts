@@ -34,6 +34,7 @@ export interface ConversationSummary {
   id: string;
   isGroup: boolean;
   title: string | null;
+  avatarUrl: string | null;
   other: PublicProfile | null;
   memberCount: number;
   lastBody: string | null;
@@ -52,6 +53,8 @@ export interface ConversationMeta {
   createdBy: string | null;
   /** If set and in the future, the current user is timed out and can't send. */
   myMutedUntil: string | null;
+  /** Group photo (groups only). */
+  avatarUrl: string | null;
 }
 
 function mapMessage(row: Record<string, unknown>): Message {
@@ -146,7 +149,7 @@ export function subscribeToMessages(convId: string, onInsert: (m: Message) => vo
 export async function getConversationMeta(convId: string): Promise<ConversationMeta | null> {
   const { data: c } = await supabase
     .from('conversations')
-    .select('is_group, title, voting_active, created_by')
+    .select('is_group, title, voting_active, created_by, avatar_url')
     .eq('id', convId)
     .maybeSingle();
   if (!c) return null;
@@ -166,6 +169,7 @@ export async function getConversationMeta(convId: string): Promise<ConversationM
     votingActive: Boolean(c.voting_active),
     createdBy: (c.created_by as string | null) ?? null,
     myMutedUntil: (myMutedUntil as string | null) ?? null,
+    avatarUrl: (c.avatar_url as string | null) ?? null,
   };
 }
 
@@ -201,7 +205,7 @@ export async function getConversations(): Promise<ConversationSummary[]> {
 
   const { data: convs } = await supabase
     .from('conversations')
-    .select('id, is_group, title, last_message_at')
+    .select('id, is_group, title, last_message_at, avatar_url')
     .in('id', ids)
     .order('last_message_at', { ascending: false });
   if (!convs) return [];
@@ -256,6 +260,7 @@ export async function getConversations(): Promise<ConversationSummary[]> {
         id: cid,
         isGroup,
         title: (c.title as string | null) ?? null,
+        avatarUrl: (c.avatar_url as string | null) ?? null,
         other,
         memberCount: members.length,
         lastBody: last?.body ?? null,

@@ -18,7 +18,7 @@ function Row({ conv, onPress }: { conv: ConversationSummary; onPress: () => void
   const name = conv.isGroup
     ? conv.title ?? tr('chat.group')
     : conv.other?.name ?? tr('community.someone');
-  const avatar = conv.isGroup ? null : conv.other?.avatar ?? null;
+  const avatar = conv.isGroup ? conv.avatarUrl : conv.other?.avatar ?? null;
   const preview = conv.lastIsPlan
     ? tr('messages.sharedPlan')
     : conv.lastIsImage

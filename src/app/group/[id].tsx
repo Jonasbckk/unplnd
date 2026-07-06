@@ -15,11 +15,13 @@ import {
   removeParticipant,
   renameGroup,
   setParticipantTimeout,
+  updateGroupAvatar,
   type GroupInfo,
   type GroupMember,
 } from '@/lib/group-admin';
 import { haptics } from '@/lib/haptics';
 import { useT } from '@/lib/i18n';
+import { pickAvatar } from '@/lib/profile';
 import { toast } from '@/store/toast-store';
 import { useTheme } from '@/theme';
 
@@ -60,6 +62,20 @@ export default function GroupInfoScreen() {
     const ok = await renameGroup(id, nameDraft.trim());
     toast(ok ? tr('groupInfo.renamed') : tr('editProfile.failed'));
     if (ok) reload();
+  };
+
+  const changeAvatar = async () => {
+    if (!id || !amCreator) return;
+    const asset = await pickAvatar();
+    if (!asset) return;
+    const url = await updateGroupAvatar(id, asset);
+    if (url) {
+      haptics.success();
+      toast(tr('editProfile.avatarUpdated'));
+      reload();
+    } else {
+      toast(tr('editProfile.failed'));
+    }
   };
 
   const doTimeout = async (minutes: number) => {
@@ -131,18 +147,43 @@ export default function GroupInfoScreen() {
 
       <Screen scroll edges={[]} contentStyle={{ gap: t.spacing.lg }}>
         <View style={{ alignItems: 'center', gap: t.spacing.sm }}>
-          <View
-            style={{
-              width: 72,
-              height: 72,
-              borderRadius: t.radius.pill,
-              backgroundColor: t.colors.accentOlive,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Ionicons name="people" size={34} color="#FFFFFF" />
-          </View>
+          <Pressable onPress={amCreator ? changeAvatar : undefined} style={{ width: 72, height: 72 }}>
+            {info?.avatarUrl ? (
+              <Image source={{ uri: info.avatarUrl }} style={{ width: 72, height: 72, borderRadius: 36 }} contentFit="cover" />
+            ) : (
+              <View
+                style={{
+                  width: 72,
+                  height: 72,
+                  borderRadius: 36,
+                  backgroundColor: t.colors.accentOlive,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Ionicons name="people" size={34} color="#FFFFFF" />
+              </View>
+            )}
+            {amCreator ? (
+              <View
+                style={{
+                  position: 'absolute',
+                  bottom: -2,
+                  right: -2,
+                  width: 26,
+                  height: 26,
+                  borderRadius: 13,
+                  backgroundColor: t.colors.primary,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderWidth: 2,
+                  borderColor: t.colors.background,
+                }}
+              >
+                <Ionicons name="camera" size={13} color="#FFFFFF" />
+              </View>
+            ) : null}
+          </Pressable>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}>
             <Text variant="h2">{info?.title ?? tr('chat.group')}</Text>
             {amCreator ? (

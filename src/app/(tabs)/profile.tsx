@@ -100,8 +100,10 @@ function MenuTile({
   const scale = useSharedValue(1);
   const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   return (
+    // Layout animation (entering) on the wrapper, transform (press spring) on the inner
+    // Pressable — mixing both on one animated node makes Reanimated warn.
+    <Animated.View entering={FadeInDown.duration(320).delay(140 + index * 55)} style={{ width: '48%' }}>
     <AnimatedPressable
-      entering={FadeInDown.duration(320).delay(140 + index * 55)}
       onPress={onPress}
       onPressIn={() => {
         scale.value = withSpring(0.96, { damping: 15, stiffness: 220 });
@@ -111,7 +113,7 @@ function MenuTile({
       }}
       style={[
         {
-          width: '48%',
+          width: '100%',
           flexDirection: 'row',
           alignItems: 'center',
           gap: t.spacing.sm,
@@ -159,6 +161,7 @@ function MenuTile({
         {label}
       </Text>
     </AnimatedPressable>
+    </Animated.View>
   );
 }
 

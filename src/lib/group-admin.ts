@@ -1,3 +1,6 @@
+import type * as ImagePicker from 'expo-image-picker';
+
+import { useAuthStore } from '@/features/auth/auth-store';
 import { getPublicProfile, type PublicProfile } from '@/lib/community';
 import { supabase } from '@/lib/supabase';
 
@@ -10,6 +13,7 @@ export interface GroupMember {
 export interface GroupInfo {
   title: string | null;
   createdBy: string | null;
+  avatarUrl: string | null;
   members: GroupMember[];
 }
 
@@ -17,7 +21,7 @@ export interface GroupInfo {
 export async function getGroupInfo(convId: string): Promise<GroupInfo | null> {
   const { data: c } = await supabase
     .from('conversations')
-    .select('title, created_by')
+    .select('title, created_by, avatar_url')
     .eq('id', convId)
     .maybeSingle();
   if (!c) return null;
@@ -33,8 +37,35 @@ export async function getGroupInfo(convId: string): Promise<GroupInfo | null> {
   return {
     title: (c.title as string | null) ?? null,
     createdBy: (c.created_by as string | null) ?? null,
+    avatarUrl: (c.avatar_url as string | null) ?? null,
     members,
   };
+}
+
+/** Creator-only: upload a new group photo (public avatars bucket) and set it. Returns the URL. */
+export async function updateGroupAvatar(
+  convId: string,
+  asset: ImagePicker.ImagePickerAsset,
+): Promise<string | null> {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return null;
+  try {
+    const response = await fetch(asset.uri);
+    const body = await response.arrayBuffer();
+    const ext = asset.mimeType?.split('/')[1] ?? 'jpg';
+    // Stored under the creator's folder so it passes the avatars-bucket owner RLS.
+    const path = `${userId}/group-${convId}.${ext}`;
+    const { error: upErr } = await supabase.storage
+      .from('avatars')
+      .upload(path, body, { contentType: asset.mimeType ?? 'image/jpeg', upsert: true });
+    if (upErr) return null;
+    const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+    const url = `${data.publicUrl}?v=${Date.now()}`;
+    const { error } = await supabase.rpc('set_group_avatar', { conv: convId, url });
+    return error ? null : url;
+  } catch {
+    return null;
+  }
 }
 
 /** Creator-only: rename the group. */

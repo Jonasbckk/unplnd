@@ -432,6 +432,7 @@ export default function ChatScreen() {
   const [preview, setPreview] = useState<SharedPlan | null>(null);
   const [votingActive, setVotingActive] = useState(false);
   const [myMutedUntil, setMyMutedUntil] = useState<string | null>(null);
+  const [groupAvatar, setGroupAvatar] = useState<string | null>(null);
   const [attachOpen, setAttachOpen] = useState(false);
   const [reactions, setReactions] = useState<ReactionMap>({});
   const [reactTarget, setReactTarget] = useState<Message | null>(null);
@@ -455,6 +456,7 @@ export default function ChatScreen() {
       setIsGroup(meta.isGroup);
       setVotingActive(meta.votingActive);
       setMyMutedUntil(meta.myMutedUntil);
+      setGroupAvatar(meta.avatarUrl);
       const map: Record<string, string> = {};
       for (const p of meta.participants) map[p.id] = p.name ?? tr('community.someone');
       setNames(map);
@@ -735,7 +737,11 @@ export default function ChatScreen() {
               }}
             >
               {isGroup ? (
-                <Ionicons name="people" size={19} color="#FFFFFF" />
+                groupAvatar ? (
+                  <Image source={{ uri: groupAvatar }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                ) : (
+                  <Ionicons name="people" size={19} color="#FFFFFF" />
+                )
               ) : partner?.avatar ? (
                 <Image source={{ uri: partner.avatar }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
               ) : (
