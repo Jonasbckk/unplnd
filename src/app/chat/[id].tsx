@@ -478,9 +478,9 @@ export default function ChatScreen() {
     const assets = await pickPhotos();
     if (assets.length === 0) return;
     for (const asset of assets) {
-      const path = await uploadChatImage(id, asset);
+      const { path, error } = await uploadChatImage(id, asset);
       if (path) await sendMessage(id, '', null, path);
-      else toast(tr('chat.photoFailed'));
+      else toast(error ? `Foto: ${error}` : tr('chat.photoFailed'));
     }
   }, [id, tr]);
 
