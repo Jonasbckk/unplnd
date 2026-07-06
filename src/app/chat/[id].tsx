@@ -431,6 +431,7 @@ export default function ChatScreen() {
   const [rsvps, setRsvps] = useState<Record<string, RsvpTally>>({});
   const [preview, setPreview] = useState<SharedPlan | null>(null);
   const [votingActive, setVotingActive] = useState(false);
+  const [myMutedUntil, setMyMutedUntil] = useState<string | null>(null);
   const [attachOpen, setAttachOpen] = useState(false);
   const [reactions, setReactions] = useState<ReactionMap>({});
   const [reactTarget, setReactTarget] = useState<Message | null>(null);
@@ -453,6 +454,7 @@ export default function ChatScreen() {
       if (!active || !meta) return;
       setIsGroup(meta.isGroup);
       setVotingActive(meta.votingActive);
+      setMyMutedUntil(meta.myMutedUntil);
       const map: Record<string, string> = {};
       for (const p of meta.participants) map[p.id] = p.name ?? tr('community.someone');
       setNames(map);
@@ -696,6 +698,8 @@ export default function ChatScreen() {
     if (best === 0) favoriteMessageId = null; // no votes yet → no favourite
   }
 
+  const muted = !!myMutedUntil && new Date(myMutedUntil).getTime() > Date.now();
+
   const toggleVoting = useCallback(async () => {
     if (!id) return;
     haptics.light();
@@ -712,8 +716,11 @@ export default function ChatScreen() {
             <Ionicons name="chevron-back" size={26} color={t.colors.textPrimary} />
           </Pressable>
           <Pressable
-            disabled={isGroup || !otherId}
-            onPress={() => otherId && router.push(`/user/${otherId}` as Href)}
+            disabled={!isGroup && !otherId}
+            onPress={() => {
+              if (isGroup) router.push(`/group/${id}` as Href);
+              else if (otherId) router.push(`/user/${otherId}` as Href);
+            }}
             style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}
           >
             <View
@@ -751,6 +758,15 @@ export default function ChatScreen() {
               ) : null}
             </View>
           </Pressable>
+          {isGroup ? (
+            <Pressable
+              onPress={() => router.push(`/group/${id}` as Href)}
+              hitSlop={8}
+              style={{ marginRight: t.spacing.sm }}
+            >
+              <Ionicons name="people-circle-outline" size={25} color={t.colors.textPrimary} />
+            </Pressable>
+          ) : null}
           <Pressable onPress={() => setMenuOpen(true)} hitSlop={8}>
             <Ionicons name="ellipsis-horizontal" size={22} color={t.colors.textPrimary} />
           </Pressable>
@@ -785,32 +801,49 @@ export default function ChatScreen() {
               </Text>
             </View>
           ) : (
-            visible.map((m) => (
-              <View key={m.id}>
-                <Bubble
-                  message={m}
-                  mine={m.senderId === me}
-                  senderName={isGroup ? names[m.senderId] : undefined}
-                  onPlan={(p) => setPreview(p)}
-                  onLongPress={() => setReactTarget(m)}
-                  isFavorite={m.id === favoriteMessageId}
-                />
-                <ReactionChips
-                  list={reactions[m.id] ?? []}
-                  myId={me}
-                  mine={m.senderId === me}
-                  onToggle={(emoji) => onReact(m.id, emoji)}
-                />
-                {m.sharedPlan ? (
-                  <RsvpBar
-                    tally={rsvps[m.id]}
+            visible.map((m) =>
+              m.kind === 'join' ? (
+                <View key={m.id} style={{ alignItems: 'center', marginVertical: t.spacing.sm }}>
+                  <View
+                    style={{
+                      backgroundColor: t.colors.surfaceSecondary,
+                      paddingHorizontal: t.spacing.base,
+                      paddingVertical: 5,
+                      borderRadius: t.radius.pill,
+                    }}
+                  >
+                    <Text variant="caption" color="textSecondary">
+                      {`🎉 ${tr('chat.joined', { name: m.body ?? tr('community.someone') })}`}
+                    </Text>
+                  </View>
+                </View>
+              ) : (
+                <View key={m.id}>
+                  <Bubble
+                    message={m}
                     mine={m.senderId === me}
-                    myId={me}
-                    onSet={(status) => onRsvp(m.id, status)}
+                    senderName={isGroup ? names[m.senderId] : undefined}
+                    onPlan={(p) => setPreview(p)}
+                    onLongPress={() => setReactTarget(m)}
+                    isFavorite={m.id === favoriteMessageId}
                   />
-                ) : null}
-              </View>
-            ))
+                  <ReactionChips
+                    list={reactions[m.id] ?? []}
+                    myId={me}
+                    mine={m.senderId === me}
+                    onToggle={(emoji) => onReact(m.id, emoji)}
+                  />
+                  {m.sharedPlan ? (
+                    <RsvpBar
+                      tally={rsvps[m.id]}
+                      mine={m.senderId === me}
+                      myId={me}
+                      onSet={(status) => onRsvp(m.id, status)}
+                    />
+                  ) : null}
+                </View>
+              ),
+            )
           )}
         </ScrollView>
 
@@ -833,7 +866,22 @@ export default function ChatScreen() {
           </Pressable>
         ) : null}
 
-        {recording ? (
+        {muted ? (
+          <View
+            style={{
+              alignItems: 'center',
+              paddingHorizontal: t.spacing.lg,
+              paddingVertical: t.spacing.base,
+              borderTopWidth: 1,
+              borderTopColor: t.colors.divider,
+              backgroundColor: t.colors.background,
+            }}
+          >
+            <Text variant="small" color="textSecondary" center>
+              {tr('chat.timedOut')}
+            </Text>
+          </View>
+        ) : recording ? (
           <View
             style={{
               flexDirection: 'row',

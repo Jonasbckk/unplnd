@@ -25,6 +25,8 @@ export interface Message {
   audioPath: string | null;
   audioDuration: number | null;
   location: SharedLocation | null;
+  /** null = normal message, 'join' = system join notice (body holds the member name). */
+  kind: string | null;
   createdAt: string;
 }
 
@@ -47,6 +49,9 @@ export interface ConversationMeta {
   title: string | null;
   participants: PublicProfile[];
   votingActive: boolean;
+  createdBy: string | null;
+  /** If set and in the future, the current user is timed out and can't send. */
+  myMutedUntil: string | null;
 }
 
 function mapMessage(row: Record<string, unknown>): Message {
@@ -60,6 +65,7 @@ function mapMessage(row: Record<string, unknown>): Message {
     audioPath: (row.audio_path as string | null) ?? null,
     audioDuration: (row.audio_duration as number | null) ?? null,
     location: (row.location as SharedLocation | null) ?? null,
+    kind: (row.kind as string | null) ?? null,
     createdAt: row.created_at as string,
   };
 }
@@ -80,7 +86,7 @@ export async function getMessages(convId: string): Promise<Message[]> {
   const { data } = await supabase
     .from('messages')
     .select(
-      'id, conversation_id, sender_id, body, shared_plan, image_path, audio_path, audio_duration, location, created_at',
+      'id, conversation_id, sender_id, body, shared_plan, image_path, audio_path, audio_duration, location, kind, created_at',
     )
     .eq('conversation_id', convId)
     .order('created_at', { ascending: true })
@@ -140,11 +146,16 @@ export function subscribeToMessages(convId: string, onInsert: (m: Message) => vo
 export async function getConversationMeta(convId: string): Promise<ConversationMeta | null> {
   const { data: c } = await supabase
     .from('conversations')
-    .select('is_group, title, voting_active')
+    .select('is_group, title, voting_active, created_by')
     .eq('id', convId)
     .maybeSingle();
   if (!c) return null;
-  const { data: parts } = await supabase.from('conversation_participants').select('user_id').eq('conversation_id', convId);
+  const { data: parts } = await supabase
+    .from('conversation_participants')
+    .select('user_id, muted_until')
+    .eq('conversation_id', convId);
+  const me = useAuthStore.getState().user?.id;
+  const myMutedUntil = (parts ?? []).find((p) => p.user_id === me)?.muted_until ?? null;
   const profiles = (
     await Promise.all((parts ?? []).map((p) => getPublicProfile(p.user_id as string)))
   ).filter((p): p is PublicProfile => p !== null);
@@ -153,6 +164,8 @@ export async function getConversationMeta(convId: string): Promise<ConversationM
     title: (c.title as string | null) ?? null,
     participants: profiles,
     votingActive: Boolean(c.voting_active),
+    createdBy: (c.created_by as string | null) ?? null,
+    myMutedUntil: (myMutedUntil as string | null) ?? null,
   };
 }
 
