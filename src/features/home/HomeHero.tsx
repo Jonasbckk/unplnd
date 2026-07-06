@@ -81,7 +81,6 @@ export function HomeHero({ segment }: { segment: GreetingSegment }) {
         borderRadius: t.radius.sheet,
         overflow: 'hidden',
         minHeight: 196,
-        marginBottom: t.spacing.lg,
         justifyContent: 'flex-end',
         padding: t.spacing.lg,
         ...t.shadows.md,

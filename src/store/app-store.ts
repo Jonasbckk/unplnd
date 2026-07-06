@@ -14,6 +14,20 @@ export interface NotificationPrefs {
   streakReminders: boolean;
 }
 
+export type UpsellKind = 'appOpen' | 'settingsOpen' | 'styleChange';
+
+interface UpsellState {
+  appOpen: number;
+  settingsOpen: number;
+  styleChange: number;
+  /** Last time the paywall auto-opened — cooldown so two triggers never stack. */
+  lastShownAt: number;
+}
+
+/** Cadence per trigger: every Nth event opens the paywall (founder decision 2026-07-07). */
+const UPSELL_EVERY: Record<UpsellKind, number> = { appOpen: 2, settingsOpen: 3, styleChange: 3 };
+const UPSELL_COOLDOWN_MS = 3 * 60 * 1000;
+
 interface AppState {
   /** Whether the user has finished onboarding. Persisted. */
   hasOnboarded: boolean;
@@ -31,6 +45,14 @@ interface AppState {
   lastSeenTier: number;
   /** Notification preferences. Persisted. */
   notificationPrefs: NotificationPrefs;
+  /** Premium upsell counters + cooldown. Persisted. */
+  upsell: UpsellState;
+  /**
+   * Counts an upsell event and answers "show the paywall now?" — true on every Nth
+   * occurrence of that trigger, unless another upsell fired within the cooldown.
+   * Premium users must be filtered by the CALLER (this store knows nothing about purchases).
+   */
+  registerUpsellEvent: (kind: UpsellKind) => boolean;
   /** True once the persisted state has been read from storage. */
   hasHydrated: boolean;
   completeOnboarding: () => void;
@@ -56,6 +78,21 @@ export const useAppStore = create<AppState>()(
       lastStreakCelebrationDate: null,
       lastSeenTier: 0,
       notificationPrefs: { eveningReminders: true, albumReady: true, weatherChanges: true, streakReminders: true },
+      upsell: { appOpen: 0, settingsOpen: 0, styleChange: 0, lastShownAt: 0 },
+      registerUpsellEvent: (kind) => {
+        let show = false;
+        set((s) => {
+          const count = s.upsell[kind] + 1;
+          const due = count % UPSELL_EVERY[kind] === 0;
+          const coolDown = Date.now() - s.upsell.lastShownAt < UPSELL_COOLDOWN_MS;
+          show = due && !coolDown;
+          return {
+            upsell: { ...s.upsell, [kind]: count, lastShownAt: show ? Date.now() : s.upsell.lastShownAt },
+          };
+        });
+        if (show) track('paywall_auto_shown', { trigger: kind });
+        return show;
+      },
       hasHydrated: false,
       completeOnboarding: () => {
         set({ hasOnboarded: true });
@@ -84,6 +121,7 @@ export const useAppStore = create<AppState>()(
         lastStreakCelebrationDate: state.lastStreakCelebrationDate,
         lastSeenTier: state.lastSeenTier,
         notificationPrefs: state.notificationPrefs,
+        upsell: state.upsell,
       }),
       // Deep-merge persisted prefs onto current defaults, so newly-added keys (e.g. a new
       // notification pref) get their default instead of being dropped by the flat overwrite.
@@ -93,6 +131,7 @@ export const useAppStore = create<AppState>()(
           ...current,
           ...p,
           notificationPrefs: { ...current.notificationPrefs, ...(p.notificationPrefs ?? {}) },
+          upsell: { ...current.upsell, ...(p.upsell ?? {}) },
         };
       },
       onRehydrateStorage: () => (state) => state?.setHasHydrated(true),

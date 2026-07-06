@@ -10,6 +10,15 @@ import { useRevenueCatStore } from '@/store/revenuecat-store';
  * - profiles.premium (server truth via the RevenueCat webhook — survives reinstall/cross-device),
  * - is_founder (Jonas & Flavio always have everything unlocked).
  */
+/** One-shot premium check for imperative flows (e.g. upsell triggers) — same truth as usePremium. */
+export async function fetchIsPremium(): Promise<boolean> {
+  if (useRevenueCatStore.getState().isPremium) return true;
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return false;
+  const { data } = await supabase.from('profiles').select('premium, is_founder').eq('id', userId).single();
+  return Boolean(data?.premium || data?.is_founder);
+}
+
 export function usePremium(): boolean {
   const userId = useAuthStore((s) => s.user?.id);
   const rcPremium = useRevenueCatStore((s) => s.isPremium);

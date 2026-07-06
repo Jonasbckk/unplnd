@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Card, Screen, Text } from '@/components/ui';
 import { PROFILE_STYLES, useProfileStyle, type ProfileStyle } from '@/features/profile/profile-styles';
 import { useAuthStore } from '@/features/auth/auth-store';
+import { maybeShowUpsell } from '@/features/premium/upsell';
 import { usePremium } from '@/features/profile/use-premium';
 import { haptics } from '@/lib/haptics';
 import { useT } from '@/lib/i18n';
@@ -35,6 +36,8 @@ export default function ProfileStyleScreen() {
     const ok = await updateProfileStyle(style.id);
     if (ok) await useAuthStore.getState().refreshUser();
     toast(ok ? tr('profileStyle.applied') : tr('editProfile.failed'));
+    // Every 3rd successful style change nudges toward Premium (skipped for premium users).
+    if (ok) void maybeShowUpsell('styleChange', router, 900);
   };
 
   return (
@@ -185,8 +188,15 @@ export default function ProfileStyleScreen() {
               <Text variant="body" color="textSecondary" center>
                 {tr('profileStyle.premiumBody')}
               </Text>
-              <View style={{ alignSelf: 'stretch', marginTop: t.spacing.sm }}>
-                <Button title={tr('profileStyle.premiumDismiss')} onPress={() => setUpsell(false)} />
+              <View style={{ alignSelf: 'stretch', marginTop: t.spacing.sm, gap: t.spacing.sm }}>
+                <Button
+                  title={tr('profileStyle.premiumCta')}
+                  onPress={() => {
+                    setUpsell(false);
+                    router.push('/paywall');
+                  }}
+                />
+                <Button variant="secondary" title={tr('profileStyle.premiumDismiss')} onPress={() => setUpsell(false)} />
               </View>
             </Card>
           </Pressable>

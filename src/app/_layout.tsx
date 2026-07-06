@@ -17,6 +17,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { NetworkBanner, Toast } from '@/components/ui';
+import { UpsellOnAppOpen } from '@/features/premium/upsell';
 import { useAlbumsStore } from '@/features/albums/albums-store';
 import { usePhotoQueue } from '@/features/albums/photo-queue';
 import { CelebrationOverlay } from '@/features/celebrate/CelebrationOverlay';
@@ -60,6 +61,8 @@ function RootNavigator() {
       </Stack.Protected>
       <Stack.Protected guard={hasOnboarded && !!session}>
         <Stack.Screen name="(tabs)" />
+        {/* Paywall pops up as an iOS sheet — feels like a moment, not a page. */}
+        <Stack.Screen name="paywall" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
       </Stack.Protected>
     </Stack>
   );
@@ -147,6 +150,7 @@ function AppShell() {
   return (
     <View style={{ flex: 1, backgroundColor: t.colors.background }}>
       <RootNavigator />
+      <UpsellOnAppOpen />
       <NetworkBanner />
       <Toast />
       <CelebrationOverlay />

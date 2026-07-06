@@ -55,7 +55,7 @@ export function EveningDNA({ albums, accent }: { albums: Album[]; accent: string
     <View style={{ gap: t.spacing.lg }}>
       <View style={{ gap: t.spacing.md }}>
         <Heading title={tr('dna.title')} accent={accent} />
-        <Card style={{ gap: t.spacing.lg }}>
+        <Card style={{ gap: t.spacing.md }}>
           {dna.length >= 3 ? (
             <>
               <RadarChart traits={dna.slice(0, 6)} accent={accent} />

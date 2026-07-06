@@ -13,6 +13,23 @@ export interface AlbumPhoto {
 
 const SIGNED_URL_TTL_SECONDS = 60 * 60;
 
+/**
+ * Signed-URL cache (path → url). Without it every screen visit mints a NEW token,
+ * so the image URL changes and expo-image's disk cache never hits — photos re-download
+ * every time. Reusing the same URL for ~50 min makes revisits load instantly from cache.
+ */
+const signedUrlCache = new Map<string, { url: string; expiresAt: number }>();
+const SIGNED_URL_REUSE_MS = (SIGNED_URL_TTL_SECONDS - 10 * 60) * 1000;
+
+function cachedSignedUrl(path: string): string | null {
+  const hit = signedUrlCache.get(path);
+  return hit && hit.expiresAt > Date.now() ? hit.url : null;
+}
+
+function rememberSignedUrl(path: string, url: string): void {
+  signedUrlCache.set(path, { url, expiresAt: Date.now() + SIGNED_URL_REUSE_MS });
+}
+
 /** Users choose which photos to include — never auto-upload (Memory Album Spec). */
 export async function pickPhotos(): Promise<ImagePicker.ImagePickerAsset[]> {
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -76,9 +93,11 @@ export async function getAlbumCoverUrl(albumId: string): Promise<string | null> 
     .limit(1)
     .maybeSingle();
   if (!data) return null;
-  const { data: signed } = await supabase.storage
-    .from('photos')
-    .createSignedUrl(data.storage_path as string, SIGNED_URL_TTL_SECONDS);
+  const path = data.storage_path as string;
+  const cached = cachedSignedUrl(path);
+  if (cached) return cached;
+  const { data: signed } = await supabase.storage.from('photos').createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
+  if (signed?.signedUrl) rememberSignedUrl(path, signed.signedUrl);
   return signed?.signedUrl ?? null;
 }
 
@@ -92,17 +111,24 @@ export async function getAlbumPhotos(albumId: string): Promise<AlbumPhoto[]> {
   if (error || !data || data.length === 0) return [];
 
   const paths = data.map((row) => row.storage_path as string);
-  const { data: signed, error: signError } = await supabase.storage
-    .from('photos')
-    .createSignedUrls(paths, SIGNED_URL_TTL_SECONDS);
-  if (signError || !signed) return [];
+
+  // Only mint URLs for paths we don't already have — cached ones stay stable (image cache hits).
+  const missing = paths.filter((p) => !cachedSignedUrl(p));
+  if (missing.length > 0) {
+    const { data: signed, error: signError } = await supabase.storage
+      .from('photos')
+      .createSignedUrls(missing, SIGNED_URL_TTL_SECONDS);
+    if (signError && paths.every((p) => !cachedSignedUrl(p))) return [];
+    signed?.forEach((entry, i) => {
+      if (entry?.signedUrl) rememberSignedUrl(missing[i], entry.signedUrl);
+    });
+  }
 
   return data
-    .map((row, i) => ({
-      id: row.id as string,
-      url: signed[i]?.signedUrl ?? '',
-      path: row.storage_path as string,
-    }))
+    .map((row) => {
+      const path = row.storage_path as string;
+      return { id: row.id as string, url: cachedSignedUrl(path) ?? '', path };
+    })
     .filter((photo) => photo.url.length > 0);
 }
 

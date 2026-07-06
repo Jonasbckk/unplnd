@@ -622,6 +622,9 @@ export const en = {
     nothingToRestore: 'No purchases found.',
     alreadyPremium: 'You have UNPLND Premium 🎉',
     done: 'Done',
+    cta: 'Unlock now',
+    ctaTrial: 'Try 3 days free',
+    save: 'Save %{percent}%',
   },
   messages: {
     title: 'Messages',
@@ -682,6 +685,7 @@ export const en = {
     premiumTitle: 'UNPLND Premium',
     premiumBody:
       'Special profile styles with colors and animation are part of UNPLND Premium — make your profile unmistakably yours.',
+    premiumCta: 'See Premium',
     premiumDismiss: 'Got it',
   },
   stats: {

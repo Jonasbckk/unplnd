@@ -49,8 +49,16 @@ export async function uploadChatAudio(conversationId: string, uri: string): Prom
   }
 }
 
+// Reuse signed URLs for ~50 min — a fresh token per render changes the URL and defeats
+// expo-image's disk cache, forcing chat photos to re-download on every screen visit.
+const signedUrlCache = new Map<string, { url: string; expiresAt: number }>();
+const SIGNED_URL_REUSE_MS = (SIGNED_URL_TTL_SECONDS - 10 * 60) * 1000;
+
 /** A short-lived signed URL for a private chat media file (image or audio). */
 export async function getChatMediaUrl(path: string): Promise<string | null> {
+  const hit = signedUrlCache.get(path);
+  if (hit && hit.expiresAt > Date.now()) return hit.url;
   const { data } = await supabase.storage.from('chat-media').createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
+  if (data?.signedUrl) signedUrlCache.set(path, { url: data.signedUrl, expiresAt: Date.now() + SIGNED_URL_REUSE_MS });
   return data?.signedUrl ?? null;
 }

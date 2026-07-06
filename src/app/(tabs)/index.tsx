@@ -79,20 +79,26 @@ export default function HomeScreen() {
         <Animated.View entering={FadeInDown.duration(350).delay(110)}>
           <Card
             onPress={() => startPlannerWithMood(weather.mood)}
-            style={{ marginTop: t.spacing.lg, backgroundColor: t.colors.surfaceSecondary }}
+            padded={false}
+            style={{
+              marginTop: t.spacing.md,
+              backgroundColor: t.colors.surfaceSecondary,
+              paddingVertical: t.spacing.md,
+              paddingHorizontal: t.spacing.base,
+            }}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.base }}>
-              <Ionicons name={weather.icon as IoniconName} size={28} color={t.colors.accentOrange} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.md }}>
+              <Ionicons name={weather.icon as IoniconName} size={24} color={t.colors.accentOrange} />
               <View style={{ flex: 1 }}>
-                <Text variant="h3">
+                <Text variant="body" style={{ fontWeight: '600' }} numberOfLines={1}>
                   {weather.temperature}°C · {tr(`weather.conditions.${weather.key}`)}
                 </Text>
-                <Text variant="small" color="textSecondary" style={{ marginTop: 2 }}>
+                <Text variant="caption" color="textSecondary" style={{ marginTop: 2 }} numberOfLines={2}>
                   {tr(`weather.suggestions.${weather.key}`)}
                   {weather.sunset ? `  ·  ${tr('home.sunset', { time: weather.sunset })}` : ''}
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={t.colors.textSecondary} />
+              <Ionicons name="chevron-forward" size={16} color={t.colors.textSecondary} />
             </View>
           </Card>
         </Animated.View>

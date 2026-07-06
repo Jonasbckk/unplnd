@@ -84,6 +84,8 @@ export function MemoryCard({ album, onPress, compact = false, width }: MemoryCar
                 style={StyleSheet.absoluteFill}
                 contentFit="cover"
                 transition={220}
+                cachePolicy="memory-disk"
+                recyclingKey={album.id}
                 onError={() => setFailed(true)}
               />
               <LinearGradient

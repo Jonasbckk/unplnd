@@ -1,12 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useRouter, type Href } from 'expo-router';
-import { useState, type ComponentProps, type ReactNode } from 'react';
-import { Alert, Linking, Platform, Pressable, ScrollView, Switch, View } from 'react-native';
+import { Children, useEffect, useState, type ComponentProps, type ReactNode } from 'react';
+import { Alert, Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, SegmentedControl, Text } from '@/components/ui';
 import { useAuthStore } from '@/features/auth/auth-store';
+import { maybeShowUpsell } from '@/features/premium/upsell';
 import { confirmDialog } from '@/lib/confirm';
 import { haptics } from '@/lib/haptics';
 import { useT } from '@/lib/i18n';
@@ -19,6 +20,8 @@ type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   const t = useTheme();
+  // Hairline separators between rows — grouped-list look, and rows read as units.
+  const rows = Children.toArray(children);
   return (
     <View style={{ gap: t.spacing.sm }}>
       <Text variant="small" color="textSecondary" style={{ letterSpacing: 0.5 }}>
@@ -30,7 +33,12 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
           t.shadows.sm,
         ]}
       >
-        {children}
+        {rows.map((row, i) => (
+          <View key={i}>
+            {i > 0 && <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: t.colors.border }} />}
+            {row}
+          </View>
+        ))}
       </View>
     </View>
   );
@@ -39,11 +47,12 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 function Row({ label, right, onPress }: { label: string; right?: ReactNode; onPress?: () => void }) {
   const t = useTheme();
   const content = (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.base, minHeight: 52 }}>
-      <Text variant="body" style={{ flex: 1 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.base, minHeight: 54 }}>
+      {/* Tight lineHeight keeps the label's text box snug, so label + control share one visual centre. */}
+      <Text variant="body" style={{ flex: 1, lineHeight: 21 }}>
         {label}
       </Text>
-      {right}
+      <View style={{ justifyContent: 'center' }}>{right}</View>
     </View>
   );
   return onPress ? <Pressable onPress={onPress}>{content}</Pressable> : content;
@@ -64,6 +73,12 @@ export default function SettingsScreen() {
   const signOut = useAuthStore((s) => s.signOut);
   const deleteAccount = useAuthStore((s) => s.deleteAccount);
   const [deleting, setDeleting] = useState(false);
+
+  // Every 3rd settings visit gently opens the Premium sheet (never for premium users).
+  useEffect(() => {
+    void maybeShowUpsell('settingsOpen', router);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fire once per screen visit
+  }, []);
 
   const switchColors = { false: t.colors.border, true: t.colors.primary };
 
