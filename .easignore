@@ -1,0 +1,10 @@
+# Files ignored only for EAS Build uploads (in addition to .gitignore).
+# These are not part of the app, and the skill folders contain symlinks that
+# break the archive step on Windows (EPERM: operation not permitted, symlink ...).
+.agents/
+.claude/
+promo-video/
+website/
+scripts/
+supabase/
+dist/
