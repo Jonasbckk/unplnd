@@ -81,7 +81,7 @@ export default function AuthScreen() {
       </View>
 
       {mode === 'signup' ? (
-        <Input label={tr('auth.firstName')} value={name} onChangeText={setName} autoCapitalize="words" placeholder="Jonas" />
+        <Input label={tr('auth.firstName')} value={name} onChangeText={setName} autoCapitalize="words" placeholder="Max Mustermann" />
       ) : null}
       <Input
         label={tr('auth.email')}

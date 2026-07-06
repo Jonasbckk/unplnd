@@ -181,6 +181,7 @@ export default function ProfileScreen() {
 
   const [pending, setPending] = useState(0);
   const [isFounder, setIsFounder] = useState(false);
+  const [dbAvatar, setDbAvatar] = useState<string | null>(null);
   const [verifyLevel, setVerifyLevel] = useState(0);
   const [metrics, setMetrics] = useState<VerifyMetrics | null>(null);
   const [myPlans, setMyPlans] = useState<CommunityPlan[]>([]);
@@ -213,7 +214,9 @@ export default function ProfileScreen() {
     if (!userId) return;
     let active = true;
     void getPublicProfile(userId).then((p) => {
-      if (active) setIsFounder(Boolean(p?.isFounder));
+      if (!active) return;
+      setIsFounder(Boolean(p?.isFounder));
+      setDbAvatar(p?.avatar ?? null);
     });
     void getVerifyMetrics().then((m) => {
       if (!active) return;
@@ -239,7 +242,7 @@ export default function ProfileScreen() {
       }
     | undefined;
   const name = meta?.display_name ?? user?.email?.split('@')[0] ?? 'You';
-  const avatarUrl = meta?.avatar_url;
+  const avatarUrl = meta?.avatar_url ?? dbAvatar;
   const bio = meta?.bio;
   const homeCity = meta?.home_city;
   const interests = meta?.interests ?? [];
