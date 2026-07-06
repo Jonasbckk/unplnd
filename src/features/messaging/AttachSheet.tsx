@@ -60,6 +60,7 @@ export function AttachSheet({
   onSticker,
   onToggleVote,
   onPhoto,
+  onLocation,
 }: {
   visible: boolean;
   canVote: boolean;
@@ -68,6 +69,7 @@ export function AttachSheet({
   onSticker: (emoji: string) => void;
   onToggleVote: () => void;
   onPhoto: () => void;
+  onLocation: () => void;
 }) {
   const t = useTheme();
   const { t: tr } = useT();
@@ -130,6 +132,11 @@ export function AttachSheet({
                 icon="image-outline"
                 label={tr('attach.photo')}
                 onPress={() => runAfterClose(onPhoto)}
+              />
+              <MenuRow
+                icon="location-outline"
+                label={tr('attach.location')}
+                onPress={() => runAfterClose(onLocation)}
               />
               <MenuRow
                 icon="happy-outline"

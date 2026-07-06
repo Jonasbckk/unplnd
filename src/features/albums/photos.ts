@@ -15,18 +15,14 @@ const SIGNED_URL_TTL_SECONDS = 60 * 60;
 
 /** Users choose which photos to include — never auto-upload (Memory Album Spec). */
 export async function pickPhotos(): Promise<ImagePicker.ImagePickerAsset[]> {
-  console.log('[pick] requesting media permission');
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  console.log('[pick] permission status:', permission.status, 'granted:', permission.granted);
   if (!permission.granted) return [];
-  console.log('[pick] launching library');
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
     allowsMultipleSelection: true,
     selectionLimit: 10,
     quality: 0.8,
   });
-  console.log('[pick] canceled:', result.canceled, 'assets:', result.assets?.length ?? 0);
   return result.canceled ? [] : result.assets;
 }
 

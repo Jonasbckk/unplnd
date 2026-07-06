@@ -29,13 +29,17 @@ import {
   getMessages,
   leaveConversation,
   reportMessage,
+  sendLocationMessage,
   sendMessage,
   setConversationVoting,
   subscribeToConversation,
   subscribeToMessages,
   type Message,
+  type SharedLocation,
   type SharedPlan,
 } from '@/lib/messaging';
+import { getCurrentLocation } from '@/lib/location';
+import { openInMaps } from '@/lib/maps';
 import {
   getConversationRsvps,
   removeRsvp,
@@ -167,6 +171,42 @@ function ChatImage({ path }: { path: string }) {
   );
 }
 
+/** A shared meeting point — tap to open the exact spot in Maps. */
+function LocationCard({ location, mine }: { location: SharedLocation; mine: boolean }) {
+  const t = useTheme();
+  const { t: tr } = useT();
+  const fg = mine ? '#FFFFFF' : t.colors.textPrimary;
+  const sub = mine ? 'rgba(255,255,255,0.8)' : t.colors.textSecondary;
+  return (
+    <Pressable
+      onPress={() => openInMaps(`${location.lat},${location.lng}`)}
+      style={{ marginTop: 6, borderRadius: t.radius.sm, overflow: 'hidden', minWidth: 190 }}
+    >
+      <View
+        style={{
+          height: 84,
+          backgroundColor: mine ? 'rgba(255,255,255,0.16)' : t.colors.background,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Ionicons name="location" size={30} color={mine ? '#FFFFFF' : t.colors.primary} />
+      </View>
+      <View style={{ padding: t.spacing.sm, gap: 2 }}>
+        <Text variant="small" style={{ color: fg, fontWeight: '700' }} numberOfLines={1}>
+          {location.label || tr('location.meetingPoint')}
+        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <Ionicons name="navigate" size={12} color={sub} />
+          <Text variant="caption" style={{ color: sub }}>
+            {tr('location.openMaps')}
+          </Text>
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
 function PlanCard({
   plan,
   onPress,
@@ -273,6 +313,7 @@ function Bubble({
         {message.audioPath ? (
           <VoiceMessage path={message.audioPath} duration={message.audioDuration} mine={mine} />
         ) : null}
+        {message.location ? <LocationCard location={message.location} mine={mine} /> : null}
         {message.sharedPlan ? (
           <PlanCard
             plan={message.sharedPlan}
@@ -494,21 +535,24 @@ export default function ChatScreen() {
 
   const sendPhotos = useCallback(async () => {
     if (!id) return;
-    console.log('[chat-photo] opening picker…');
     const assets = await pickPhotos();
-    console.log('[chat-photo] picker returned', assets.length, 'asset(s)');
     if (assets.length === 0) return;
     for (const asset of assets) {
-      console.log('[chat-photo] uploading', String(asset.uri).slice(0, 48), asset.mimeType, asset.fileSize);
-      const { path, error } = await uploadChatImage(id, asset);
-      if (path) {
-        console.log('[chat-photo] uploaded ->', path);
-        await sendMessage(id, '', null, path);
-      } else {
-        console.log('[chat-photo] FAILED:', error);
-        toast(error ? `Foto: ${error}` : tr('chat.photoFailed'));
-      }
+      const { path } = await uploadChatImage(id, asset);
+      if (path) await sendMessage(id, '', null, path);
+      else toast(tr('chat.photoFailed'));
     }
+  }, [id, tr]);
+
+  const shareLocation = useCallback(async () => {
+    if (!id) return;
+    const loc = await getCurrentLocation();
+    if (!loc) {
+      toast(tr('chat.locationDenied'));
+      return;
+    }
+    haptics.light();
+    await sendLocationMessage(id, { lat: loc.latitude, lng: loc.longitude, label: loc.city });
   }, [id, tr]);
 
   const startRecording = useCallback(async () => {
@@ -538,9 +582,9 @@ export default function ChatScreen() {
     }
     const uri = recorder.uri;
     if (!uri || !id) return;
-    const { path, error } = await uploadChatAudio(id, uri);
+    const { path } = await uploadChatAudio(id, uri);
     if (path) await sendMessage(id, '', null, null, path, seconds);
-    else toast(error ? `Voice: ${error}` : tr('chat.photoFailed'));
+    else toast(tr('chat.voiceFailed'));
   }, [recorder, id, tr]);
 
   const cancelRecording = useCallback(async () => {
@@ -955,6 +999,7 @@ export default function ChatScreen() {
         onSticker={sendSticker}
         onToggleVote={toggleVoting}
         onPhoto={sendPhotos}
+        onLocation={shareLocation}
       />
 
       <Modal visible={!!reactTarget} transparent animationType="fade" onRequestClose={() => setReactTarget(null)}>

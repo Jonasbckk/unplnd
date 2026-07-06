@@ -174,6 +174,8 @@ export const de = {
     },
   },
   location: {
+    meetingPoint: 'Treffpunkt',
+    openMaps: 'In Maps öffnen',
     neededTitle: 'Standort benötigt',
     neededBody: 'UNPLND plant Abende in deiner Nähe. Erlaube den Standortzugriff, um loszulegen.',
     allow: 'Standort erlauben',
@@ -586,6 +588,8 @@ export const de = {
     photoFailed: 'Foto konnte nicht gesendet werden.',
     recording: 'Aufnahme…',
     micDenied: 'Mikrofon-Zugriff für Sprachnachrichten nötig.',
+    voiceFailed: 'Sprachnachricht konnte nicht gesendet werden.',
+    locationDenied: 'Standort-Zugriff für Treffpunkt nötig.',
   },
   rsvp: {
     in: 'Dabei',
@@ -599,6 +603,7 @@ export const de = {
   attach: {
     sticker: 'Sticker',
     photo: 'Foto',
+    location: 'Treffpunkt',
   },
   messages: {
     title: 'Nachrichten',
@@ -607,6 +612,7 @@ export const de = {
     sharedPlan: '📍 Plan geteilt',
     sharedPhoto: '📷 Foto',
     sharedVoice: '🎙️ Sprachnachricht',
+    sharedLocation: '📍 Treffpunkt',
     noMessages: 'Noch keine Nachrichten',
     emptyTitle: 'Noch keine Chats',
     emptyBody: 'Verbinde dich mit jemandem und starte ein Gespräch, um zusammen zu planen.',

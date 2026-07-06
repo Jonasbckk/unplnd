@@ -25,7 +25,9 @@ function Row({ conv, onPress }: { conv: ConversationSummary; onPress: () => void
       ? tr('messages.sharedPhoto')
       : conv.lastIsAudio
         ? tr('messages.sharedVoice')
-        : conv.lastBody ?? tr('messages.noMessages');
+        : conv.lastIsLocation
+          ? tr('messages.sharedLocation')
+          : conv.lastBody ?? tr('messages.noMessages');
   return (
     <Pressable
       onPress={onPress}

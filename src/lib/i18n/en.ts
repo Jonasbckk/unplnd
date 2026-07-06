@@ -138,6 +138,8 @@ export const en = {
     },
   },
   location: {
+    meetingPoint: 'Meeting point',
+    openMaps: 'Open in Maps',
     neededTitle: 'Location needed',
     neededBody: 'UNPLND plans evenings near you. Allow location access to get started.',
     allow: 'Allow location',
@@ -550,6 +552,8 @@ export const en = {
     photoFailed: 'Couldn’t send photo.',
     recording: 'Recording…',
     micDenied: 'Microphone access needed for voice messages.',
+    voiceFailed: 'Couldn’t send voice message.',
+    locationDenied: 'Location access needed to share a meeting point.',
   },
   rsvp: {
     in: "I'm in",
@@ -563,6 +567,7 @@ export const en = {
   attach: {
     sticker: 'Stickers',
     photo: 'Photo',
+    location: 'Meeting point',
   },
   messages: {
     title: 'Messages',
@@ -571,6 +576,7 @@ export const en = {
     sharedPlan: '📍 Shared a plan',
     sharedPhoto: '📷 Photo',
     sharedVoice: '🎙️ Voice message',
+    sharedLocation: '📍 Meeting point',
     noMessages: 'No messages yet',
     emptyTitle: 'No chats yet',
     emptyBody: 'Connect with someone and start a conversation to plan together.',
