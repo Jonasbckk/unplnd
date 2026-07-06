@@ -26,6 +26,7 @@ import { useRatingsQueue } from '@/lib/ratings-queue';
 import { useCelebrateStore } from '@/features/celebrate/celebrate-store';
 import { recordActivity } from '@/lib/activity';
 import { useAuthStore } from '@/features/auth/auth-store';
+import { useRevenueCatStore } from '@/store/revenuecat-store';
 import { useAppStore } from '@/store/app-store';
 import { useConnectivityStore } from '@/store/connectivity-store';
 import { ThemeProvider, useTheme } from '@/theme';
@@ -79,6 +80,13 @@ function RootLayout() {
     const unsubscribe = useAuthStore.getState().init();
     return unsubscribe;
   }, []);
+
+  // RevenueCat: configure for the signed-in user (no-op until a key is set + a dev build is made).
+  const rcUserId = useAuthStore((s) => s.user?.id);
+  useEffect(() => {
+    if (rcUserId) void useRevenueCatStore.getState().start(rcUserId);
+    else void useRevenueCatStore.getState().reset();
+  }, [rcUserId]);
 
   useEffect(() => {
     const unsubscribe = useConnectivityStore.getState().init();

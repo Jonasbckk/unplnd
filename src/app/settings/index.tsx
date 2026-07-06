@@ -116,6 +116,19 @@ export default function SettingsScreen() {
           contentContainerStyle={{ padding: t.spacing.lg, paddingTop: 0, gap: t.spacing.xl }}
           showsVerticalScrollIndicator={false}
         >
+          <Section title="UNPLND Premium">
+            <Row
+              label={tr('settings.getPremium')}
+              onPress={() => router.push('/paywall' as Href)}
+              right={
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}>
+                  <Ionicons name={'sparkles' as IoniconName} size={18} color={t.colors.primary} />
+                  <Ionicons name={'chevron-forward' as IoniconName} size={18} color={t.colors.textSecondary} />
+                </View>
+              }
+            />
+          </Section>
+
           <Section title={tr('settings.appearance')}>
             <View style={{ paddingVertical: t.spacing.base, gap: t.spacing.md }}>
               <Text variant="body">{tr('settings.theme')}</Text>
