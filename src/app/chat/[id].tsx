@@ -475,12 +475,20 @@ export default function ChatScreen() {
 
   const sendPhotos = useCallback(async () => {
     if (!id) return;
+    console.log('[chat-photo] opening picker…');
     const assets = await pickPhotos();
+    console.log('[chat-photo] picker returned', assets.length, 'asset(s)');
     if (assets.length === 0) return;
     for (const asset of assets) {
+      console.log('[chat-photo] uploading', String(asset.uri).slice(0, 48), asset.mimeType, asset.fileSize);
       const { path, error } = await uploadChatImage(id, asset);
-      if (path) await sendMessage(id, '', null, path);
-      else toast(error ? `Foto: ${error}` : tr('chat.photoFailed'));
+      if (path) {
+        console.log('[chat-photo] uploaded ->', path);
+        await sendMessage(id, '', null, path);
+      } else {
+        console.log('[chat-photo] FAILED:', error);
+        toast(error ? `Foto: ${error}` : tr('chat.photoFailed'));
+      }
     }
   }, [id, tr]);
 
