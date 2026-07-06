@@ -4,16 +4,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, {
-  Easing,
-  FadeInDown,
-  useAnimatedStyle,
-  useReducedMotion,
-  useSharedValue,
-  withDelay,
-  withRepeat,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { FadeInDown, useReducedMotion } from 'react-native-reanimated';
 
 import { Button, Text } from '@/components/ui';
 import { haptics } from '@/lib/haptics';
@@ -30,39 +21,6 @@ const BENEFITS: { icon: keyof typeof Ionicons.glyphMap; key: string }[] = [
   { icon: 'location-outline', key: 'benefitFavorites' },
   { icon: 'ribbon-outline', key: 'benefitBadge' },
 ];
-
-/** A softly floating sparkle in the hero — ambient, loops forever (Reduce Motion → still). */
-function FloatingSpark({
-  x,
-  y,
-  size,
-  delay,
-  reduced,
-}: {
-  x: number;
-  y: number;
-  size: number;
-  delay: number;
-  reduced: boolean;
-}) {
-  const p = useSharedValue(reduced ? 0.5 : 0);
-  useEffect(() => {
-    if (reduced) return;
-    p.value = withDelay(
-      delay,
-      withRepeat(withTiming(1, { duration: 2600, easing: Easing.inOut(Easing.ease) }), -1, true),
-    );
-  }, [reduced, delay, p]);
-  const style = useAnimatedStyle(() => ({
-    transform: [{ translateY: (p.value - 0.5) * 12 }],
-    opacity: 0.45 + p.value * 0.5,
-  }));
-  return (
-    <Animated.View pointerEvents="none" style={[{ position: 'absolute', left: x, top: y }, style]}>
-      <Ionicons name="sparkles" size={size} color="rgba(255,255,255,0.9)" />
-    </Animated.View>
-  );
-}
 
 export default function PaywallScreen() {
   const t = useTheme();
@@ -144,9 +102,6 @@ export default function PaywallScreen() {
               end={{ x: 1, y: 1 }}
               style={{ padding: t.spacing.xl, alignItems: 'center', gap: t.spacing.sm }}
             >
-              <FloatingSpark x={26} y={22} size={16} delay={0} reduced={reduced} />
-              <FloatingSpark x={300} y={30} size={13} delay={600} reduced={reduced} />
-              <FloatingSpark x={48} y={120} size={12} delay={1100} reduced={reduced} />
               <Ionicons name="sparkles" size={40} color="#FFFFFF" />
               <Text variant="displayMedium" style={{ color: '#FFFFFF' }} center>
                 UNPLND Premium

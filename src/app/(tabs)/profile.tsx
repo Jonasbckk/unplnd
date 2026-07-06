@@ -203,6 +203,13 @@ export default function ProfileScreen() {
       void getUserPublishedPlans(userId).then((pl) => {
         if (active) setMyPlans(pl);
       });
+      // Server truth for avatar + founder flag — refreshed on every focus, so a new
+      // profile photo shows the moment you come back to the tab.
+      void getPublicProfile(userId).then((p) => {
+        if (!active) return;
+        setIsFounder(Boolean(p?.isFounder));
+        setDbAvatar(p?.avatar ?? null);
+      });
       return () => {
         active = false;
       };
@@ -213,11 +220,6 @@ export default function ProfileScreen() {
     const userId = user?.id;
     if (!userId) return;
     let active = true;
-    void getPublicProfile(userId).then((p) => {
-      if (!active) return;
-      setIsFounder(Boolean(p?.isFounder));
-      setDbAvatar(p?.avatar ?? null);
-    });
     void getVerifyMetrics().then((m) => {
       if (!active) return;
       const lvl = currentTierLevel(m);
@@ -242,7 +244,11 @@ export default function ProfileScreen() {
       }
     | undefined;
   const name = meta?.display_name ?? user?.email?.split('@')[0] ?? 'You';
-  const avatarUrl = meta?.avatar_url ?? dbAvatar;
+  // profiles.photo_url is the server truth. Auth-meta only counts when it's a real URL —
+  // older builds could leave '' or a local file path there, which masked the DB value.
+  const metaAvatar = meta?.avatar_url?.startsWith('http') ? meta.avatar_url : null;
+  const avatarUrl = metaAvatar ?? dbAvatar;
+  const [avatarFailedUri, setAvatarFailedUri] = useState<string | null>(null);
   const bio = meta?.bio;
   const homeCity = meta?.home_city;
   const interests = meta?.interests ?? [];
@@ -304,8 +310,17 @@ export default function ProfileScreen() {
                   borderColor: style.onGradient,
                 }}
               >
-                {avatarUrl ? (
-                  <Image source={{ uri: avatarUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                {avatarUrl && avatarUrl !== avatarFailedUri ? (
+                  <Image
+                    source={{ uri: avatarUrl }}
+                    style={{ width: '100%', height: '100%' }}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    onError={() => {
+                      console.warn('[profile] avatar failed to load:', avatarUrl);
+                      setAvatarFailedUri(avatarUrl);
+                    }}
+                  />
                 ) : (
                   <Text variant="h1" color="onPrimary">
                     {name.charAt(0).toUpperCase()}

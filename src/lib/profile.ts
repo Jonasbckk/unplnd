@@ -96,7 +96,10 @@ export async function updateProfileAvatar(asset: ImagePicker.ImagePickerAsset): 
     const { error: upErr } = await supabase.storage
       .from('avatars')
       .upload(path, body, { contentType: asset.mimeType ?? 'image/jpeg', upsert: true });
-    if (upErr) return null;
+    if (upErr) {
+      console.warn('[avatar] upload failed:', upErr.message);
+      return null;
+    }
 
     const { data } = supabase.storage.from('avatars').getPublicUrl(path);
     // Cache-bust: same path (upsert) would otherwise show the stale cached image.
@@ -104,7 +107,8 @@ export async function updateProfileAvatar(asset: ImagePicker.ImagePickerAsset): 
     await supabase.auth.updateUser({ data: { avatar_url: url } });
     await supabase.from('profiles').update({ photo_url: url }).eq('id', userId);
     return url;
-  } catch {
+  } catch (e) {
+    console.warn('[avatar] update failed:', e instanceof Error ? e.message : e);
     return null;
   }
 }
