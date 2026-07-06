@@ -548,6 +548,8 @@ export const en = {
     empty: 'Say hi and plan your next evening together.',
     placeholder: 'Write a message…',
     photoFailed: 'Couldn’t send photo.',
+    recording: 'Recording…',
+    micDenied: 'Microphone access needed for voice messages.',
   },
   rsvp: {
     in: "I'm in",
@@ -568,6 +570,7 @@ export const en = {
     shareHint: 'Pick a chat to share this plan with.',
     sharedPlan: '📍 Shared a plan',
     sharedPhoto: '📷 Photo',
+    sharedVoice: '🎙️ Voice message',
     noMessages: 'No messages yet',
     emptyTitle: 'No chats yet',
     emptyBody: 'Connect with someone and start a conversation to plan together.',

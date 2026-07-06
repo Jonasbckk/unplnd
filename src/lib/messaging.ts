@@ -16,6 +16,8 @@ export interface Message {
   body: string | null;
   sharedPlan: SharedPlan | null;
   imagePath: string | null;
+  audioPath: string | null;
+  audioDuration: number | null;
   createdAt: string;
 }
 
@@ -28,6 +30,7 @@ export interface ConversationSummary {
   lastBody: string | null;
   lastIsPlan: boolean;
   lastIsImage: boolean;
+  lastIsAudio: boolean;
   lastAt: string;
 }
 
@@ -46,6 +49,8 @@ function mapMessage(row: Record<string, unknown>): Message {
     body: (row.body as string | null) ?? null,
     sharedPlan: (row.shared_plan as SharedPlan | null) ?? null,
     imagePath: (row.image_path as string | null) ?? null,
+    audioPath: (row.audio_path as string | null) ?? null,
+    audioDuration: (row.audio_duration as number | null) ?? null,
     createdAt: row.created_at as string,
   };
 }
@@ -65,7 +70,7 @@ export async function createGroup(title: string, memberIds: string[]): Promise<s
 export async function getMessages(convId: string): Promise<Message[]> {
   const { data } = await supabase
     .from('messages')
-    .select('id, conversation_id, sender_id, body, shared_plan, image_path, created_at')
+    .select('id, conversation_id, sender_id, body, shared_plan, image_path, audio_path, audio_duration, created_at')
     .eq('conversation_id', convId)
     .order('created_at', { ascending: true })
     .limit(300);
@@ -77,17 +82,21 @@ export async function sendMessage(
   body: string,
   sharedPlan?: SharedPlan | null,
   imagePath?: string | null,
+  audioPath?: string | null,
+  audioDuration?: number | null,
 ): Promise<boolean> {
   const me = useAuthStore.getState().user?.id;
   if (!me) return false;
   const trimmed = body.trim();
-  if (!trimmed && !sharedPlan && !imagePath) return false;
+  if (!trimmed && !sharedPlan && !imagePath && !audioPath) return false;
   const { error } = await supabase.from('messages').insert({
     conversation_id: convId,
     sender_id: me,
     body: trimmed || null,
     shared_plan: sharedPlan ?? null,
     image_path: imagePath ?? null,
+    audio_path: audioPath ?? null,
+    audio_duration: audioDuration ?? null,
   });
   return !error;
 }
@@ -177,11 +186,11 @@ export async function getConversations(): Promise<ConversationSummary[]> {
 
   const { data: msgs } = await supabase
     .from('messages')
-    .select('conversation_id, body, shared_plan, image_path, created_at')
+    .select('conversation_id, body, shared_plan, image_path, audio_path, created_at')
     .in('conversation_id', ids)
     .order('created_at', { ascending: false })
     .limit(200);
-  const lastByConv = new Map<string, { body: string | null; isPlan: boolean; isImage: boolean }>();
+  const lastByConv = new Map<string, { body: string | null; isPlan: boolean; isImage: boolean; isAudio: boolean }>();
   for (const m of msgs ?? []) {
     const cid = m.conversation_id as string;
     if (!lastByConv.has(cid)) {
@@ -189,6 +198,7 @@ export async function getConversations(): Promise<ConversationSummary[]> {
         body: (m.body as string | null) ?? null,
         isPlan: Boolean(m.shared_plan),
         isImage: Boolean(m.image_path),
+        isAudio: Boolean(m.audio_path),
       });
     }
   }
@@ -213,6 +223,7 @@ export async function getConversations(): Promise<ConversationSummary[]> {
         lastBody: last?.body ?? null,
         lastIsPlan: last?.isPlan ?? false,
         lastIsImage: last?.isImage ?? false,
+        lastIsAudio: last?.isAudio ?? false,
         lastAt: (c.last_message_at as string) ?? '',
       } as ConversationSummary;
     }),

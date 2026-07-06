@@ -51,7 +51,8 @@
           "photosPermission": "UNPLND braucht Zugriff auf deine Fotos, damit du Erinnerungen zu deinen Alben hinzufügen kannst."
         }
       ],
-      "expo-notifications"
+      "expo-notifications",
+      "expo-audio"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -584,6 +584,8 @@ export const de = {
     empty: 'Sagt Hallo und plant euren nächsten Abend zusammen.',
     placeholder: 'Nachricht schreiben…',
     photoFailed: 'Foto konnte nicht gesendet werden.',
+    recording: 'Aufnahme…',
+    micDenied: 'Mikrofon-Zugriff für Sprachnachrichten nötig.',
   },
   rsvp: {
     in: 'Dabei',
@@ -604,6 +606,7 @@ export const de = {
     shareHint: 'Wähle einen Chat, um diesen Plan zu teilen.',
     sharedPlan: '📍 Plan geteilt',
     sharedPhoto: '📷 Foto',
+    sharedVoice: '🎙️ Sprachnachricht',
     noMessages: 'Noch keine Nachrichten',
     emptyTitle: 'Noch keine Chats',
     emptyBody: 'Verbinde dich mit jemandem und starte ein Gespräch, um zusammen zu planen.',

@@ -2,6 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Keyboard, Modal, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
+import {
+  RecordingPresets,
+  requestRecordingPermissionsAsync,
+  setAudioModeAsync,
+  useAudioRecorder,
+  useAudioRecorderState,
+} from 'expo-audio';
 import { Image } from 'expo-image';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,7 +18,8 @@ import { useAuthStore } from '@/features/auth/auth-store';
 import { pickPhotos } from '@/features/albums/photos';
 import { AttachSheet } from '@/features/messaging/AttachSheet';
 import { PlanPreviewSheet } from '@/features/messaging/PlanPreviewSheet';
-import { getChatImageUrl, uploadChatImage } from '@/lib/chat-media';
+import { VoiceMessage } from '@/features/messaging/VoiceMessage';
+import { getChatMediaUrl, uploadChatAudio, uploadChatImage } from '@/lib/chat-media';
 import { blockUser, getBlockedIds, type PublicProfile } from '@/lib/community';
 import { confirmDialog } from '@/lib/confirm';
 import { haptics } from '@/lib/haptics';
@@ -49,6 +57,11 @@ import { useTheme } from '@/theme';
 function formatTime(iso: string): string {
   const d = new Date(iso);
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+function fmtClock(totalSec: number): string {
+  const s = Math.max(0, Math.floor(totalSec));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
 // A message that is only emoji (a sticker, or a bare "👍") renders big, without a bubble.
@@ -131,7 +144,7 @@ function ChatImage({ path }: { path: string }) {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
     let active = true;
-    void getChatImageUrl(path).then((u) => active && setUrl(u));
+    void getChatMediaUrl(path).then((u) => active && setUrl(u));
     return () => {
       active = false;
     };
@@ -257,6 +270,9 @@ function Bubble({
           )
         ) : null}
         {message.imagePath ? <ChatImage path={message.imagePath} /> : null}
+        {message.audioPath ? (
+          <VoiceMessage path={message.audioPath} duration={message.audioDuration} mine={mine} />
+        ) : null}
         {message.sharedPlan ? (
           <PlanCard
             plan={message.sharedPlan}
@@ -380,6 +396,9 @@ export default function ChatScreen() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [kbHeight, setKbHeight] = useState(0);
   const insets = useSafeAreaInsets();
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recorderState = useAudioRecorderState(recorder);
+  const [recording, setRecording] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -491,6 +510,48 @@ export default function ChatScreen() {
       }
     }
   }, [id, tr]);
+
+  const startRecording = useCallback(async () => {
+    const perm = await requestRecordingPermissionsAsync();
+    if (!perm.granted) {
+      toast(tr('chat.micDenied'));
+      return;
+    }
+    try {
+      await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+      await recorder.prepareToRecordAsync();
+      recorder.record();
+      setRecording(true);
+      haptics.light();
+    } catch {
+      toast(tr('chat.micDenied'));
+    }
+  }, [recorder, tr]);
+
+  const stopAndSend = useCallback(async () => {
+    const seconds = Math.max(1, Math.round(recorder.currentTime));
+    setRecording(false);
+    try {
+      await recorder.stop();
+    } catch {
+      return;
+    }
+    const uri = recorder.uri;
+    if (!uri || !id) return;
+    const { path, error } = await uploadChatAudio(id, uri);
+    if (path) await sendMessage(id, '', null, null, path, seconds);
+    else toast(error ? `Voice: ${error}` : tr('chat.photoFailed'));
+  }, [recorder, id, tr]);
+
+  const cancelRecording = useCallback(async () => {
+    setRecording(false);
+    try {
+      await recorder.stop();
+    } catch {
+      // discard
+    }
+    haptics.selection();
+  }, [recorder]);
 
   const onRsvp = useCallback(
     async (messageId: string, status: RsvpStatus) => {
@@ -728,70 +789,119 @@ export default function ChatScreen() {
           </Pressable>
         ) : null}
 
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'flex-end',
-            gap: t.spacing.sm,
-            paddingHorizontal: t.spacing.lg,
-            paddingTop: t.spacing.sm,
-            paddingBottom: t.spacing.sm,
-            borderTopWidth: 1,
-            borderTopColor: t.colors.divider,
-            backgroundColor: t.colors.background,
-          }}
-        >
-          <Pressable
-            onPress={() => {
-              haptics.selection();
-              setAttachOpen(true);
-            }}
+        {recording ? (
+          <View
             style={{
-              width: 44,
-              height: 44,
-              borderRadius: t.radius.pill,
-              backgroundColor: t.colors.surfaceSecondary,
+              flexDirection: 'row',
               alignItems: 'center',
-              justifyContent: 'center',
+              gap: t.spacing.sm,
+              paddingHorizontal: t.spacing.lg,
+              paddingTop: t.spacing.sm,
+              paddingBottom: t.spacing.sm,
+              borderTopWidth: 1,
+              borderTopColor: t.colors.divider,
+              backgroundColor: t.colors.background,
             }}
           >
-            <Ionicons name="add" size={24} color={t.colors.textPrimary} />
-          </Pressable>
-          <TextInput
-            value={draft}
-            onChangeText={setDraft}
-            placeholder={tr('chat.placeholder')}
-            placeholderTextColor={t.colors.textSecondary}
-            multiline
-            textAlignVertical="center"
+            <Pressable
+              onPress={cancelRecording}
+              hitSlop={8}
+              style={{ width: 44, height: 44, borderRadius: t.radius.pill, alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Ionicons name="trash-outline" size={22} color={t.colors.textSecondary} />
+            </Pressable>
+            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}>
+              <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: t.colors.error }} />
+              <Text variant="body" style={{ fontWeight: '700' }}>
+                {fmtClock(recorderState.durationMillis / 1000)}
+              </Text>
+              <Text variant="small" color="textSecondary">
+                {tr('chat.recording')}
+              </Text>
+            </View>
+            <Pressable
+              onPress={stopAndSend}
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: t.radius.pill,
+                backgroundColor: t.colors.primary,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Ionicons name="arrow-up" size={22} color="#FFFFFF" />
+            </Pressable>
+          </View>
+        ) : (
+          <View
             style={{
-              flex: 1,
-              maxHeight: 120,
-              minHeight: 44,
-              paddingHorizontal: t.spacing.base,
-              paddingTop: 12,
-              paddingBottom: 12,
-              borderRadius: t.radius.lg,
-              backgroundColor: t.colors.surfaceSecondary,
-              color: t.colors.textPrimary,
-              fontSize: 16,
-            }}
-          />
-          <Pressable
-            onPress={send}
-            disabled={!draft.trim()}
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: t.radius.pill,
-              backgroundColor: draft.trim() ? t.colors.primary : t.colors.border,
-              alignItems: 'center',
-              justifyContent: 'center',
+              flexDirection: 'row',
+              alignItems: 'flex-end',
+              gap: t.spacing.sm,
+              paddingHorizontal: t.spacing.lg,
+              paddingTop: t.spacing.sm,
+              paddingBottom: t.spacing.sm,
+              borderTopWidth: 1,
+              borderTopColor: t.colors.divider,
+              backgroundColor: t.colors.background,
             }}
           >
-            <Ionicons name="arrow-up" size={22} color="#FFFFFF" />
-          </Pressable>
-        </View>
+            <Pressable
+              onPress={() => {
+                haptics.selection();
+                setAttachOpen(true);
+              }}
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: t.radius.pill,
+                backgroundColor: t.colors.surfaceSecondary,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Ionicons name="add" size={24} color={t.colors.textPrimary} />
+            </Pressable>
+            <TextInput
+              value={draft}
+              onChangeText={setDraft}
+              placeholder={tr('chat.placeholder')}
+              placeholderTextColor={t.colors.textSecondary}
+              multiline
+              textAlignVertical="center"
+              style={{
+                flex: 1,
+                maxHeight: 120,
+                minHeight: 44,
+                paddingHorizontal: t.spacing.base,
+                paddingTop: 12,
+                paddingBottom: 12,
+                borderRadius: t.radius.lg,
+                backgroundColor: t.colors.surfaceSecondary,
+                color: t.colors.textPrimary,
+                fontSize: 16,
+              }}
+            />
+            <Pressable
+              onPress={draft.trim() ? send : startRecording}
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: t.radius.pill,
+                backgroundColor: draft.trim() ? t.colors.primary : t.colors.surfaceSecondary,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Ionicons
+                name={draft.trim() ? 'arrow-up' : 'mic'}
+                size={22}
+                color={draft.trim() ? '#FFFFFF' : t.colors.textPrimary}
+              />
+            </Pressable>
+          </View>
+        )}
       </View>
 
       <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>

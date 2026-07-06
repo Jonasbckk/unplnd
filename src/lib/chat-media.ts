@@ -31,8 +31,26 @@ export async function uploadChatImage(
   }
 }
 
-/** A short-lived signed URL for a chat image (the bucket is private). */
-export async function getChatImageUrl(path: string): Promise<string | null> {
+/** Uploads a recorded audio clip (local file uri) to the private chat-media bucket. */
+export async function uploadChatAudio(conversationId: string, uri: string): Promise<UploadResult> {
+  try {
+    const response = await fetch(uri);
+    const body = await response.arrayBuffer();
+    if (body.byteLength === 0) return { path: null, error: 'empty recording (0 bytes)' };
+    const rand = Math.random().toString(36).slice(2, 10);
+    const path = `${conversationId}/${Date.now()}-${rand}.m4a`;
+    const { error } = await supabase.storage
+      .from('chat-media')
+      .upload(path, body, { contentType: 'audio/m4a' });
+    if (error) return { path: null, error: error.message };
+    return { path };
+  } catch (e) {
+    return { path: null, error: e instanceof Error ? e.message : 'unknown error' };
+  }
+}
+
+/** A short-lived signed URL for a private chat media file (image or audio). */
+export async function getChatMediaUrl(path: string): Promise<string | null> {
   const { data } = await supabase.storage.from('chat-media').createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
   return data?.signedUrl ?? null;
 }
