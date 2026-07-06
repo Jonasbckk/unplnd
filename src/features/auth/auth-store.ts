@@ -19,6 +19,8 @@ interface AuthState {
   initialized: boolean;
   /** Subscribe to auth changes. Returns an unsubscribe function. */
   init: () => () => void;
+  /** Re-pull the current user (e.g. after editing the profile) so metadata reflects at once. */
+  refreshUser: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<AuthResult>;
   signUpWithEmail: (email: string, password: string, name: string) => Promise<AuthResult>;
   signOut: () => Promise<void>;
@@ -43,6 +45,10 @@ export const useAuthStore = create<AuthState>((set) => ({
       else resetAnalytics();
     });
     return () => data.subscription.unsubscribe();
+  },
+  refreshUser: async () => {
+    const { data } = await supabase.auth.getUser();
+    if (data.user) set({ user: data.user });
   },
   signInWithEmail: async (email, password) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });

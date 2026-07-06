@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, Card, Screen, Text } from '@/components/ui';
 import { PROFILE_STYLES, useProfileStyle, type ProfileStyle } from '@/features/profile/profile-styles';
+import { useAuthStore } from '@/features/auth/auth-store';
 import { usePremium } from '@/features/profile/use-premium';
 import { haptics } from '@/lib/haptics';
 import { useT } from '@/lib/i18n';
@@ -32,6 +33,7 @@ export default function ProfileStyleScreen() {
     if (style.id === active.id) return;
     haptics.success();
     const ok = await updateProfileStyle(style.id);
+    if (ok) await useAuthStore.getState().refreshUser();
     toast(ok ? tr('profileStyle.applied') : tr('editProfile.failed'));
   };
 

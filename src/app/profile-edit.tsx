@@ -61,6 +61,7 @@ export default function EditProfile() {
     setUploading(false);
     if (url) {
       setAvatar(url);
+      await useAuthStore.getState().refreshUser();
       haptics.success();
       toast(tr('editProfile.avatarUpdated'));
     } else {
@@ -77,6 +78,7 @@ export default function EditProfile() {
     const okExtras = await updateProfileExtras(interests, promptAnswers);
     setSaving(false);
     if (okName && okBio && okCity && okExtras) {
+      await useAuthStore.getState().refreshUser();
       haptics.success();
       toast(tr('editProfile.saved'));
       router.back();
