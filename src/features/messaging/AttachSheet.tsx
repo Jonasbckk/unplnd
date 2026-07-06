@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
-import { Modal, Pressable, ScrollView, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Modal, Platform, Pressable, ScrollView, View } from 'react-native';
 
 import { Text } from '@/components/ui';
 import { haptics } from '@/lib/haptics';
@@ -72,13 +72,38 @@ export function AttachSheet({
   const t = useTheme();
   const { t: tr } = useT();
   const [mode, setMode] = useState<'menu' | 'stickers'>('menu');
+  // Action to run once the sheet is fully dismissed — launching the image picker while this
+  // modal is still on screen silently fails on iOS, so we wait for onDismiss.
+  const pendingRef = useRef<(() => void) | null>(null);
+
+  const runAfterClose = (fn: () => void) => {
+    pendingRef.current = fn;
+    onClose();
+    if (Platform.OS !== 'ios') {
+      setTimeout(() => {
+        const pending = pendingRef.current;
+        pendingRef.current = null;
+        pending?.();
+      }, 250);
+    }
+  };
 
   useEffect(() => {
     if (visible) setMode('menu');
   }, [visible]);
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+      onDismiss={() => {
+        const pending = pendingRef.current;
+        pendingRef.current = null;
+        pending?.();
+      }}
+    >
       <Pressable
         onPress={onClose}
         style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: t.colors.overlay }}
@@ -104,12 +129,7 @@ export function AttachSheet({
               <MenuRow
                 icon="image-outline"
                 label={tr('attach.photo')}
-                onPress={() => {
-                  // Close the sheet first, then open the picker — presenting the OS picker while
-                  // this modal is still dismissing silently fails on iOS.
-                  onClose();
-                  setTimeout(onPhoto, 320);
-                }}
+                onPress={() => runAfterClose(onPhoto)}
               />
               <MenuRow
                 icon="happy-outline"
