@@ -763,13 +763,14 @@ export default function ChatScreen() {
             placeholder={tr('chat.placeholder')}
             placeholderTextColor={t.colors.textSecondary}
             multiline
+            textAlignVertical="center"
             style={{
               flex: 1,
               maxHeight: 120,
               minHeight: 44,
               paddingHorizontal: t.spacing.base,
-              paddingTop: t.spacing.sm,
-              paddingBottom: t.spacing.sm,
+              paddingTop: 12,
+              paddingBottom: 12,
               borderRadius: t.radius.lg,
               backgroundColor: t.colors.surfaceSecondary,
               color: t.colors.textPrimary,
@@ -871,7 +872,7 @@ export default function ChatScreen() {
               >
                 {QUICK_REACTIONS.map((e) => (
                   <Pressable key={e} onPress={() => onReact(reactTarget.id, e)} hitSlop={4}>
-                    <Text style={{ fontSize: 30 }}>{e}</Text>
+                    <Text style={{ fontSize: 30, lineHeight: 38 }}>{e}</Text>
                   </Pressable>
                 ))}
               </View>
