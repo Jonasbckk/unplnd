@@ -550,6 +550,7 @@ export const en = {
     empty: 'Say hi and plan your next evening together.',
     placeholder: 'Write a message…',
     photoFailed: 'Couldn’t send photo.',
+    sendFailed: 'Sending failed — please try again.',
     recording: 'Recording…',
     micDenied: 'Microphone access needed for voice messages.',
     voiceFailed: 'Couldn’t send voice message.',

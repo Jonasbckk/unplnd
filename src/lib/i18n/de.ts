@@ -586,6 +586,7 @@ export const de = {
     empty: 'Sagt Hallo und plant euren nächsten Abend zusammen.',
     placeholder: 'Nachricht schreiben…',
     photoFailed: 'Foto konnte nicht gesendet werden.',
+    sendFailed: 'Senden fehlgeschlagen — versuch es nochmal.',
     recording: 'Aufnahme…',
     micDenied: 'Mikrofon-Zugriff für Sprachnachrichten nötig.',
     voiceFailed: 'Sprachnachricht konnte nicht gesendet werden.',

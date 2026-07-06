@@ -24,6 +24,7 @@ import { getPublicProfile, getUserPublishedPlans, type CommunityPlan } from '@/l
 import { getPendingCount } from '@/lib/connections';
 import { haptics } from '@/lib/haptics';
 import { setPinnedPlaces } from '@/lib/profile';
+import { supabase } from '@/lib/supabase';
 import { useT } from '@/lib/i18n';
 import { useAppStore } from '@/store/app-store';
 import { useTheme } from '@/theme';
@@ -209,6 +210,17 @@ export default function ProfileScreen() {
         if (!active) return;
         setIsFounder(Boolean(p?.isFounder));
         setDbAvatar(p?.avatar ?? null);
+        if (!p?.avatar) console.warn('[profile] server returned no avatar for', userId);
+        // Self-heal: older builds could leave '' or a local file path in the auth meta,
+        // hiding the photo on screens that read only the meta (e.g. profile edit).
+        // Copy the server truth back once, then refresh the cached auth user.
+        const metaUrl = (useAuthStore.getState().user?.user_metadata as { avatar_url?: string } | undefined)
+          ?.avatar_url;
+        if (p?.avatar && !(metaUrl ?? '').startsWith('http')) {
+          void supabase.auth
+            .updateUser({ data: { avatar_url: p.avatar } })
+            .then(() => useAuthStore.getState().refreshUser());
+        }
       });
       return () => {
         active = false;
@@ -244,10 +256,10 @@ export default function ProfileScreen() {
       }
     | undefined;
   const name = meta?.display_name ?? user?.email?.split('@')[0] ?? 'You';
-  // profiles.photo_url is the server truth. Auth-meta only counts when it's a real URL —
-  // older builds could leave '' or a local file path there, which masked the DB value.
+  // profiles.photo_url is the server truth (exactly what the public preview renders) —
+  // it wins; valid auth-meta only bridges the first frames while the fetch is in flight.
   const metaAvatar = meta?.avatar_url?.startsWith('http') ? meta.avatar_url : null;
-  const avatarUrl = metaAvatar ?? dbAvatar;
+  const avatarUrl = dbAvatar ?? metaAvatar;
   const [avatarFailedUri, setAvatarFailedUri] = useState<string | null>(null);
   const bio = meta?.bio;
   const homeCity = meta?.home_city;

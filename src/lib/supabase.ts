@@ -2,6 +2,7 @@ import 'react-native-url-polyfill/auto';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
+import { AppState } from 'react-native';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
@@ -33,3 +34,17 @@ export const supabase = createClient(
     },
   },
 );
+
+/**
+ * React Native token refresh (official Supabase RN pattern): the auto-refresh timer must be
+ * driven by the app's foreground state. Without this the access token silently expires after
+ * ~1h and the FIRST request afterwards fails (messages that only send on the second try,
+ * profile queries returning nothing) before the client recovers.
+ */
+if (isSupabaseConfigured) {
+  supabase.auth.startAutoRefresh();
+  AppState.addEventListener('change', (state) => {
+    if (state === 'active') supabase.auth.startAutoRefresh();
+    else supabase.auth.stopAutoRefresh();
+  });
+}

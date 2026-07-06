@@ -519,9 +519,19 @@ export default function ChatScreen() {
     if (!text) return;
     setDraft('');
     haptics.light();
-    await sendMessage(id, text);
-    // realtime echoes it back; nothing else to do
-  }, [id, draft]);
+    let ok = await sendMessage(id, text);
+    if (!ok) {
+      // One silent retry — covers a just-refreshed auth token after the app sat idle.
+      await new Promise((r) => setTimeout(r, 600));
+      ok = await sendMessage(id, text);
+    }
+    if (!ok) {
+      // Never lose the user's words: put the draft back and say so.
+      setDraft(text);
+      toast(tr('chat.sendFailed'));
+    }
+    // realtime echoes successful sends back; nothing else to do
+  }, [id, draft, tr]);
 
   const openFull = (sourceId: string) => {
     setPreview(null);
