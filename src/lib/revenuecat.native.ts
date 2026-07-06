@@ -7,7 +7,6 @@ import Purchases, {
 
 const IOS_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY;
 const ANDROID_KEY = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY;
-const ENTITLEMENT = 'premium';
 
 let configured = false;
 
@@ -95,7 +94,9 @@ export function onCustomerInfo(cb: (premium: boolean) => void): () => void {
 }
 
 function hasPremium(info: CustomerInfo): boolean {
-  return info.entitlements.active[ENTITLEMENT] !== undefined;
+  // UNPLND has a single paid tier, so ANY active entitlement means premium —
+  // regardless of how it's named in the RevenueCat dashboard ("premium", "Unplnd Pro", …).
+  return Object.keys(info.entitlements.active).length > 0;
 }
 
 export type { PurchasesOffering, PurchasesPackage } from 'react-native-purchases';
