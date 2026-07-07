@@ -10,7 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 
-import { Logo, Text } from '@/components/ui';
+import { Logo, StatementTitle, Text } from '@/components/ui';
 import { useT } from '@/lib/i18n';
 import { useTheme } from '@/theme';
 import type { GreetingSegment } from './greeting';
@@ -79,12 +79,6 @@ export function HomeHero({ segment }: { segment: GreetingSegment }) {
   const p = PALETTES[segment];
   const dark = t.scheme === 'dark';
 
-  // Last word carries the accent — "Schon Pläne für später?" / "Ein letztes Abenteuer?".
-  const headline = tr(`home.greetings.${segment}.headline`);
-  const words = headline.trim().split(' ');
-  const accentWord = words.pop() ?? '';
-  const leadWords = words.join(' ');
-
   const glowOpacity = dark ? 0.32 : 0.5;
 
   return (
@@ -127,12 +121,7 @@ export function HomeHero({ segment }: { segment: GreetingSegment }) {
         <Text variant="small" style={{ color: t.colors.primary, fontWeight: '600', marginBottom: t.spacing.xs }}>
           {tr(`home.greetings.${segment}.hello`)}
         </Text>
-        <Text variant="displayLarge" style={{ color: t.colors.textHeading }}>
-          {leadWords ? `${leadWords} ` : ''}
-          <Text variant="displayLarge" style={{ color: t.colors.primary }}>
-            {accentWord}
-          </Text>
-        </Text>
+        <StatementTitle text={tr(`home.greetings.${segment}.headline`)} variant="displayLarge" />
       </View>
     </View>
   );

@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 
-import { Button, EmptyState, FadeInUp, Screen, Skeleton, Text } from '@/components/ui';
+import { Button, EmptyState, FadeInUp, Screen, Skeleton, StatementTitle, Text } from '@/components/ui';
 import { MemoryCard } from '@/features/albums/MemoryCard';
 import { useAlbumsStore } from '@/features/albums/albums-store';
 import { useT } from '@/lib/i18n';
@@ -32,7 +32,7 @@ export default function AlbumsScreen() {
   if (loading && !loaded) {
     return (
       <Screen scroll contentStyle={{ gap: t.spacing.lg }}>
-        <Text variant="displayMedium">{tr('albums.title')}</Text>
+        <StatementTitle text={tr('albums.title')} />
         <View style={{ gap: t.spacing.base }}>
           {[0, 1, 2].map((i) => (
             <Skeleton key={i} height={198} radius={t.radius.card} />
@@ -58,7 +58,7 @@ export default function AlbumsScreen() {
   return (
     <Screen scroll contentStyle={{ gap: t.spacing.lg }} onRefresh={onRefresh} refreshing={refreshing}>
       <View style={{ gap: 4 }}>
-        <Text variant="displayMedium">{tr('albums.title')}</Text>
+        <StatementTitle text={tr('albums.title')} />
         <Text variant="bodyLarge" color="textSecondary">
           {tr('albums.subtitle')}
         </Text>

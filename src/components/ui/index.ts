@@ -13,3 +13,4 @@ export { StarRating, type StarRatingProps } from './star-rating';
 export { FadeInUp, useCountUp } from './motion';
 export { Skeleton } from './skeleton';
 export { EmptyState } from './empty-state';
+export { StatementTitle, type StatementTitleProps } from './statement-title';

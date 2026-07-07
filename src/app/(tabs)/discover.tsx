@@ -4,7 +4,7 @@ import { useRouter, type Href } from 'expo-router';
 import { useCallback, useEffect, useState, type ComponentProps } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
-import { Button, Card, EmptyState, FadeInUp, Input, Screen, Skeleton, Text } from '@/components/ui';
+import { Button, Card, EmptyState, FadeInUp, Input, Screen, Skeleton, StatementTitle, Text } from '@/components/ui';
 import { LocationChip } from '@/features/location/LocationChip';
 import { useFavoritesStore } from '@/features/favorites/favorites-store';
 import { getDiscoverPlaces, type DiscoverPlace } from '@/lib/discover';
@@ -226,7 +226,7 @@ export default function DiscoverScreen() {
   return (
     <Screen scroll contentStyle={{ gap: t.spacing.lg }} onRefresh={onRefresh} refreshing={refreshing}>
       <View>
-        <Text variant="displayMedium">{tr('discover.title')}</Text>
+        <StatementTitle text={tr('discover.title')} />
         <Text variant="bodyLarge" color="textSecondary" style={{ marginTop: t.spacing.xs }}>
           {tr('discover.sub')}
         </Text>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { Button, Text } from '@/components/ui';
+import { Button, StatementTitle } from '@/components/ui';
 import { optionLabel, useT } from '@/lib/i18n';
 import { useTheme } from '@/theme';
 import { ChoiceGrid } from './ChoiceGrid';
@@ -46,7 +46,7 @@ export function QuestionCard({ question, selected, onSelect }: QuestionCardProps
 
   return (
     <View style={{ gap: t.spacing.base }}>
-      <Text variant="h2">{tr(`planner.questions.${question.key}`)}</Text>
+      <StatementTitle text={tr(`planner.questions.${question.key}`)} variant="h1" />
       {question.type === 'slider' ? (
         <SliderChoice
           question={question}
