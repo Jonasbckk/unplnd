@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, useReducedMotion } from 'react-native-reanimated';
 
 import { Button, Logo, Text } from '@/components/ui';
+import { PremiumMascot } from '@/features/premium/PremiumMascot';
 import { haptics } from '@/lib/haptics';
 import { useT } from '@/lib/i18n';
 import { purchase, restore, type PurchasesPackage } from '@/lib/revenuecat';
@@ -140,7 +141,7 @@ export default function PaywallScreen() {
           </Pressable>
         </View>
 
-        {/* Statement headline — second line in brand orange */}
+        {/* Statement headline — second line in brand orange, mascot on the stage beside it */}
         <Animated.View entering={reduced ? undefined : FadeInDown.duration(400)} style={{ gap: t.spacing.md }}>
           <Text variant="displayLarge" style={{ color: t.colors.textHeading }}>
             {tr('paywall.headline')}
@@ -149,9 +150,12 @@ export default function PaywallScreen() {
               {tr('paywall.headlineAccent')}
             </Text>
           </Text>
-          <Text variant="bodyLarge" color="textSecondary">
-            {tr('paywall.subtitle')}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.md }}>
+            <Text variant="bodyLarge" color="textSecondary" style={{ flex: 1 }}>
+              {tr('paywall.subtitle')}
+            </Text>
+            <PremiumMascot size={124} />
+          </View>
         </Animated.View>
 
         {isPremium ? (
