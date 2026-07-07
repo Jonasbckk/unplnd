@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 
-import { Button, Input, Logo, Screen, Text } from '@/components/ui';
+import { Button, Input, Logo, Screen, StatementTitle, Text } from '@/components/ui';
 import { isStrongPassword, useAuthStore } from '@/features/auth/auth-store';
 import { useT } from '@/lib/i18n';
 import { useTheme } from '@/theme';
@@ -72,9 +72,10 @@ export default function AuthScreen() {
     <Screen scroll contentStyle={{ gap: t.spacing.base, flexGrow: 1 }}>
       <View style={{ alignItems: 'center', gap: t.spacing.sm, marginTop: t.spacing.xl, marginBottom: t.spacing.lg }}>
         <Logo size={56} />
-        <Text variant="displayMedium" center>
-          {mode === 'signup' ? tr('auth.createTitle') : tr('auth.welcomeBack')}
-        </Text>
+        <StatementTitle
+          text={mode === 'signup' ? tr('auth.createTitle') : tr('auth.welcomeBack')}
+          style={{ textAlign: 'center' }}
+        />
         <Text variant="body" color="textSecondary" center>
           {mode === 'signup' ? tr('auth.createSub') : tr('auth.signinSub')}
         </Text>

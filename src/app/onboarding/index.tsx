@@ -17,7 +17,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button, Logo, Text } from '@/components/ui';
+import { Button, Logo, StatementTitle, Text } from '@/components/ui';
 import { EveningScene, type SceneName } from '@/features/onboarding/EveningScene';
 import { useT } from '@/lib/i18n';
 import { useAppStore } from '@/store/app-store';
@@ -147,9 +147,7 @@ function OnboardingPage({
         style={[{ gap: t.spacing.md, alignItems: 'center' }, textStyle]}
         entering={isFirst ? FadeInUp.duration(500).delay(240) : undefined}
       >
-        <Text variant="displayMedium" center>
-          {tr(`onboarding.pages.${scene}.headline`)}
-        </Text>
+        <StatementTitle text={tr(`onboarding.pages.${scene}.headline`)} style={{ textAlign: 'center' }} />
         <Text variant="bodyLarge" color="textSecondary" center>
           {tr(`onboarding.pages.${scene}.body`)}
         </Text>

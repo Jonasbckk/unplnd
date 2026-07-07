@@ -3,7 +3,7 @@ import { type ComponentProps } from 'react';
 import { View } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
-import { Button, Card, Screen, Text } from '@/components/ui';
+import { Button, Card, Screen, StatementTitle, Text } from '@/components/ui';
 import { useT } from '@/lib/i18n';
 import { requestLocationPermission } from '@/lib/location';
 import { requestNotificationPermission } from '@/lib/notifications';
@@ -25,7 +25,7 @@ export default function OnboardingPermissions() {
 
   return (
     <Screen contentStyle={{ flex: 1 }}>
-      <Text variant="displayMedium">{tr('onboarding.permissions.title')}</Text>
+      <StatementTitle text={tr('onboarding.permissions.title')} />
       <Text variant="bodyLarge" color="textSecondary" style={{ marginTop: t.spacing.sm }}>
         {tr('onboarding.permissions.body')}
       </Text>

@@ -21,9 +21,17 @@ export function StatementTitle({ text, variant = 'displayMedium', style }: State
   const words = text.trim().split(' ');
   const accentWord = words.pop() ?? '';
   const lead = words.join(' ');
+  // Single-word titles stay plain — an all-orange heading reads as a link, not a title.
+  if (!lead) {
+    return (
+      <Text variant={variant} style={[{ color: t.colors.textHeading }, style]}>
+        {accentWord}
+      </Text>
+    );
+  }
   return (
     <Text variant={variant} style={[{ color: t.colors.textHeading }, style]}>
-      {lead ? `${lead} ` : ''}
+      {`${lead} `}
       <Text variant={variant} style={{ color: t.colors.primary }}>
         {accentWord}
       </Text>

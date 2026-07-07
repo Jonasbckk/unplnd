@@ -5,7 +5,7 @@ import { Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Card, EmptyState, Text, useCountUp } from '@/components/ui';
+import { Card, EmptyState, StatementTitle, Text, useCountUp } from '@/components/ui';
 import { useAlbumsStore } from '@/features/albums/albums-store';
 import { computeExtendedStats } from '@/features/profile/evening-stats';
 import { optionLabel, useT } from '@/lib/i18n';
@@ -82,7 +82,7 @@ export default function StatsScreen() {
           <Pressable onPress={() => router.back()} hitSlop={8}>
             <Ionicons name={'chevron-back' as IoniconName} size={26} color={t.colors.textHeading} />
           </Pressable>
-          <Text variant="h1">{tr('stats.title')}</Text>
+          <StatementTitle text={tr('stats.title')} variant="h1" />
         </View>
 
         {albums.length === 0 ? (

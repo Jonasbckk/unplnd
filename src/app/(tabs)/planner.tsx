@@ -8,7 +8,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 
-import { Button, FadeInUp, Input, Screen, Text } from '@/components/ui';
+import { Button, FadeInUp, Input, Screen, StatementTitle, Text } from '@/components/ui';
 import { LocationChip } from '@/features/location/LocationChip';
 import { AnswerRow } from '@/features/planner/AnswerRow';
 import { QuestionCard } from '@/features/planner/QuestionCard';
@@ -87,7 +87,7 @@ export default function PlannerScreen() {
     <Screen scroll contentStyle={{ gap: t.spacing.lg }}>
       <LocationChip />
 
-      <Text variant="displayMedium">{tr('planner.title')}</Text>
+      <StatementTitle text={tr('planner.title')} />
 
       <View style={{ gap: t.spacing.sm }}>
         <Text variant="caption" color="textSecondary" style={{ alignSelf: 'flex-end' }}>
@@ -114,7 +114,14 @@ export default function PlannerScreen() {
         );
       })}
 
-      {ready && <Button title={tr('planner.create')} onPress={() => router.push('/plan/generating')} />}
+      {ready && (
+        <Button
+          title={tr('planner.create')}
+          gradient
+          iconRight="arrow-forward"
+          onPress={() => router.push('/plan/generating')}
+        />
+      )}
 
       {/* Or describe it yourself — the Planner is a conversation, not a form (Constitution Rule 12). */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.md, marginTop: t.spacing.sm }}>

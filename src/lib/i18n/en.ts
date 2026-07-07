@@ -298,7 +298,7 @@ export const en = {
     },
   },
   albums: {
-    title: 'Memories',
+    title: 'Your memories',
     subtitle: 'Your best evenings, captured.',
     yourRating: 'Your rating',
     emptyTitle: 'Your memories are waiting.',

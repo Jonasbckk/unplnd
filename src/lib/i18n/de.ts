@@ -334,7 +334,7 @@ export const de = {
     },
   },
   albums: {
-    title: 'Erinnerungen',
+    title: 'Deine Erinnerungen',
     subtitle: 'Deine schönsten Abende, festgehalten.',
     yourRating: 'Deine Bewertung',
     emptyTitle: 'Deine Erinnerungen warten.',

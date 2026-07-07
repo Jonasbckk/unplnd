@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 
-import { Button, Card, Logo, Screen, StarRating, Text } from '@/components/ui';
+import { Button, Card, Logo, Screen, StarRating, StatementTitle, Text } from '@/components/ui';
 import { useAlbumsStore } from '@/features/albums/albums-store';
 import { useEveningStore } from '@/features/evening/evening-store';
 import { track } from '@/lib/analytics';
@@ -62,9 +62,7 @@ export default function EveningComplete() {
       <Animated.View entering={FadeInUp.duration(450)} style={{ alignItems: 'center', gap: t.spacing.lg }}>
         <Logo size={64} />
         <View style={{ alignItems: 'center', gap: t.spacing.sm }}>
-          <Text variant="displayMedium" center>
-            {tr('complete.title')}
-          </Text>
+          <StatementTitle text={tr('complete.title')} style={{ textAlign: 'center' }} />
           <Text variant="bodyLarge" color="textSecondary" center>
             {tr('complete.stats', {
               stops: completed === 1 ? tr('complete.stopOne') : tr('complete.stopMany', { count: completed }),

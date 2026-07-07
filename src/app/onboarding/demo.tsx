@@ -15,7 +15,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { Button, Chip, Screen, StarRating, Text } from '@/components/ui';
+import { Button, Chip, Screen, StarRating, StatementTitle, Text } from '@/components/ui';
 import { DEMO_META, DEMO_PLANS } from '@/features/onboarding/demo-plans';
 import { optionLabel, useT } from '@/lib/i18n';
 import { useTheme } from '@/theme';
@@ -85,7 +85,7 @@ export default function OnboardingDemo() {
   return (
     <Screen scroll contentStyle={{ gap: t.spacing.base }}>
       <Animated.View entering={FadeInUp.duration(400).delay(60)}>
-        <Text variant="displayMedium">{tr('onboarding.demo.title')}</Text>
+        <StatementTitle text={tr('onboarding.demo.title')} />
         <Text variant="bodyLarge" color="textSecondary" style={{ marginTop: t.spacing.sm }}>
           {tr('onboarding.demo.body')}
         </Text>
