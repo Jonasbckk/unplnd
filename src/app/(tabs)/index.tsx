@@ -82,21 +82,30 @@ export default function HomeScreen() {
             padded={false}
             style={{
               marginTop: t.spacing.md,
-              backgroundColor: t.colors.surfaceSecondary,
+              backgroundColor: t.colors.surface,
               paddingVertical: t.spacing.md,
               paddingHorizontal: t.spacing.base,
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.md }}>
-              <Ionicons name={weather.icon as IoniconName} size={24} color={t.colors.accentOrange} />
-              <View style={{ flex: 1 }}>
-                <Text variant="body" style={{ fontWeight: '600' }} numberOfLines={1}>
-                  {weather.temperature}°C · {tr(`weather.conditions.${weather.key}`)}
+              <Ionicons name={weather.icon as IoniconName} size={30} color={t.colors.accentOrange} />
+              <View style={{ minWidth: 78 }}>
+                <Text variant="h2" style={{ color: t.colors.textHeading }}>
+                  {weather.temperature}°C
                 </Text>
-                <Text variant="caption" color="textSecondary" style={{ marginTop: 2 }} numberOfLines={2}>
+                <Text variant="small" style={{ color: t.colors.primary, fontWeight: '600' }} numberOfLines={1}>
+                  {tr(`weather.conditions.${weather.key}`)}
+                </Text>
+              </View>
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text variant="small" color="textSecondary" numberOfLines={2}>
                   {tr(`weather.suggestions.${weather.key}`)}
-                  {weather.sunset ? `  ·  ${tr('home.sunset', { time: weather.sunset })}` : ''}
                 </Text>
+                {weather.sunset ? (
+                  <Text variant="caption" color="textSecondary">
+                    {tr('home.sunset', { time: weather.sunset })}
+                  </Text>
+                ) : null}
               </View>
               <Ionicons name="chevron-forward" size={16} color={t.colors.textSecondary} />
             </View>
@@ -121,7 +130,12 @@ export default function HomeScreen() {
             </View>
           </Card>
         ) : (
-          <Button title={tr('home.planMyEvening')} onPress={() => router.navigate('/planner')} />
+          <Button
+            title={tr('home.planMyEvening')}
+            gradient
+            iconRight="arrow-forward"
+            onPress={() => router.navigate('/planner')}
+          />
         )}
       </Animated.View>
 
@@ -146,14 +160,16 @@ export default function HomeScreen() {
                     width: '100%',
                     aspectRatio: 1,
                     borderRadius: t.radius.md,
-                    backgroundColor: color + '1F',
+                    backgroundColor: t.colors.card,
+                    borderWidth: 1,
+                    borderColor: t.colors.border,
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
                   <Ionicons name={category.icon} size={26} color={color} />
                 </View>
-                <Text variant="caption" color="textSecondary" numberOfLines={1}>
+                <Text variant="caption" numberOfLines={1}>
                   {optionLabel(category.label)}
                 </Text>
               </Pressable>
@@ -164,7 +180,16 @@ export default function HomeScreen() {
 
       {nearby.length > 0 && (
         <Animated.View entering={FadeInDown.duration(350).delay(300)} style={{ marginTop: t.spacing.xl, gap: t.spacing.md }}>
-          <Text variant="h3">{tr('discover.nearby')}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text variant="h3">{tr('discover.nearby')}</Text>
+            <Text
+              variant="small"
+              style={{ color: t.colors.primary, fontWeight: '600' }}
+              onPress={() => router.navigate('/discover')}
+            >
+              {tr('common.seeAll')}
+            </Text>
+          </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: t.spacing.base }}>
             {nearby.map((place) => (
               <Pressable key={place.id} onPress={() => openInMaps(place.name, place.id)} style={{ width: 160 }}>
@@ -198,7 +223,11 @@ export default function HomeScreen() {
         <Animated.View entering={FadeInDown.duration(350).delay(340)} style={{ marginTop: t.spacing.xl, gap: t.spacing.md }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <Text variant="h3">{tr('discover.communityTitle')}</Text>
-            <Text variant="small" color="textSecondary" onPress={() => router.push('/community' as Href)}>
+            <Text
+              variant="small"
+              style={{ color: t.colors.primary, fontWeight: '600' }}
+              onPress={() => router.push('/community' as Href)}
+            >
               {tr('common.seeAll')}
             </Text>
           </View>
@@ -246,7 +275,11 @@ export default function HomeScreen() {
         <Animated.View entering={FadeInDown.duration(350).delay(380)} style={{ marginTop: t.spacing.xl, gap: t.spacing.md }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <Text variant="h3">{tr('home.recentMemories')}</Text>
-            <Text variant="small" color="textSecondary" onPress={() => router.navigate('/albums')}>
+            <Text
+              variant="small"
+              style={{ color: t.colors.primary, fontWeight: '600' }}
+              onPress={() => router.navigate('/albums')}
+            >
               {tr('common.seeAll')}
             </Text>
           </View>

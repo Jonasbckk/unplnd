@@ -47,35 +47,40 @@ export const lightColors = {
 export type ColorTokens = { [K in keyof typeof lightColors]: string };
 export type ColorToken = keyof typeof lightColors;
 
+/**
+ * Dark = the star (founder redesign 2026-07-07): deep neutral-warm gray, elevated gray
+ * cards, and a more vivid brand orange that glows on the dark ground. Still warm-tinted,
+ * never pure black.
+ */
 export const darkColors: ColorTokens = {
-  primary: '#C97B63',
-  primaryPressed: '#B96A52',
+  primary: '#E0794E',
+  primaryPressed: '#C9663F',
   onPrimary: '#FFFFFF',
 
-  background: '#171412',
-  surface: '#211D1A',
-  surfaceSecondary: '#2A2522',
-  card: '#302A26',
+  background: '#131110',
+  surface: '#1C1917',
+  surfaceSecondary: '#292420',
+  card: '#211D1A',
 
   textPrimary: '#F8F3EF',
-  textSecondary: '#BDB2AA',
+  textSecondary: '#B8ADA5',
   textHeading: '#F8F3EF',
   textOnPrimary: '#FFFFFF',
 
-  border: '#403833',
-  divider: '#403833',
+  border: '#38322D',
+  divider: '#38322D',
 
-  accentOrange: '#E88C5A',
-  accentOlive: '#7A8F63',
-  accentOcean: '#6D9DC5',
+  accentOrange: '#F09B60',
+  accentOlive: '#8FA678',
+  accentOcean: '#7FABD0',
 
   success: '#6FAE75',
   warning: '#F2B84B',
   error: '#D96C6C',
   info: '#7AAEDB',
 
-  overlay: 'rgba(0, 0, 0, 0.55)',
-  skeleton: '#2A2522',
-  tabBar: '#211D1A',
-  tabBarBorder: '#403833',
+  overlay: 'rgba(0, 0, 0, 0.6)',
+  skeleton: '#292420',
+  tabBar: '#191614',
+  tabBarBorder: '#2C2723',
 };
