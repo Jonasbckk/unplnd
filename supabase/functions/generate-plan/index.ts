@@ -162,6 +162,13 @@ const SEARCH_PLANS: Record<string, SearchGroup[]> = {
     { category: 'Nature', types: ['park', 'hiking_area'] },
     { category: 'Café', types: ['cafe', 'ice_cream_shop'] },
   ],
+  // "Abseits" — quiet, undisturbed spots: viewpoints, lakes, nature. Google can't index literal
+  // empty gravel lots, so we go for scenic/quiet places with a view (relaxed review threshold below).
+  Secluded: [
+    { category: 'View', textQuery: 'Aussichtspunkt' },
+    { category: 'Nature', types: ['park', 'hiking_area', 'tourist_attraction'] },
+    { category: 'Water', textQuery: 'See' },
+  ],
   'Surprise Me': [
     { category: 'Activity', types: ['bowling_alley', 'amusement_center', 'tourist_attraction'] },
     { category: 'Dinner', types: ['restaurant'] },
@@ -458,6 +465,11 @@ async function findCandidates(req: PlanRequest, key: string, plan: SearchGroup[]
   const lng = req.longitude!;
   const radius = radiusFor(req.transport);
   const language = req.language ?? 'de';
+  // "Abseits"/quiet spots have few reviews by nature — relax the popularity gate so hidden
+  // gems survive (they'd never clear the normal ≥15-reviews bar).
+  const secluded = req.mood === 'Secluded';
+  const minRating = secluded ? 3.5 : 3.9;
+  const minReviews = secluded ? 3 : 15;
 
   const groups = await Promise.all(
     plan.map((g) => {
@@ -476,8 +488,8 @@ async function findCandidates(req: PlanRequest, key: string, plan: SearchGroup[]
         (p: any) =>
           p?.id &&
           p?.location &&
-          (p.rating ?? 0) >= 3.9 &&
-          (p.userRatingCount ?? 0) >= 15 &&
+          (p.rating ?? 0) >= minRating &&
+          (p.userRatingCount ?? 0) >= minReviews &&
           !JUNK_TYPES.includes(p.primaryType) &&
           !(Array.isArray(p.types) && p.types.some((tp: string) => HARD_BLOCK_TYPES.includes(tp))) &&
           !CHAIN_BLOCKLIST.test(p.displayName?.text ?? ''),

@@ -147,6 +147,7 @@ export const de = {
       'Live Music': 'Live-Musik',
       'Road Trip': 'Roadtrip',
       'Beach': 'Strand',
+      'Secluded': 'Abseits',
       'Stay In': 'Zuhause',
       'Culture': 'Kultur',
       'Surprise Me': 'Überrasch mich',

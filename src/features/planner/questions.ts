@@ -30,6 +30,7 @@ export const QUESTIONS: Question[] = [
       'Adventure',
       'Road Trip',
       'Beach',
+      'Secluded',
       'Stay In',
       'Culture',
       'Surprise Me',

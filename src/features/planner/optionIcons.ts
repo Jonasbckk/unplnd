@@ -19,6 +19,7 @@ const ICONS: Record<string, IoniconName> = {
   'Live Music': 'musical-notes-outline',
   'Road Trip': 'car-sport-outline',
   Beach: 'sunny-outline',
+  Secluded: 'telescope-outline',
   'Stay In': 'home-outline',
   Culture: 'color-palette-outline',
   'Surprise Me': 'dice-outline',
