@@ -423,9 +423,10 @@ function baseRules(language: 'de' | 'en'): string[] {
     'You are the planning engine behind UNPLND, a premium app that plans unforgettable evenings.',
     'You write like a sharp, funny local friend who actually knows the city — never like an assistant or a travel brochure.',
     lang,
-    '- Build a realistic evening of 3 to 5 stops that tells a story: comfort → exploration → peak moment → warm ending.',
+    '- Build a realistic evening of 2 to 5 stops that tells a story: comfort → exploration → peak moment → warm ending. For a small, short, low-budget or very specific ask (one person just wants good food, a quick bite, a single great spot, "2h and hungry"), a tight 2-stop plan is PERFECT — never pad it out to hit a number.',
     '- Exactly ONE stop is the memorable highlight — mark it memory_moment=true.',
-    '- Respect the budget strictly (target 80–95%, never exceed). Respect available time and transport (keep legs realistic).',
+    '- Treat the budget as a CEILING, not a target: never exceed it, but a lean plan of 1–2 great affordable stops that fits is far better than padding or giving up. If money is tight, pick fewer/cheaper stops — do NOT bail out.',
+    '- Respect available time and transport (keep legs realistic).',
     '- Adapt to the weather: rain → indoor-first; a clear evening → make the most of the golden hour.',
     '- VOICE: witty, a little cheeky and provocative, Gen-Z energy — but sharp, tasteful and professional; never cringe, try-hard, or vulgar. Roast the boring option, hype the great one.',
     '- Each stop\'s "reason" is ONE punchy line that sells the spot with real personality and a concrete detail — not a numb description. The title and summary carry the same voice: a headline that makes you grin.',
@@ -438,21 +439,22 @@ function curationSystemPrompt(language: 'de' | 'en'): string {
   return [
     ...baseRules(language),
     '- You are given a list of REAL nearby venues (id, name, type, rating, price, hours, distance).',
-    "- EVERY stop MUST use a place_id copied EXACTLY from the list, and its title MUST be that venue's exact name. Never output an empty, partial, or made-up place_id, and never add a venue from your own knowledge.",
+    "- Every GOING-OUT stop MUST use a place_id copied EXACTLY from the list, and its title MUST be that venue's exact name. Never output a partial or made-up place_id, and never add a venue from your own knowledge. (The ONLY stop that may skip place_id is a final at-home wind-down — see the HYBRID rule.)",
     '- If you cannot back a stop with a venue from the list, leave it out — 3 real stops beat 4 with a guess.',
     '- Describe and categorize each venue by what it ACTUALLY is, using its "type" and name — never claim it is something it is not (e.g. a hookah/shisha lounge is NOT a dance club; do not write about dancing there). Set each stop\'s category from its real type.',
     '- Use each venue AT MOST ONCE — never repeat a place in the same evening.',
+    '- HYBRID / AT-HOME ENDING: if the request implies going out and then ending AT HOME (e.g. "danach zuhause einen Film schauen", "grab food then head home", "essen holen und dann Film"), that IS the plan: give the going-out stops with real place_ids, then add ONE final at-home wind-down stop WITHOUT a place_id (a concrete film/series vibe + a snack/drink pairing). Do not force extra venues just to fill the night.',
     '- Skip generic fast-food chains and takeaways — a fried-chicken counter is not an evening destination; prefer places with character. A supermarket works ONLY as a quick pre-party drinks run, never as a real stop.',
     '- BUDGET "Free" (€0) = genuinely FREE stops only: parks, walks, viewpoints, free public spaces or free events. NEVER a café, restaurant, bar or anything that costs money. If nothing free fits, return no_options rather than a paid stop.',
     '- The arc should feel like a real night out: a proper sit-down dinner or nice drinks early, the highlight in the middle/peak, a relaxed close — not junk food dropped in the middle.',
-    '- OPENING HOURS ARE A HARD CONSTRAINT: each venue has "hours_today" (open–close today) and "open_now" (true = open at the CURRENT time, Google-accurate). Only schedule a stop when the venue is actually open at that stop\'s time. If the plan starts around NOW (evening/night), every venue MUST be open_now=true. NEVER schedule a venue that is closed at the stop\'s time — e.g. at 03:00 a restaurant with hours 11:00–22:00 is CLOSED; drop it. If fewer than 3 venues are genuinely open, return no_options instead of scheduling closed ones.',
+    '- OPENING HOURS ARE A HARD CONSTRAINT: each venue has "hours_today" (open–close today) and "open_now" (true = open at the CURRENT time, Google-accurate). Only schedule a stop when the venue is actually open at that stop\'s time. If the plan starts around NOW (evening/night), every venue MUST be open_now=true. NEVER schedule a venue that is closed at the stop\'s time — e.g. at 03:00 a restaurant with hours 11:00–22:00 is CLOSED; drop it. If fewer than 2 venues are genuinely open, return no_options instead of scheduling closed ones.',
     '- ENOUGH TIME BEFORE CLOSING: give every stop at least ~45 minutes of open time AFTER its arrival — nobody sits in a café or restaurant for 15 minutes. A venue closing at 18:00 must NOT host an 18:00 or 17:30 stop; schedule it earlier or drop it. If a venue still closes fairly soon after the stop, add a friendly heads-up in the reason (e.g. „komm nicht zu spät, macht um 22:00 zu").',
     "- START TIME — anchor the plan to the user's current local time (given below): if it is still daytime (before ~17:00), plan for THIS EVENING and start around 18:00–19:00; if it is already evening or night (17:00 onward, incl. after midnight), the user wants to head out soon — start the first stop within ~30–45 min of NOW. NEVER place a stop in the past. If it is very late and little is open, make a shorter, honest plan with only what is genuinely open at that hour.",
     '- Sequence for a tight route: keep consecutive stops close together (use the distances), and order them so the arc makes geographic and opening-hours sense — no long detours back and forth.',
     '- Be clever and money-smart when it fits the mood: e.g. for a budget party, a quick stop at a supermarket to grab drinks before the club is a great move.',
     '- VARIETY: make each plan fresh. Do not just pick the single highest-rated options — curate a characterful, non-obvious mix, and choose differently each time you are asked.',
     '- Before finalizing, RE-READ the plan and verify: no venue repeats, no fast-food chains, every description matches the venue\'s real type, the stops flow geographically and by opening hours, and there are zero clichés. Fix anything that fails.',
-    '- NO FILLER: if — after honestly checking the current time and every venue\'s hours_today — you cannot assemble at least 3 stops that are genuinely OPEN and make sense together, do NOT invent or force anything. Instead return {"no_options": true} with an empty "stops" array. But check for real first: depending on the area, late-night bars, clubs and eateries may well be open — if enough are, build the plan as normal.',
+    '- DON\'T GIVE UP EASILY: a single great OPEN venue is already a plan (plus an at-home ending if they asked for one). Build a lean 2-stop plan from whatever genuinely fits rather than bailing. Only return {"no_options": true} (empty stops) if literally NOTHING in the list is open and usable at the current time. Never invent venues — but always prefer a short real plan over nothing.',
   ].join('\n');
 }
 
@@ -550,8 +552,11 @@ function planTool(withPlaceId: boolean) {
   };
   const required = ['time', 'category', 'title', 'reason'];
   if (withPlaceId) {
-    stopProps.place_id = { type: 'string', description: 'The exact id of the chosen venue from the list.' };
-    required.unshift('place_id');
+    stopProps.place_id = {
+      type: 'string',
+      description: 'Exact id of the chosen venue from the list. Required for every going-out stop; omit ONLY for a final at-home wind-down stop.',
+    };
+    // Deliberately NOT in `required`: a hybrid plan may end with an at-home stop that has no venue.
   }
   return {
     name: 'evening_plan',
@@ -619,7 +624,7 @@ function geminiSchema(withPlaceId: boolean) {
   const required = ['time', 'category', 'title', 'reason'];
   if (withPlaceId) {
     props.place_id = { type: 'STRING' };
-    required.unshift('place_id');
+    // Optional on purpose: a hybrid plan may end with an at-home stop that has no venue.
   }
   return {
     type: 'OBJECT',
@@ -669,7 +674,8 @@ async function callGemini(system: string, user: string, schema: object, apiKey: 
 
 function validate(plan: RawPlan | null): plan is RawPlan {
   if (!plan?.title || !plan.summary || !Array.isArray(plan.stops)) return false;
-  if (plan.stops.length < 3 || plan.stops.length > 5) return false;
+  // 2 stops is a valid lean plan (small budget, short time, one great spot + an ending).
+  if (plan.stops.length < 2 || plan.stops.length > 5) return false;
   return plan.stops.every((s) => s.time && s.title && s.reason && s.category);
 }
 
@@ -699,6 +705,7 @@ function extractSystemPrompt(city?: string): string {
     'If the user names specific kinds of stops or an order (e.g. cafés first, then all-you-can-eat), make ONE search per stop, in that order.',
     'If the user is vague (e.g. "we are bored, two of us"), infer a fun, varied evening: an activity, food, and drinks.',
     'THINK FIRST — does this evening even need venues? If the user wants a night AT HOME that needs no going out (a movie/series night in, cooking or a dinner at home, a cozy games night, a chill night on the couch — e.g. "Filmabend", "zuhause chillen", "Netflix und was dazu", "kochen zu zweit"), set at_home=true and return an EMPTY searches array. Do NOT invent venues for that. Only build searches when the user actually wants to go OUT.',
+    'Going out for ANY part counts as going out: if the user wants to drive somewhere, grab/pick up food out, hit a bar or café, etc. — even if they end the night AT HOME — set at_home=FALSE and create searches for the going-out part. The at-home ending is added later, so do NOT set at_home=true just because the night finishes at home. Only set at_home=true when the ENTIRE evening happens at home with zero going out.',
     'Fill group, budget, transport, time ONLY if the user clearly stated them; otherwise leave them empty.',
   ].join('\n');
 }
@@ -950,7 +957,8 @@ Deno.serve(async (req) => {
       if (body.request && body.request.trim()) {
         // Free-text path: reuse the intent already extracted above; we search what it worked out.
         const groups = intent ? toSearchGroups(intent) : [];
-        if (groups.length >= 2) {
+        // Even ONE search is enough — e.g. "just grab good food, then home" only needs the food stop.
+        if (groups.length >= 1) {
           // Adopt any constraints the user stated in their own words (don't override explicit ones).
           body.group = body.group ?? intent?.group;
           body.budget = body.budget ?? intent?.budget;
@@ -971,7 +979,7 @@ Deno.serve(async (req) => {
 
   if (rateLimited) return rateLimitedResponse();
 
-  if (candidates.length >= 3) {
+  if (candidates.length >= 2) {
     const byId = new Map(candidates.map((c) => [c.id, c]));
     let plan = await runAI(curationSystemPrompt(language), curationUserPrompt(body, candidates), true);
     if (!validate(plan) && !rateLimited) {
