@@ -214,6 +214,8 @@ export const de = {
     startEvening: 'Abend starten',
     anotherIdea: 'Zeig mir eine andere Idee',
     planAnother: 'Neu planen',
+    travelMinutes: '%{count} Min',
+    travelHome: 'Nach Hause',
     openNow: 'Jetzt geöffnet',
     closed: 'Geschlossen',
     opensAt: 'Öffnet um %{time}',

@@ -178,6 +178,8 @@ export const en = {
     startEvening: 'Start evening',
     anotherIdea: 'Show another idea',
     planAnother: 'Plan another',
+    travelMinutes: '%{count} min',
+    travelHome: 'Head home',
     openNow: 'Open now',
     closed: 'Closed',
     opensAt: 'Opens at %{time}',

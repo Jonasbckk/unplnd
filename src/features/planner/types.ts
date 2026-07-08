@@ -28,6 +28,8 @@ export interface PlanStop {
   photoUrl?: string;
   /** Unresolved Google photo names — resolved on demand when the gallery opens. */
   photoNames?: string[];
+  /** How you get to this stop from the previous one — the connector shown on the route rail. */
+  travel?: { mode: string; minutes: number; distanceM: number; cost?: string; toHome?: boolean };
 }
 
 export interface GeneratedPlan {

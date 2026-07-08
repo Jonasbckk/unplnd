@@ -53,6 +53,8 @@ interface StopOut {
   photoUrl?: string;
   /** Unresolved Google photo names for on-demand gallery resolution (resolve-photos fn). */
   photoNames?: string[];
+  /** How you get to THIS stop from the previous one (Phase 2 connectors). */
+  travel?: { mode: string; minutes: number; distanceM: number; cost?: string; toHome?: boolean };
 }
 
 const CORS = {
@@ -241,6 +243,72 @@ function haversine(aLat: number, aLng: number, bLat: number, bLng: number): numb
     Math.sin(dLat / 2) ** 2 +
     Math.cos((aLat * Math.PI) / 180) * Math.cos((bLat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+/**
+ * A connector between two consecutive stops: mode + realistic minutes (+ a rough taxi cost).
+ * Makes the chosen transport actually visible in the plan (founder: "Transport bewirkt nix").
+ * Costs are labelled approximate ("~8 €"); we never fake precise fares.
+ */
+function travelBetween(
+  aLat: number,
+  aLng: number,
+  bLat: number,
+  bLng: number,
+  transport?: string,
+): { mode: string; minutes: number; distanceM: number; cost?: string } {
+  const distanceM = Math.round(haversine(aLat, aLng, bLat, bLng));
+  let mode = 'walk';
+  let speed = 83; // m/min ≈ 5 km/h
+  let cost: string | undefined;
+  switch (transport) {
+    case 'Bike':
+      mode = 'bike';
+      speed = 250; // ≈ 15 km/h
+      break;
+    case 'Public Transport':
+      mode = 'transit';
+      speed = 300; // ≈ 18 km/h incl. waiting
+      if (distanceM > 900) cost = '~3 €';
+      break;
+    case 'Car':
+      mode = 'car';
+      speed = 470; // ≈ 28 km/h city
+      break;
+    case 'Uber / Taxi':
+      mode = 'taxi';
+      speed = 470;
+      cost = `~${Math.max(5, Math.round(4 + (distanceM / 1000) * 2))} €`; // ~4€ base + ~2€/km
+      break;
+    case 'Walking':
+      mode = 'walk';
+      speed = 83;
+      break;
+    default:
+      // "Any": short hops on foot, longer legs by transit.
+      if (distanceM > 1200) {
+        mode = 'transit';
+        speed = 300;
+        cost = '~3 €';
+      }
+  }
+  return { mode, minutes: Math.max(1, Math.round(distanceM / speed)), distanceM, cost };
+}
+
+/** The mode label for a "head home" connector, from the chosen transport. */
+function homeMode(transport?: string): string {
+  switch (transport) {
+    case 'Walking':
+      return 'walk';
+    case 'Bike':
+      return 'bike';
+    case 'Public Transport':
+      return 'transit';
+    case 'Uber / Taxi':
+      return 'taxi';
+    default:
+      return 'car';
+  }
 }
 
 async function searchNearby(
@@ -1013,6 +1081,21 @@ Deno.serve(async (req) => {
         });
       }
       if (!stops.some((s) => s.memoryMoment) && stops.length > 1) stops[stops.length - 2].memoryMoment = true;
+
+      // Phase 2 connectors: how you get from each stop to the next (mode + minutes + rough cost).
+      for (let i = 1; i < stops.length; i++) {
+        const a = stops[i - 1];
+        const b = stops[i];
+        if (
+          typeof a.lat === 'number' && typeof a.lng === 'number' &&
+          typeof b.lat === 'number' && typeof b.lng === 'number'
+        ) {
+          b.travel = travelBetween(a.lat, a.lng, b.lat, b.lng, body.transport);
+        } else if (typeof b.lat !== 'number') {
+          // At-home closing stop (hybrid out->home): a simple "head home" connector, no distance.
+          b.travel = { mode: homeMode(body.transport), minutes: 0, distanceM: 0, toHome: true };
+        }
+      }
 
       // Resolve photos for the chosen venues in parallel (best effort).
       await Promise.all(

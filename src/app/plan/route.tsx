@@ -18,6 +18,15 @@ import { useTheme } from '@/theme';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
+// Transport mode → icon for the between-stop connector.
+const TRAVEL_ICON: Record<string, IoniconName> = {
+  walk: 'walk-outline',
+  bike: 'bicycle-outline',
+  transit: 'bus-outline',
+  car: 'car-outline',
+  taxi: 'car-sport-outline',
+};
+
 function SummaryStat({ icon, label }: { icon: IoniconName; label: string }) {
   const t = useTheme();
   return (
@@ -123,6 +132,21 @@ export default function RouteScreen() {
 
               {/* Content */}
               <View style={{ flex: 1, paddingBottom: isLast ? 0 : t.spacing.lg }}>
+                {/* Connector: how you got here from the last stop (mode · minutes · rough cost). */}
+                {stop.travel && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: t.spacing.sm }}>
+                    <Ionicons
+                      name={TRAVEL_ICON[stop.travel.mode] ?? 'navigate-outline'}
+                      size={14}
+                      color={t.colors.textSecondary}
+                    />
+                    <Text variant="caption" color="textSecondary">
+                      {stop.travel.toHome
+                        ? tr('route.travelHome')
+                        : `${tr('route.travelMinutes', { count: stop.travel.minutes })}${stop.travel.cost ? ` · ${stop.travel.cost}` : ''}`}
+                    </Text>
+                  </View>
+                )}
                 <Card style={isMemory ? { borderWidth: 1.5, borderColor: t.colors.accentOrange } : undefined}>
                   {stop.photoUrl && (
                     <Pressable
