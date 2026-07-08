@@ -431,9 +431,17 @@ async function findCandidates(req: PlanRequest, key: string, plan: SearchGroup[]
           distanceM: Math.round(haversine(lat, lng, p.location.latitude, p.location.longitude)),
         } as Candidate;
       });
-    // Keep the top few per category by a rating × popularity score.
+    // Rank by rating × popularity, then RANDOMLY SAMPLE from a broad top window. Google returns
+    // the same "most popular" set every call, so strict top-N gave identical plans — sampling is
+    // what makes repeated searches feel fresh (founder: "immer die gleichen 2 Restaurants").
+    // Quality stays high: everything here already passed rating ≥3.9 / ≥15 reviews.
     mapped.sort((a, b) => b.rating * Math.log10(b.ratingCount + 10) - a.rating * Math.log10(a.ratingCount + 10));
-    for (const c of mapped.slice(0, 7)) {
+    const window = mapped.slice(0, 12);
+    for (let i = window.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [window[i], window[j]] = [window[j], window[i]];
+    }
+    for (const c of window.slice(0, 8)) {
       if (!seen.has(c.id)) {
         seen.add(c.id);
         candidates.push(c);
@@ -491,10 +499,10 @@ function baseRules(language: 'de' | 'en'): string[] {
     'You are the planning engine behind UNPLND, a premium app that plans unforgettable evenings.',
     'You write like a sharp, funny local friend who actually knows the city — never like an assistant or a travel brochure.',
     lang,
-    '- Build a realistic evening of 2 to 5 stops that tells a story: comfort → exploration → peak moment → warm ending. For a small, short, low-budget or very specific ask (one person just wants good food, a quick bite, a single great spot, "2h and hungry"), a tight 2-stop plan is PERFECT — never pad it out to hit a number.',
+    '- Build a realistic evening of 2 to 5 stops that tells a story: comfort → exploration → peak moment → warm ending. MATCH THE STOP COUNT TO THE AVAILABLE TIME: roughly ~2h → 2 stops, ~3h → 3 stops, ~5h or a whole evening → 4–5 stops that genuinely fill the time. Go lean (2 stops) ONLY when the ask is truly small — short time, tiny budget, or the user wants just one thing (e.g. "2h and hungry"). With plenty of time and budget, build a FULL evening — NEVER stop at 2 stops when the user has 5 hours.',
     '- Exactly ONE stop is the memorable highlight — mark it memory_moment=true.',
     '- Treat the budget as a CEILING, not a target: never exceed it, but a lean plan of 1–2 great affordable stops that fits is far better than padding or giving up. If money is tight, pick fewer/cheaper stops — do NOT bail out.',
-    '- Respect available time and transport (keep legs realistic).',
+    '- The evening\'s total span (first stop → last stop) and the "duration" field MUST roughly match the available time: 5 hours means an evening that spans ~5 hours (later end time, more or longer stops), not 2.5. Keep travel legs realistic for the transport.',
     '- Adapt to the weather: rain → indoor-first; a clear evening → make the most of the golden hour.',
     '- VOICE: witty, a little cheeky and provocative, Gen-Z energy — but sharp, tasteful and professional; never cringe, try-hard, or vulgar. Roast the boring option, hype the great one.',
     '- Each stop\'s "reason" is ONE punchy line that sells the spot with real personality and a concrete detail — not a numb description. The title and summary carry the same voice: a headline that makes you grin.',
