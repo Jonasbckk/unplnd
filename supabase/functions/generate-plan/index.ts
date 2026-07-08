@@ -615,6 +615,7 @@ function curationSystemPrompt(language: 'de' | 'en'): string {
     "- START TIME — anchor the plan to the user's current local time (given below): if it is still daytime (before ~17:00), plan for THIS EVENING and start around 18:00–19:00; if it is already evening or night (17:00 onward, incl. after midnight), the user wants to head out soon — start the first stop within ~30–45 min of NOW. NEVER place a stop in the past. If it is very late and little is open, make a shorter, honest plan with only what is genuinely open at that hour.",
     '- Sequence for a tight route: keep consecutive stops close together (use the distances), and order them so the arc makes geographic and opening-hours sense — no long detours back and forth.',
     '- Be clever and money-smart when it fits the mood: e.g. for a budget party, a quick stop at a supermarket to grab drinks before the club is a great move.',
+    '- VIBE OVER STARS: match each venue to the MOOD\'s character using its type, name and "about" — e.g. Date = intimate/romantic, Abseits (Secluded) = quiet/scenic/undisturbed, Party = loud/lively, Cozy = warm/small, Adventure = active/outdoorsy, Live Music = gigs/DJ. Prefer the venue with the RIGHT vibe over a slightly higher-rated but generic one. Let the reason carry that vibe where it fits (a "hidden gem", a "golden-hour spot", "main-character energy") — always specific, never a hashtag dump.',
     '- VARIETY: make each plan fresh. Do not just pick the single highest-rated options — curate a characterful, non-obvious mix, and choose differently each time you are asked.',
     '- Before finalizing, RE-READ the plan and verify: no venue repeats, no fast-food chains, every description matches the venue\'s real type, the stops flow geographically and by opening hours, and there are zero clichés. Fix anything that fails.',
     '- DON\'T GIVE UP EASILY: a single great OPEN venue is already a plan (plus an at-home ending if they asked for one). Build a lean 2-stop plan from whatever genuinely fits rather than bailing. Only return {"no_options": true} (empty stops) if literally NOTHING in the list is open and usable at the current time. Never invent venues — but always prefer a short real plan over nothing.',
@@ -1033,6 +1034,7 @@ Deno.serve(async (req) => {
   const authHeader = req.headers.get('Authorization');
   let userId: string | null = null;
   let admin: ReturnType<typeof createClient> | null = null;
+  const recentPlaceIds = new Set<string>(); // venues suggested to this user recently (anti-repeat)
   if (supaUrl && serviceKey && anonKey && authHeader) {
     try {
       const asUser = createClient(supaUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
@@ -1050,6 +1052,22 @@ Deno.serve(async (req) => {
             .eq('user_id', userId)
             .gte('created_at', startOfDay.toISOString());
           if ((count ?? 0) >= DAILY_FREE_LIMIT) return limitReachedResponse();
+        }
+        // Remember venues suggested to this user in the last 3 days — so we don't repeat them.
+        try {
+          const since = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+          const { data: recent } = await admin
+            .from('plan_generations')
+            .select('place_ids')
+            .eq('user_id', userId)
+            .gte('created_at', since)
+            .order('created_at', { ascending: false })
+            .limit(25);
+          for (const row of recent ?? []) {
+            for (const id of ((row.place_ids as string[] | null) ?? [])) recentPlaceIds.add(id);
+          }
+        } catch (e) {
+          console.error('recent_ids_error', String(e).slice(0, 200));
         }
       }
     } catch (e) {
@@ -1143,6 +1161,12 @@ Deno.serve(async (req) => {
 
   if (rateLimited) return rateLimitedResponse();
 
+  // Drop venues we suggested this user recently — but never over-filter into an empty plan.
+  if (recentPlaceIds.size > 0 && candidates.length > 0) {
+    const fresh = candidates.filter((c) => !recentPlaceIds.has(c.id));
+    if (fresh.length >= 2) candidates = fresh;
+  }
+
   if (candidates.length >= 2) {
     const byId = new Map(candidates.map((c) => [c.id, c]));
     let plan = await runAI(curationSystemPrompt(language), curationUserPrompt(body, candidates), true);
@@ -1222,7 +1246,9 @@ Deno.serve(async (req) => {
       // Count this successful generation against the user's daily limit (best effort).
       if (admin && userId) {
         try {
-          await admin.from('plan_generations').insert({ user_id: userId });
+          await admin
+            .from('plan_generations')
+            .insert({ user_id: userId, place_ids: stops.map((s) => s.placeId).filter((x): x is string => Boolean(x)) });
         } catch (e) {
           console.error('record_generation_error', String(e).slice(0, 200));
         }
