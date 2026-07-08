@@ -295,6 +295,45 @@ function travelBetween(
   return { mode, minutes: Math.max(1, Math.round(distanceM / speed)), distanceM, cost };
 }
 
+// ---- Opening-hours math (LLMs get this wrong, so we enforce it in code) ----
+
+/**
+ * The venue's CLOSING time today as minutes-since-midnight, from Google's hours string
+ * (e.g. "18:00–00:00", "11:30–14:30, 17:30–23:00"). Past-midnight closes get +24h so an
+ * evening comparison works. Returns null if unknown / 24h, or -1 if closed today.
+ */
+function closeMinutesOf(hours?: string): number | null {
+  if (!hours) return null;
+  const h = hours.toLowerCase();
+  if (h.includes('geschlossen') || h.includes('closed')) return -1;
+  if ((h.includes('24') && (h.includes('stunden') || h.includes('hours'))) || h.includes('durchgehend')) return null;
+  const times = [...hours.matchAll(/(\d{1,2}):(\d{2})/g)].map((m) => parseInt(m[1], 10) * 60 + parseInt(m[2], 10));
+  if (times.length === 0) return null;
+  let close = times[times.length - 1]; // the final closing time of the day
+  if (close <= 5 * 60) close += 24 * 60; // closes after midnight
+  return close;
+}
+
+/** A stop's scheduled time as minutes-since-midnight (early-morning hours count as "late night"). */
+function stopMinutesOf(time?: string): number | null {
+  if (!time) return null;
+  const m = /(\d{1,2}):(\d{2})/.exec(time);
+  if (!m) return null;
+  let mins = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+  if (mins <= 5 * 60) mins += 24 * 60;
+  return mins;
+}
+
+/** Readable "closes at" for the AI prompt: "23:00", "24h", or "closed". */
+function closesAtLabel(hours?: string): string {
+  const c = closeMinutesOf(hours);
+  if (c === -1) return 'closed today';
+  if (c === null) return hours ? '24h' : 'unknown';
+  const h = Math.floor((c % (24 * 60)) / 60);
+  const m = c % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
 /** The mode label for a "head home" connector, from the chosen transport. */
 function homeMode(transport?: string): string {
   switch (transport) {
@@ -525,6 +564,7 @@ function curationSystemPrompt(language: 'de' | 'en'): string {
     '- The arc should feel like a real night out: a proper sit-down dinner or nice drinks early, the highlight in the middle/peak, a relaxed close — not junk food dropped in the middle.',
     '- OPENING HOURS ARE A HARD CONSTRAINT: each venue has "hours_today" (open–close today) and "open_now" (true = open at the CURRENT time, Google-accurate). Only schedule a stop when the venue is actually open at that stop\'s time. If the plan starts around NOW (evening/night), every venue MUST be open_now=true. NEVER schedule a venue that is closed at the stop\'s time — e.g. at 03:00 a restaurant with hours 11:00–22:00 is CLOSED; drop it. If fewer than 2 venues are genuinely open, return no_options instead of scheduling closed ones.',
     '- ENOUGH TIME BEFORE CLOSING: give every stop at least ~45 minutes of open time AFTER its arrival — nobody sits in a café or restaurant for 15 minutes. A venue closing at 18:00 must NOT host an 18:00 or 17:30 stop; schedule it earlier or drop it. If a venue still closes fairly soon after the stop, add a friendly heads-up in the reason (e.g. „komm nicht zu spät, macht um 22:00 zu").',
+    '- LATER STOPS ARE LATER AT NIGHT — use each venue\'s "closes_at": order stops so EARLY-CLOSING venues (cafés, most restaurants) come FIRST and LATE-OPEN ones (bars, clubs, late-night eateries) come LAST. A venue with closes_at 22:00 CANNOT host a stop at or after ~21:15. For a LONG evening (e.g. 5h), every later stop MUST have a closes_at well past its stop time — if you do not have enough late-open venues, make the plan SHORTER rather than scheduling any stop that its venue will be closed for. A closed stop is worse than a shorter plan.',
     "- START TIME — anchor the plan to the user's current local time (given below): if it is still daytime (before ~17:00), plan for THIS EVENING and start around 18:00–19:00; if it is already evening or night (17:00 onward, incl. after midnight), the user wants to head out soon — start the first stop within ~30–45 min of NOW. NEVER place a stop in the past. If it is very late and little is open, make a shorter, honest plan with only what is genuinely open at that hour.",
     '- Sequence for a tight route: keep consecutive stops close together (use the distances), and order them so the arc makes geographic and opening-hours sense — no long detours back and forth.',
     '- Be clever and money-smart when it fits the mood: e.g. for a budget party, a quick stop at a supermarket to grab drinks before the club is a great move.',
@@ -543,6 +583,7 @@ function curationUserPrompt(req: PlanRequest, candidates: Candidate[]): string {
     reviews: c.ratingCount,
     price: c.priceLevel || '?',
     hours_today: c.hours ?? 'unknown', // today's open–close — a HARD constraint on stop times
+    closes_at: closesAtLabel(c.hours), // final closing time today ("23:00", "24h", "closed")
     open_now: c.openNow, // true = open at the CURRENT time (Google-accurate)
     distance_m: c.distanceM,
     about: c.summary ?? undefined,
@@ -1088,6 +1129,19 @@ Deno.serve(async (req) => {
           lng: c?.lng,
         });
       }
+      // Hours safety net — enforced in CODE, not left to the AI (it's bad at time math): drop any
+      // venue scheduled at a time it is already closed or closing within 30 min. This is the
+      // #1 "macht keinen Sinn" bug — a stop the venue will be shut for. Unknown/24h hours are kept.
+      for (let i = stops.length - 1; i >= 0; i--) {
+        const close = closeMinutesOf(stops[i].hours);
+        const st = stopMinutesOf(stops[i].time);
+        if (close === -1 || (close !== null && st !== null && st + 30 > close)) {
+          stops.splice(i, 1);
+        }
+      }
+      // If the schedule collapsed to under 2 real stops, be honest rather than show a broken plan.
+      if (stops.length < 2) return noOptionsResponse();
+
       if (!stops.some((s) => s.memoryMoment) && stops.length > 1) stops[stops.length - 2].memoryMoment = true;
 
       // Phase 2 connectors: how you get from each stop to the next (mode + minutes + rough cost).
