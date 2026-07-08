@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useEffect, useState, type ComponentProps } from 'react';
 import { Pressable, View } from 'react-native';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, FadeInUp, ZoomIn, useReducedMotion } from 'react-native-reanimated';
 
 import { Button, Card, Screen, Text } from '@/components/ui';
 import { useEveningStore } from '@/features/evening/evening-store';
@@ -39,11 +39,72 @@ function SummaryStat({ icon, label }: { icon: IoniconName; label: string }) {
   );
 }
 
+/**
+ * A roadmap waypoint: a glowing map-pin that springs in, with the route line growing down to the
+ * next stop. The memory moment is a bigger, orange, glowing pin. Reduce Motion → static.
+ */
+function Waypoint({
+  index,
+  isMemory,
+  isLast,
+  reduced,
+}: {
+  index: number;
+  isMemory: boolean;
+  isLast: boolean;
+  reduced: boolean;
+}) {
+  const t = useTheme();
+  return (
+    <View style={{ width: 40, alignItems: 'center' }}>
+      <Animated.View
+        entering={reduced ? undefined : ZoomIn.duration(380).delay(150 + index * 90).springify().damping(13)}
+        style={[
+          {
+            width: isMemory ? 38 : 32,
+            height: isMemory ? 38 : 32,
+            borderRadius: 19,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: isMemory ? t.colors.accentOrange : t.colors.card,
+            borderWidth: isMemory ? 0 : 2,
+            borderColor: t.colors.primary,
+          },
+          isMemory
+            ? {
+                shadowColor: t.colors.accentOrange,
+                shadowOpacity: 0.55,
+                shadowRadius: 10,
+                shadowOffset: { width: 0, height: 0 },
+                elevation: 8,
+              }
+            : t.shadows.sm,
+        ]}
+      >
+        {isMemory ? (
+          <Ionicons name="sparkles" size={17} color="#FFFFFF" />
+        ) : (
+          <Text variant="small" style={{ color: t.colors.primary, fontWeight: '700' }}>
+            {index + 1}
+          </Text>
+        )}
+      </Animated.View>
+      {!isLast && (
+        <Animated.View
+          entering={reduced ? undefined : FadeIn.duration(450).delay(230 + index * 90)}
+          style={{ width: 3, flex: 1, backgroundColor: t.colors.primary, opacity: 0.3, marginTop: 5, borderRadius: 2 }}
+        />
+      )}
+    </View>
+  );
+}
+
 /** The generated evening — anticipation, not logistics (19_ROUTE). */
 export default function RouteScreen() {
   const t = useTheme();
   const { t: tr } = useT();
   const router = useRouter();
+  const reduced = useReducedMotion();
   const plan = usePlannerStore((s) => s.plan);
   const mood = usePlannerStore((s) => s.answers.mood);
   const reset = usePlannerStore((s) => s.reset);
@@ -105,30 +166,8 @@ export default function RouteScreen() {
               entering={FadeInDown.duration(320).delay(140 + i * 70)}
               style={{ flexDirection: 'row', gap: t.spacing.base }}
             >
-              {/* Rail: numbered waypoint + connecting line down to the next stop. */}
-              <View style={{ width: 36, alignItems: 'center' }}>
-                <View
-                  style={{
-                    width: 34,
-                    height: 34,
-                    borderRadius: 17,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: isMemory ? t.colors.accentOrange : t.colors.surfaceSecondary,
-                    borderWidth: isMemory ? 0 : 1.5,
-                    borderColor: t.colors.primary,
-                  }}
-                >
-                  {isMemory ? (
-                    <Ionicons name="sparkles" size={16} color="#FFFFFF" />
-                  ) : (
-                    <Text variant="small" style={{ color: t.colors.primary, fontWeight: '700' }}>
-                      {i + 1}
-                    </Text>
-                  )}
-                </View>
-                {!isLast && <View style={{ width: 2, flex: 1, backgroundColor: t.colors.border, marginTop: 2 }} />}
-              </View>
+              {/* Rail: animated map-style waypoint + route line down to the next stop. */}
+              <Waypoint index={i} isMemory={isMemory} isLast={isLast} reduced={reduced} />
 
               {/* Content */}
               <View style={{ flex: 1, paddingBottom: isLast ? 0 : t.spacing.lg }}>
