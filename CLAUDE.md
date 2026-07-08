@@ -1,5 +1,7 @@
 # UNPLND — Build Charter (read this first, every session)
 
+> **Starting a session / picking up work?** Read `HANDOFF.md` in the repo root first — it holds the current project state, what was done last, and what's still open. (Claude Code sessions don't sync across machines, so `HANDOFF.md` + `git log` are how a new session — or a new teammate — gets caught up.)
+
 UNPLND — "Plan less. Live more." A premium consumer mobile app that plans an unforgettable evening with friends in seconds (conversational AI Planner → route + navigation → automatic Memory Album), then gets out of the way so people live real life. Founders: Jonas Becker, Flavio Ciraci.
 
 ## 0. Source of truth & reading order
