@@ -128,9 +128,44 @@ const SEARCH_PLANS: Record<string, SearchGroup[]> = {
     { category: 'Walk', types: ['park', 'tourist_attraction'] },
   ],
   Activities: [
-    { category: 'Activity', types: ['tourist_attraction', 'bowling_alley', 'amusement_center'] },
+    { category: 'Activity', types: ['bowling_alley', 'amusement_center', 'amusement_park'] },
+    { category: 'Fun', types: ['tourist_attraction', 'movie_theater'] },
+    { category: 'Food', types: ['restaurant'] },
+  ],
+  Date: [
+    { category: 'Dinner', types: ['restaurant', 'fine_dining_restaurant'] },
+    { category: 'Drinks', types: ['wine_bar', 'bar'] },
+    { category: 'Dessert', types: ['dessert_shop', 'ice_cream_shop'] },
+  ],
+  Cozy: [
+    { category: 'Café', types: ['cafe', 'coffee_shop'] },
+    { category: 'Dessert', types: ['dessert_shop', 'bakery'] },
+    { category: 'Walk', types: ['park', 'tourist_attraction'] },
+  ],
+  Adventure: [
+    { category: 'Activity', types: ['bowling_alley', 'amusement_center', 'amusement_park'] },
+    { category: 'Nature', types: ['park', 'hiking_area'] },
+    { category: 'Food', types: ['restaurant'] },
+  ],
+  'Live Music': [
+    { category: 'Music', types: ['night_club', 'bar'] },
+    { category: 'Show', types: ['performing_arts_theater'] },
+    { category: 'Drinks', types: ['pub', 'bar'] },
+  ],
+  'Road Trip': [
+    { category: 'Scenic', types: ['tourist_attraction', 'park'] },
+    { category: 'View', types: ['tourist_attraction'] },
+    { category: 'Food', types: ['restaurant', 'cafe'] },
+  ],
+  Beach: [
+    { category: 'Waterside', types: ['tourist_attraction', 'park'] },
+    { category: 'Nature', types: ['park', 'hiking_area'] },
+    { category: 'Café', types: ['cafe', 'ice_cream_shop'] },
+  ],
+  'Surprise Me': [
+    { category: 'Activity', types: ['bowling_alley', 'amusement_center', 'tourist_attraction'] },
     { category: 'Dinner', types: ['restaurant'] },
-    { category: 'Drinks', types: ['bar', 'pub'] },
+    { category: 'Bar', types: ['bar', 'pub'] },
   ],
 };
 
