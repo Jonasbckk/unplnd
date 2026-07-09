@@ -13,6 +13,8 @@ import { ProfileBanner } from '@/features/profile/ProfileBanner';
 import { ProfileExtras } from '@/features/profile/ProfileExtras';
 import { computeAllBadgesFromCtx, computeDNAFromMoodCounts } from '@/features/profile/evening-dna';
 import { getProfileStyle } from '@/features/profile/profile-styles';
+import { VerifyBadge } from '@/features/verify/VerifyBadge';
+import { currentTierLevel, tierByLevel } from '@/features/verify/verification';
 import {
   getPublicProfile,
   getPublicProfileStats,
@@ -211,6 +213,22 @@ export default function PublicProfileScreen() {
   const totalStars = plans.reduce((sum, p) => sum + p.starCount, 0);
   const name = profile?.name ?? tr('community.someone');
 
+  // Their verification tier — computed here from server aggregates with the SAME ladder the
+  // profile tab uses (single source of truth in features/verify), so the seal matches everywhere.
+  const verifyTier = stats
+    ? tierByLevel(
+        currentTierLevel({
+          eveningsCreated: stats.evenings,
+          published: stats.published,
+          ownPlans: stats.ownPlans,
+          streakDays: stats.streakDays,
+          connections: stats.connections,
+          ratingsReceived: stats.ratings,
+          topPlans: stats.topPlans,
+        }),
+      )
+    : undefined;
+
   return (
     <View style={{ flex: 1, backgroundColor: t.colors.background }}>
       <SafeAreaView edges={['top']}>
@@ -259,9 +277,12 @@ export default function PublicProfileScreen() {
                   </Text>
                 )}
               </View>
-              <Text variant="h1" style={{ color: style.onGradient }} center>
-                {name}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, maxWidth: '100%' }}>
+                <Text variant="h1" style={{ color: style.onGradient, flexShrink: 1 }} center numberOfLines={1}>
+                  {name}
+                </Text>
+                {verifyTier ? <VerifyBadge color={verifyTier.color} size={22} animated={false} /> : null}
+              </View>
               {profile.isFounder && (
                 <View
                   style={{
@@ -297,9 +318,21 @@ export default function PublicProfileScreen() {
                 </View>
               ) : null}
               {profile.bio ? (
-                <Text variant="small" style={{ color: style.onGradient, opacity: 0.9 }} center numberOfLines={3}>
-                  {profile.bio}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 4, maxWidth: '92%' }}>
+                  <Ionicons
+                    name="chatbubble-ellipses-outline"
+                    size={12}
+                    color={style.onGradient}
+                    style={{ marginTop: 3, opacity: 0.9 }}
+                  />
+                  <Text
+                    variant="small"
+                    style={{ color: style.onGradient, opacity: 0.9, flexShrink: 1 }}
+                    numberOfLines={3}
+                  >
+                    {profile.bio}
+                  </Text>
+                </View>
               ) : null}
             </View>
           </ProfileBanner>

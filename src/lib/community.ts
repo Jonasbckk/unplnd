@@ -218,9 +218,16 @@ export interface PublicProfileStats {
   cities: number;
   photos: number;
   moods: Record<string, number>;
+  /** Raw metrics for their verification tier (tier logic lives in features/verify). */
+  published: number;
+  ownPlans: number;
+  streakDays: number;
+  connections: number;
+  ratings: number;
+  topPlans: number;
 }
 
-/** Aggregate stats for someone's public profile — powers their Evening DNA + badges (RPC 0032).
+/** Aggregate stats for someone's public profile — powers their Evening DNA + badges + verify tier (RPC 0032/0033).
  * Only aggregates cross the wire; the private albums themselves never do. */
 export async function getPublicProfileStats(userId: string): Promise<PublicProfileStats | null> {
   if (!isSupabaseConfigured) return null;
@@ -232,6 +239,12 @@ export async function getPublicProfileStats(userId: string): Promise<PublicProfi
     cities: (row.cities as number) ?? 0,
     photos: (row.photos as number) ?? 0,
     moods: (row.moods as Record<string, number> | null) ?? {},
+    published: (row.published as number) ?? 0,
+    ownPlans: (row.own_plans as number) ?? 0,
+    streakDays: (row.streak_days as number) ?? 0,
+    connections: (row.connections as number) ?? 0,
+    ratings: (row.ratings as number) ?? 0,
+    topPlans: (row.top_plans as number) ?? 0,
   };
 }
 

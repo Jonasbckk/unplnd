@@ -2,6 +2,7 @@ import type { Ionicons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
 
 import type { Album } from '@/features/albums/types';
+import { optionIcon } from '@/features/planner/optionIcons';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -16,23 +17,18 @@ export interface EarnedBadge {
   icon: IoniconName;
 }
 
-const TRAIT_ICON: Record<string, IoniconName> = {
-  Romantic: 'partly-sunny-outline',
-  Party: 'musical-notes-outline',
-  Relaxed: 'cafe-outline',
-  Cozy: 'home-outline',
-  Adventure: 'compass-outline',
-  Luxury: 'diamond-outline',
-};
-
-/** Your "Evening DNA" — the share each mood makes up of your evenings (real data only). */
+/** Your "Evening DNA" — the share each mood makes up of your evenings (real data only).
+ * Icons reuse the planner's canonical mood→icon map so a mood looks the same everywhere. */
 export function computeDNA(albums: Album[]): DnaTrait[] {
   const total = albums.length;
   if (total === 0) return [];
   const counts = new Map<string, number>();
-  for (const a of albums) if (a.mood) counts.set(a.mood, (counts.get(a.mood) ?? 0) + 1);
+  for (const a of albums) {
+    const mood = a.moodRaw ?? a.mood;
+    if (mood) counts.set(mood, (counts.get(mood) ?? 0) + 1);
+  }
   return [...counts.entries()]
-    .map(([mood, n]) => ({ mood, icon: TRAIT_ICON[mood] ?? 'sparkles-outline', pct: Math.round((n / total) * 100) }))
+    .map(([mood, n]) => ({ mood, icon: optionIcon(mood), pct: Math.round((n / total) * 100) }))
     .sort((a, b) => b.pct - a.pct);
 }
 
@@ -41,7 +37,7 @@ export function computeDNAFromMoodCounts(moods: Record<string, number>): DnaTrai
   const total = Object.values(moods).reduce((a, b) => a + b, 0);
   if (total === 0) return [];
   return Object.entries(moods)
-    .map(([mood, n]) => ({ mood, icon: TRAIT_ICON[mood] ?? 'sparkles-outline', pct: Math.round((n / total) * 100) }))
+    .map(([mood, n]) => ({ mood, icon: optionIcon(mood), pct: Math.round((n / total) * 100) }))
     .sort((a, b) => b.pct - a.pct);
 }
 
@@ -57,7 +53,8 @@ function buildCtx(albums: Album[]): BadgeCtx {
   const cities = new Set<string>();
   let photos = 0;
   for (const a of albums) {
-    if (a.mood) moods[a.mood] = (moods[a.mood] ?? 0) + 1;
+    const mood = a.moodRaw ?? a.mood;
+    if (mood) moods[mood] = (moods[mood] ?? 0) + 1;
     if (a.city) cities.add(a.city);
     photos += a.photoCount ?? 0;
   }
