@@ -213,6 +213,28 @@ export async function getPublicProfile(userId: string): Promise<PublicProfile | 
   return null;
 }
 
+export interface PublicProfileStats {
+  evenings: number;
+  cities: number;
+  photos: number;
+  moods: Record<string, number>;
+}
+
+/** Aggregate stats for someone's public profile — powers their Evening DNA + badges (RPC 0032).
+ * Only aggregates cross the wire; the private albums themselves never do. */
+export async function getPublicProfileStats(userId: string): Promise<PublicProfileStats | null> {
+  if (!isSupabaseConfigured) return null;
+  const { data, error } = await supabase.rpc('get_public_profile_stats', { target: userId });
+  const row = Array.isArray(data) ? data[0] : data;
+  if (error || !row) return null;
+  return {
+    evenings: (row.evenings as number) ?? 0,
+    cities: (row.cities as number) ?? 0,
+    photos: (row.photos as number) ?? 0,
+    moods: (row.moods as Record<string, number> | null) ?? {},
+  };
+}
+
 /** Every non-hidden plan a user has published — the feed on their public profile. */
 export async function getUserPublishedPlans(userId: string): Promise<CommunityPlan[]> {
   if (!isSupabaseConfigured) return [];

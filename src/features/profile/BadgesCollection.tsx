@@ -50,10 +50,19 @@ function BadgeHex({
  * still-locked ones muted with their progress (e.g. "2/3"). Tap any for how to earn it.
  * Own profile only (computed from private album data).
  */
-export function BadgesCollection({ albums, accent }: { albums: Album[]; accent: string }) {
+export function BadgesCollection({
+  albums,
+  badges: badgesProp,
+  accent,
+}: {
+  albums?: Album[];
+  /** Pre-computed badges (e.g. another user's, from server aggregates). Falls back to `albums`. */
+  badges?: BadgeProgress[];
+  accent: string;
+}) {
   const t = useTheme();
   const { t: tr } = useT();
-  const badges = computeAllBadges(albums);
+  const badges = badgesProp ?? computeAllBadges(albums ?? []);
   const [selected, setSelected] = useState<BadgeProgress | null>(null);
   const earnedCount = badges.filter((b) => b.earned).length;
 

@@ -117,6 +117,8 @@ export const de = {
     freeTitle: 'Oder sag es in eigenen Worten',
     freePlaceholder: 'Sag einfach, worauf ihr Lust habt … z. B. „uns ist langweilig, was geht?“ oder „erst Cafés, dann All-you-can-eat“',
     freeGo: 'Abend planen',
+    customTitle: 'Eigenen Plan erstellen',
+    customSub: 'Bau deinen Abend Schritt für Schritt selbst',
     questions: {
       mood: 'Worauf hast du Lust?',
       group: 'Wer ist dabei?',
@@ -563,6 +565,9 @@ export const de = {
     favorites: 'Lieblingsorte',
     evenings: 'Veröffentlichte Abende',
     noEvenings: 'Noch keine veröffentlichten Abende.',
+    memberSince: 'Dabei seit %{year}',
+    dna: 'Abend-DNA',
+    badges: 'Badges',
   },
   connections: {
     title: 'Verbindungen',

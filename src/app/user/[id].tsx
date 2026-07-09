@@ -7,10 +7,20 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, Card, FadeInUp, Text, useCountUp } from '@/components/ui';
 import { useAuthStore } from '@/features/auth/auth-store';
+import { BadgesCollection } from '@/features/profile/BadgesCollection';
+import { EveningDNA } from '@/features/profile/EveningDNA';
 import { ProfileBanner } from '@/features/profile/ProfileBanner';
 import { ProfileExtras } from '@/features/profile/ProfileExtras';
+import { computeAllBadgesFromCtx, computeDNAFromMoodCounts } from '@/features/profile/evening-dna';
 import { getProfileStyle } from '@/features/profile/profile-styles';
-import { getPublicProfile, getUserPublishedPlans, type CommunityPlan, type PublicProfile } from '@/lib/community';
+import {
+  getPublicProfile,
+  getPublicProfileStats,
+  getUserPublishedPlans,
+  type CommunityPlan,
+  type PublicProfile,
+  type PublicProfileStats,
+} from '@/lib/community';
 import {
   acceptRequest,
   getConnectionState,
@@ -101,6 +111,7 @@ export default function PublicProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [plans, setPlans] = useState<CommunityPlan[]>([]);
+  const [stats, setStats] = useState<PublicProfileStats | null>(null);
   const [loading, setLoading] = useState(true);
   const me = useAuthStore((s) => s.user?.id);
   const isOwn = !!me && me === id;
@@ -110,12 +121,15 @@ export default function PublicProfileScreen() {
   useEffect(() => {
     if (!id) return;
     let active = true;
-    void Promise.all([getPublicProfile(id), getUserPublishedPlans(id)]).then(([pr, pl]) => {
-      if (!active) return;
-      setProfile(pr);
-      setPlans(pl);
-      setLoading(false);
-    });
+    void Promise.all([getPublicProfile(id), getUserPublishedPlans(id), getPublicProfileStats(id)]).then(
+      ([pr, pl, st]) => {
+        if (!active) return;
+        setProfile(pr);
+        setPlans(pl);
+        setStats(st);
+        setLoading(false);
+      },
+    );
     return () => {
       active = false;
     };
@@ -274,6 +288,14 @@ export default function PublicProfileScreen() {
                   </Text>
                 </View>
               ) : null}
+              {profile.memberSince ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                  <Ionicons name="calendar-outline" size={12} color={style.onGradient} />
+                  <Text variant="small" style={{ color: style.onGradient, opacity: 0.9 }}>
+                    {tr('publicProfile.memberSince', { year: new Date(profile.memberSince).getFullYear() })}
+                  </Text>
+                </View>
+              ) : null}
               {profile.bio ? (
                 <Text variant="small" style={{ color: style.onGradient, opacity: 0.9 }} center numberOfLines={3}>
                   {profile.bio}
@@ -345,6 +367,22 @@ export default function PublicProfileScreen() {
           )}
 
           <ProfileExtras interests={profile.interests} prompts={profile.prompts} accent={accent} />
+
+          {/* Their Evening DNA + badges — from server-side aggregates (private albums never leave the server). */}
+          {stats && stats.evenings > 0 && (
+            <>
+              <EveningDNA dna={computeDNAFromMoodCounts(stats.moods)} accent={accent} title={tr('publicProfile.dna')} />
+              <BadgesCollection
+                badges={computeAllBadgesFromCtx({
+                  evenings: stats.evenings,
+                  cities: stats.cities,
+                  photos: stats.photos,
+                  moods: stats.moods,
+                })}
+                accent={accent}
+              />
+            </>
+          )}
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}>
             <View style={{ width: 4, height: 18, borderRadius: 2, backgroundColor: accent }} />

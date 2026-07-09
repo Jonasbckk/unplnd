@@ -117,6 +117,8 @@ export const en = {
     freeTitle: 'Or say it in your own words',
     freePlaceholder: 'Just tell us what you feel like … e.g. “we’re bored, what’s good?” or “cafés first, then all-you-can-eat”',
     freeGo: 'Plan my evening',
+    customTitle: 'Create your own plan',
+    customSub: 'Build your evening yourself, step by step',
     questions: {
       mood: 'What are you in the mood for?',
       group: 'Who’s joining?',
@@ -522,6 +524,9 @@ export const en = {
     favorites: 'Favorite spots',
     evenings: 'Published evenings',
     noEvenings: 'No published evenings yet.',
+    memberSince: 'Member since %{year}',
+    dna: 'Evening DNA',
+    badges: 'Badges',
   },
   connections: {
     title: 'Connections',

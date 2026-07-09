@@ -15,7 +15,7 @@ import { Card, Text } from '@/components/ui';
 import type { Album } from '@/features/albums/types';
 import { optionLabel, useT } from '@/lib/i18n';
 import { useTheme } from '@/theme';
-import { computeDNA } from './evening-dna';
+import { computeDNA, type DnaTrait } from './evening-dna';
 
 function Heading({ title, accent }: { title: string; accent: string }) {
   const t = useTheme();
@@ -44,16 +44,28 @@ function DnaBar({ pct, color, delay }: { pct: number; color: string; delay: numb
 }
 
 /** Evening DNA — your mood mix from real evenings, as clean percent bars. Own profile only. */
-export function EveningDNA({ albums, accent }: { albums: Album[]; accent: string }) {
+export function EveningDNA({
+  albums,
+  dna: dnaProp,
+  accent,
+  title: titleProp,
+}: {
+  albums?: Album[];
+  /** Pre-computed DNA (e.g. another user's, from server aggregates). Falls back to `albums`. */
+  dna?: DnaTrait[];
+  accent: string;
+  /** Override the heading (e.g. "Abend-DNA" on someone else's profile, not "Deine Abend-DNA"). */
+  title?: string;
+}) {
   const t = useTheme();
   const { t: tr } = useT();
   const reduced = useReducedMotion();
-  const dna = computeDNA(albums);
+  const dna = dnaProp ?? computeDNA(albums ?? []);
   if (dna.length === 0) return null;
 
   return (
     <View style={{ gap: t.spacing.md }}>
-      <Heading title={tr('dna.title')} accent={accent} />
+      <Heading title={titleProp ?? tr('dna.title')} accent={accent} />
       <Card style={{ gap: t.spacing.base }}>
         {dna.map((trait, i) => (
           <Animated.View

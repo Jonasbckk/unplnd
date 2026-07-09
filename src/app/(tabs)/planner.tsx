@@ -8,7 +8,9 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 
-import { Button, FadeInUp, Input, Screen, StatementTitle, Text } from '@/components/ui';
+import { Ionicons } from '@expo/vector-icons';
+
+import { Button, Card, FadeInUp, Input, Screen, StatementTitle, Text } from '@/components/ui';
 import { LocationChip } from '@/features/location/LocationChip';
 import { AnswerRow } from '@/features/planner/AnswerRow';
 import { QuestionCard } from '@/features/planner/QuestionCard';
@@ -143,6 +145,41 @@ export default function PlannerScreen() {
         />
         <Button title={tr('planner.freeGo')} disabled={!freeText.trim()} onPress={planFromText} />
       </View>
+
+      {/* Build-your-own — was buried in the community feed; surfaced here as a clear option. */}
+      <Card
+        onPress={() => router.push('/plan/create')}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: t.spacing.md,
+          backgroundColor: t.colors.surface,
+          borderWidth: 1,
+          borderColor: t.colors.primary + '40',
+        }}
+      >
+        <View
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: t.radius.sm,
+            backgroundColor: t.colors.primary + '1A',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Ionicons name="create-outline" size={22} color={t.colors.primary} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text variant="body" style={{ fontWeight: '600' }}>
+            {tr('planner.customTitle')}
+          </Text>
+          <Text variant="small" color="textSecondary">
+            {tr('planner.customSub')}
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={t.colors.textSecondary} />
+      </Card>
     </Screen>
   );
 }

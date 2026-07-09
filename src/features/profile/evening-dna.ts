@@ -36,7 +36,16 @@ export function computeDNA(albums: Album[]): DnaTrait[] {
     .sort((a, b) => b.pct - a.pct);
 }
 
-interface BadgeCtx {
+/** Evening DNA from server-side mood counts — for another user's public profile (private albums stay private). */
+export function computeDNAFromMoodCounts(moods: Record<string, number>): DnaTrait[] {
+  const total = Object.values(moods).reduce((a, b) => a + b, 0);
+  if (total === 0) return [];
+  return Object.entries(moods)
+    .map(([mood, n]) => ({ mood, icon: TRAIT_ICON[mood] ?? 'sparkles-outline', pct: Math.round((n / total) * 100) }))
+    .sort((a, b) => b.pct - a.pct);
+}
+
+export interface BadgeCtx {
   evenings: number;
   cities: number;
   photos: number;
@@ -86,7 +95,11 @@ export interface BadgeProgress {
 
 /** Every badge with its progress — earned and still-locked — for the collection view. */
 export function computeAllBadges(albums: Album[]): BadgeProgress[] {
-  const ctx = buildCtx(albums);
+  return computeAllBadgesFromCtx(buildCtx(albums));
+}
+
+/** Badge progress from a pre-aggregated context — for another user's public profile. */
+export function computeAllBadgesFromCtx(ctx: BadgeCtx): BadgeProgress[] {
   return BADGE_DEFS.map((b) => {
     const raw = b.value(ctx);
     return { key: b.key, icon: b.icon, current: Math.min(raw, b.target), target: b.target, earned: raw >= b.target };
