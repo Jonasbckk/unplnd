@@ -28,8 +28,10 @@ Die App hat native Module (In-App-Käufe/RevenueCat, Sprachnachrichten) → **Ex
 - **Kritischer Bugfix:** Auth-Token lief nach ~1 h ab → erster Request danach schlug still fehl. Gefixt (RN AppState-Auto-Refresh).
 - **Premium-Upsell-Popups**, **Bilder laden schneller**, **Monetarisierung** (RevenueCat verdrahtet).
 
+> **⚠️ TestFlight ≠ automatisch aktuell.** Es ist **kein** OTA/EAS-Update eingerichtet. Der vorhandene TestFlight-Build ist ein eingefrorener Stand — GitHub-Pushes erscheinen dort **nicht** von selbst. Um Neues auf TestFlight zu sehen: neuen Build bauen + einreichen (`eas build -p ios --profile production` → `eas submit -p ios --profile production`). Für den allerneusten Stand ohne Build: `git pull` + Dev-Build (`npx expo start --dev-client`).
+
 ## 4. Offen / als Nächstes
-1. **Supabase nachziehen** (im SQL-Editor, in Reihenfolge): `0030_sync_author_identity.sql`, `0031_plan_history_places.sql`, `0032_public_profile_stats.sql`. Und **Edge Function `generate-plan` neu deployen** (`npx supabase functions deploy generate-plan`) für die Planer-Fixes. Danach App neu laden.
+1. **Supabase nachziehen** (im SQL-Editor, in Reihenfolge): `0030_sync_author_identity.sql`, `0031_plan_history_places.sql`, `0032_public_profile_stats.sql`, `0033_public_profile_verify.sql`. Und **Edge Function `generate-plan` neu deployen** (`npx supabase functions deploy generate-plan`) für die Planer-Fixes. Danach App neu laden. **CEO-Badge/Admin für Flavios neuen Google-Account:** `supabase/set-founders.sql` ausführen (lokal/untracked, findet ihn per Name; `is_founder=true` gibt Badge **und** Admin-Rechte).
 2. **RevenueCat scharf schalten** (Blocker für Käufe): 3 Produkte in **App Store Connect** auf „Bereit zum Senden" (Preis + Lokalisierung + Review-Screenshot) **+ Paid-Apps-Vertrag**. Erst dann echte Preise + Käufe.
 3. **Premium-Gates** scharf ziehen (Album-Foto-Limit, Discover-Favoriten) + **RevenueCat-Webhook → `profiles.premium`**.
 4. **App-Icon-Picker** verdrahten (`expo-alternate-app-icons` + Premium-Auswahl) → Native-Rebuild.
