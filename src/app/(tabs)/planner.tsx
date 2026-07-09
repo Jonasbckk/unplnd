@@ -9,7 +9,6 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 
 import { Button, Card, FadeInUp, Input, Screen, StatementTitle, Text } from '@/components/ui';
 import { LocationChip } from '@/features/location/LocationChip';
@@ -147,51 +146,39 @@ export default function PlannerScreen() {
         <Button title={tr('planner.freeGo')} disabled={!freeText.trim()} onPress={planFromText} />
       </View>
 
-      {/* Build-your-own — was buried in the community feed; surfaced here as a bold gradient CTA. */}
+      {/* Build-your-own — was buried in the community feed; surfaced here as a clear, calm option. */}
       <Card
-        padded={false}
         onPress={() => router.push('/plan/create')}
-        style={{ overflow: 'hidden', marginTop: t.spacing.xs }}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: t.spacing.md,
+          backgroundColor: t.colors.surface,
+          borderWidth: 1,
+          borderColor: t.colors.primary + '40',
+        }}
       >
-        <LinearGradient
-          colors={[t.colors.primary, t.colors.accentOrange]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.md, padding: t.spacing.base }}
+        <View
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: t.radius.sm,
+            backgroundColor: t.colors.primary + '1A',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
-          <View
-            style={{
-              width: 46,
-              height: 46,
-              borderRadius: t.radius.md,
-              backgroundColor: 'rgba(255,255,255,0.22)',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Ionicons name="construct-outline" size={24} color="#FFFFFF" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text variant="body" style={{ fontWeight: '700', color: '#FFFFFF' }}>
-              {tr('planner.customTitle')}
-            </Text>
-            <Text variant="small" style={{ color: 'rgba(255,255,255,0.88)' }}>
-              {tr('planner.customSub')}
-            </Text>
-          </View>
-          <View
-            style={{
-              width: 30,
-              height: 30,
-              borderRadius: t.radius.pill,
-              backgroundColor: 'rgba(255,255,255,0.22)',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Ionicons name="arrow-forward" size={17} color="#FFFFFF" />
-          </View>
-        </LinearGradient>
+          <Ionicons name="create-outline" size={22} color={t.colors.primary} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text variant="body" style={{ fontWeight: '600' }}>
+            {tr('planner.customTitle')}
+          </Text>
+          <Text variant="small" color="textSecondary">
+            {tr('planner.customSub')}
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={t.colors.textSecondary} />
       </Card>
     </Screen>
   );
