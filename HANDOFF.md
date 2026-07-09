@@ -3,7 +3,7 @@
 > **Hallo Flavio 👋** — kompakte Übergabe, damit du sofort weitermachen kannst.
 > **Wichtig:** Der Claude-Chatverlauf synct **nicht** über Rechner (auch nicht bei gleichem Account) — er lag nur lokal auf Jonas' Rechner. Deshalb steht alles Nötige hier + im Obsidian-Vault. Diese Datei kommt per `git pull` automatisch mit.
 >
-> _Stand: 07.07.2026_
+> _Stand: 09.07.2026_
 
 ## 1. Stand ziehen (immer zuerst)
 ```bash
@@ -20,19 +20,21 @@ Die App hat native Module (In-App-Käufe/RevenueCat, Sprachnachrichten) → **Ex
 - Schritt für Schritt: Obsidian-Vault → **„Flavio - App testen"**.
 
 ## 3. Zuletzt gemacht
-- **Visuelles Redesign v2** (dunkel-first, zweifarbige Statement-Titel, Gradient-CTAs) — app-weit ausgerollt.
-- **3D-Maskottchen** auf der Paywall (pures Vektor-SVG, animiert).
-- **Kritischer Bugfix:** Auth-Token lief nach ~1 h ab → erster Request danach schlug still fehl (Ursache für „erste Chat-Nachricht geht nicht" + fehlendes Profilbild). Gefixt (RN AppState-Auto-Refresh).
-- **Premium-Upsell-Popups** (2. App-Start / 3. Einstellungen / 3. Stil-Änderung; nie für Premium).
-- **Bilder laden schneller** (signierte URLs gecacht), **Abend-DNA** als Prozent-Balken.
-- **Monetarisierung:** RevenueCat-SDK + Paywall + Store + Upsell verdrahtet.
+- **Planer-Überarbeitung (Kern-Feature)** — Backup-Tag `planner-v1-stable`. Fixes: Stopp-Anzahl passt jetzt zur Zeit (5 h → mehr Stopps), keine Wiederholungen mehr (Anti-Repeat pro Nutzer, 3 Tage), Öffnungszeiten werden **im Code** geprüft (geschlossene/gleich-schließende Stopps fliegen raus), Transport-Verbindungen zwischen Stopps, jede Stimmung hat einen eigenen Suchplan, neue Stimmung **„Abseits"** (ruhige Plätze mit Aussicht) + Rollen-Design als animierte Roadmap.
+- **TestFlight:** Production-Build ist drin, Flavio als interner Tester eingeladen.
+- **Profile (heute):** man sieht auf **fremden** Profilen jetzt Abend-DNA + Badges (nur anonyme Aggregate via RPC, Alben bleiben privat) → **braucht Migration `0032`**. „Eigenen Plan erstellen" ist prominenter. **6 Premium-App-Icons** als Assets erstellt (Verdrahtung Picker/Rebuild folgt).
+- **Visuelles Redesign v2** (dunkel-first, zweifarbige Statement-Titel, Gradient-CTAs) — app-weit.
+- **3D-Maskottchen** auf der Paywall (Vektor-SVG, animiert).
+- **Kritischer Bugfix:** Auth-Token lief nach ~1 h ab → erster Request danach schlug still fehl. Gefixt (RN AppState-Auto-Refresh).
+- **Premium-Upsell-Popups**, **Bilder laden schneller**, **Monetarisierung** (RevenueCat verdrahtet).
 
 ## 4. Offen / als Nächstes
-1. **RevenueCat scharf schalten** (Blocker für Käufe): 3 Produkte in **App Store Connect** auf „Bereit zum Senden" (Preis + Lokalisierung + Review-Screenshot) **+ Paid-Apps-Vertrag** aktivieren. Erst dann echte Preise + Käufe.
-2. **TestFlight-Build** erstellen → dich als internen Tester (geht jetzt schon, Käufe kommen später).
-3. **Migration `0030_sync_author_identity.sql`** im Supabase-SQL-Editor ausführen, falls noch nicht (Profilbild/Name-Sync auf veröffentlichten Plänen).
-4. **Premium-Gates** scharf ziehen (Album-Foto-Limit, Discover-Favoriten) + **RevenueCat-Webhook → `profiles.premium`**.
-5. Optional: Redesign-Feinschliff auf Chat-Screens + Community-Feed.
+1. **Supabase nachziehen** (im SQL-Editor, in Reihenfolge): `0030_sync_author_identity.sql`, `0031_plan_history_places.sql`, `0032_public_profile_stats.sql`. Und **Edge Function `generate-plan` neu deployen** (`npx supabase functions deploy generate-plan`) für die Planer-Fixes. Danach App neu laden.
+2. **RevenueCat scharf schalten** (Blocker für Käufe): 3 Produkte in **App Store Connect** auf „Bereit zum Senden" (Preis + Lokalisierung + Review-Screenshot) **+ Paid-Apps-Vertrag**. Erst dann echte Preise + Käufe.
+3. **Premium-Gates** scharf ziehen (Album-Foto-Limit, Discover-Favoriten) + **RevenueCat-Webhook → `profiles.premium`**.
+4. **App-Icon-Picker** verdrahten (`expo-alternate-app-icons` + Premium-Auswahl) → Native-Rebuild.
+5. Noch offen aus der 7er-Liste: **Sprachnachrichten** für Planer (1×/Woche frei, sonst Premium), **Creator-Programm** (Bewerbung + Badge wie CEO), **Freunde treten Abend bei**, **Weekly Challenges**.
+6. Optional: Redesign-Feinschliff auf Chat-Screens + Community-Feed. App-Store-Screenshots aus echten iPhone-Shots rahmen.
 
 ## 5. Vor jedem Commit (Verifizierungs-Gates)
 ```bash
