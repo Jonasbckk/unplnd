@@ -7,10 +7,7 @@ export interface Album {
   title: string;
   city: string;
   date: string; // ISO date
-  mood: AlbumMood; // normalized to the 6 themed moods — drives coverColor/accents only
-  /** The exact mood the user picked (may be outside AlbumMood, e.g. 'Beach', 'Road Trip').
-   * Used for Evening DNA / stats so the profile tab matches the server-side public aggregate. */
-  moodRaw?: string;
+  mood: AlbumMood;
   weather: string; // e.g. "22°C · Clear sky"
   coverColor: string; // derived from mood, drives accents
   timeline: PlanStop[];

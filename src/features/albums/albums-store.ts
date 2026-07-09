@@ -5,7 +5,8 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { useAuthStore } from '@/features/auth/auth-store';
 import type { GeneratedPlan } from '@/features/planner/types';
 import { supabase } from '@/lib/supabase';
-import type { Album, AlbumMood } from './types';
+import { normalizeAlbumMood } from './mood';
+import type { Album } from './types';
 
 const MOOD_COLORS: Record<string, string> = {
   Romantic: '#C97B63',
@@ -19,14 +20,8 @@ const MOOD_COLORS: Record<string, string> = {
   Nature: '#7A8F63',
 };
 
-const ALBUM_MOODS: AlbumMood[] = ['Romantic', 'Relaxed', 'Party', 'Cozy', 'Adventure', 'Luxury'];
-
 function moodColor(mood?: string): string {
   return MOOD_COLORS[mood ?? ''] ?? '#C97B63';
-}
-
-function normalizeMood(mood?: string): AlbumMood {
-  return ALBUM_MOODS.includes(mood as AlbumMood) ? (mood as AlbumMood) : 'Relaxed';
 }
 
 interface AlbumRow {
@@ -50,8 +45,7 @@ function rowToAlbum(row: AlbumRow): Album {
     title: row.title,
     city: row.city ?? '',
     date: row.date,
-    mood: normalizeMood(row.mood ?? undefined),
-    moodRaw: row.mood ?? undefined,
+    mood: normalizeAlbumMood(row.mood ?? undefined),
     weather: row.weather ?? '',
     coverColor: row.cover_color ?? '#C97B63',
     timeline: row.timeline ?? [],
@@ -160,8 +154,7 @@ export const useAlbumsStore = create<AlbumsState>()(
           title: plan.title,
           city,
           date: new Date().toISOString(),
-          mood: normalizeMood(mood),
-          moodRaw: mood,
+          mood: normalizeAlbumMood(mood),
           weather: '22°C · Clear sky',
           coverColor: moodColor(mood),
           timeline: plan.stops,

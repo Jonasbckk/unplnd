@@ -6,6 +6,7 @@ import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, Card, FadeInUp, Text, useCountUp } from '@/components/ui';
+import { normalizeMoodCounts } from '@/features/albums/mood';
 import { useAuthStore } from '@/features/auth/auth-store';
 import { BadgesCollection } from '@/features/profile/BadgesCollection';
 import { EveningDNA } from '@/features/profile/EveningDNA';
@@ -401,16 +402,21 @@ export default function PublicProfileScreen() {
 
           <ProfileExtras interests={profile.interests} prompts={profile.prompts} accent={accent} />
 
-          {/* Their Evening DNA + badges — from server-side aggregates (private albums never leave the server). */}
+          {/* Their Evening DNA + badges — from server-side aggregates (private albums never leave the server).
+              Moods are normalized to the six themed moods so this reads exactly like their own profile tab. */}
           {stats && stats.evenings > 0 && (
             <>
-              <EveningDNA dna={computeDNAFromMoodCounts(stats.moods)} accent={accent} title={tr('publicProfile.dna')} />
+              <EveningDNA
+                dna={computeDNAFromMoodCounts(normalizeMoodCounts(stats.moods))}
+                accent={accent}
+                title={tr('publicProfile.dna')}
+              />
               <BadgesCollection
                 badges={computeAllBadgesFromCtx({
                   evenings: stats.evenings,
                   cities: stats.cities,
                   photos: stats.photos,
-                  moods: stats.moods,
+                  moods: normalizeMoodCounts(stats.moods),
                 })}
                 accent={accent}
               />
