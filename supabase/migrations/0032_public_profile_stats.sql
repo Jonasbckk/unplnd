@@ -13,7 +13,7 @@ set search_path = public
 stable
 as $$
   with a as (
-    select mood, city, photo_count from public.albums where user_id = target
+    select mood, city, photo_count from public.albums where owner_id = target
   ),
   m as (
     select mood, count(*)::int as c from a where mood is not null group by mood
