@@ -377,11 +377,15 @@ export const de = {
   },
   common2: {
     cancel: 'Abbrechen',
-    close: 'Schließen',
   },
   highlights: {
     title: 'Highlights',
     add: 'Teilen',
+    save: 'Speichern',
+    editHint: 'Lange drücken zum Umbenennen oder Titelbild wählen.',
+    editTitle: 'Highlight bearbeiten',
+    chooseCover: 'Titelbild wählen',
+    unshare: 'Nicht mehr teilen',
     pickTitle: 'Abende teilen',
     pickBody:
       'Deine Alben sind privat. Was du hier auswählst, erscheint mit Fotos auf deinem Profil — und lässt sich jederzeit wieder entfernen.',

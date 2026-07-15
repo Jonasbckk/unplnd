@@ -336,11 +336,15 @@ export const en = {
   },
   common2: {
     cancel: 'Cancel',
-    close: 'Close',
   },
   highlights: {
     title: 'Highlights',
     add: 'Share',
+    save: 'Save',
+    editHint: 'Long-press to rename or pick a cover.',
+    editTitle: 'Edit highlight',
+    chooseCover: 'Choose cover',
+    unshare: 'Stop sharing',
     pickTitle: 'Share evenings',
     pickBody:
       'Your albums are private. Whatever you pick here appears on your profile, photos included — and you can remove it again at any time.',

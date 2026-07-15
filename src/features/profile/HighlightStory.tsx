@@ -32,13 +32,13 @@ export function HighlightStory({ highlight, onClose }: { highlight: Highlight | 
     setIndex(0);
   }, [highlight?.albumId]);
 
+  // Decide OUTSIDE the state updater: calling onClose() (which sets state in the parent) from
+  // inside setIndex's updater is a side effect during render — React warns "Cannot update a
+  // component while rendering a different component".
   const next = useCallback(() => {
-    setIndex((i) => {
-      if (i + 1 < total) return i + 1;
-      onClose();
-      return i;
-    });
-  }, [total, onClose]);
+    if (index + 1 < total) setIndex(index + 1);
+    else onClose();
+  }, [index, total, onClose]);
 
   const prev = useCallback(() => setIndex((i) => Math.max(0, i - 1)), []);
 
@@ -107,7 +107,7 @@ export function HighlightStory({ highlight, onClose }: { highlight: Highlight | 
                       {[highlight.city, dateLabel].filter(Boolean).join(' · ')}
                     </Text>
                   </View>
-                  <Pressable onPress={onClose} hitSlop={10} accessibilityLabel={tr('common2.close')}>
+                  <Pressable onPress={onClose} hitSlop={10} accessibilityLabel={tr('common.close')}>
                     <Ionicons name="close" size={26} color="#FFFFFF" />
                   </Pressable>
                 </View>

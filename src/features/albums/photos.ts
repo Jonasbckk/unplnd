@@ -60,6 +60,18 @@ export async function pickPhotos(): Promise<ImagePicker.ImagePickerAsset[]> {
   return result.canceled ? [] : result.assets;
 }
 
+/** Pick a single image (e.g. a highlight cover). Null if cancelled or not permitted. */
+export async function pickPhoto(): Promise<ImagePicker.ImagePickerAsset | null> {
+  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (!permission.granted) return null;
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['images'],
+    allowsMultipleSelection: false,
+    quality: 0.8,
+  });
+  return result.canceled ? null : (result.assets[0] ?? null);
+}
+
 /** Uploads picked photos to the private bucket and records them in album_photos. Returns the new photo count. */
 export async function uploadAlbumPhotos(
   albumId: string,
