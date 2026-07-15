@@ -45,3 +45,8 @@ example
 # generated native folders
 /ios
 /android
+
+# Founder-Originale der App-Icons (1254px) — nur Quellmaterial; die App nutzt die
+# aufbereiteten 1024er (marble/lavender/mint/lime/holographic.png).
+assets/images/app-icons/Icon_*.png
+assets/images/app-icons/icon_1.png
