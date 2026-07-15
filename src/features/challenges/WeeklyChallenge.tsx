@@ -24,12 +24,15 @@ export function WeeklyChallenge({ onAccept }: { onAccept: () => void }) {
 
   return (
     <Card
+      padded={false}
       onPress={done ? undefined : onAccept}
       accessibilityLabel={`${tr('challenges.thisWeek')}: ${title}. ${body}`}
       style={{
         flexDirection: 'row',
         alignItems: 'center',
         gap: t.spacing.md,
+        paddingVertical: t.spacing.md,
+        paddingHorizontal: t.spacing.base,
         backgroundColor: done ? t.colors.primary + '14' : t.colors.surface,
         borderWidth: 1,
         borderColor: done ? t.colors.primary + '40' : t.colors.border,
@@ -37,30 +40,30 @@ export function WeeklyChallenge({ onAccept }: { onAccept: () => void }) {
     >
       <View
         style={{
-          width: 42,
-          height: 42,
+          width: 34,
+          height: 34,
           borderRadius: t.radius.pill,
           backgroundColor: t.colors.primary + '1A',
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <Ionicons name={done ? 'checkmark' : challenge.icon} size={21} color={t.colors.primary} />
+        <Ionicons name={done ? 'checkmark' : challenge.icon} size={17} color={t.colors.primary} />
       </View>
 
-      <View style={{ flex: 1, gap: 2 }}>
+      <View style={{ flex: 1, gap: 1 }}>
         <Text variant="caption" color="textSecondary">
           {tr('challenges.thisWeek')}
         </Text>
-        <Text variant="body" style={{ fontWeight: '600' }} numberOfLines={2}>
+        <Text variant="small" style={{ fontWeight: '600' }} numberOfLines={1}>
           {title}
         </Text>
-        <Text variant="small" color="textSecondary" numberOfLines={2}>
+        <Text variant="caption" color="textSecondary" numberOfLines={1}>
           {body}
         </Text>
       </View>
 
-      {done ? null : <Ionicons name="chevron-forward" size={18} color={t.colors.textSecondary} />}
+      {done ? null : <Ionicons name="chevron-forward" size={16} color={t.colors.textSecondary} />}
     </Card>
   );
 }

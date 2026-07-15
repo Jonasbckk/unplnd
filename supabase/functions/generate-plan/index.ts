@@ -1201,6 +1201,16 @@ Deno.serve(async (req) => {
           lng: c?.lng,
         });
       }
+      // Invented-venue safety net — enforced in CODE, like the hours check below. A stop with no
+      // real venue behind it is ONLY ever legitimate as the FINAL at-home wind-down (hybrid
+      // out->home). Anywhere else it means the AI named a place from its own knowledge instead of
+      // copying a place_id from the list: it renders with no photo, no rating and no hours, and the
+      // connector logic then mistakes it for home ("Nach Hause" on a restaurant). We never show
+      // venues we haven't verified against Google, so drop them.
+      for (let i = stops.length - 2; i >= 0; i--) {
+        if (!stops[i].placeId) stops.splice(i, 1);
+      }
+
       // Hours safety net — enforced in CODE, not left to the AI (it's bad at time math): drop any
       // venue scheduled at a time it is already closed or closing within 30 min. This is the
       // #1 "macht keinen Sinn" bug — a stop the venue will be shut for. Unknown/24h hours are kept.
