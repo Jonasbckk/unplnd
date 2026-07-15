@@ -378,6 +378,26 @@ export const de = {
   common2: {
     cancel: 'Abbrechen',
   },
+  appIcon: {
+    title: 'App-Icon',
+    body: 'Wähle, wie UNPLND auf deinem Homescreen aussieht.',
+    premium: 'Premium',
+    reset: 'Zurück zum Standard-Icon',
+    unsupported: 'Dein Gerät unterstützt keine wechselnden App-Icons.',
+    founderNote: 'Als Founder sind alle Icons zum Testen freigeschaltet.',
+    lockedToast: 'Noch nicht freigeschaltet — %{current} von %{target}.',
+    failed: 'Das Icon konnte nicht gewechselt werden.',
+    names: {
+      classic: 'Classic',
+      white: 'Clean White',
+      marble: 'Marmor',
+      lavender: 'Lavendel',
+      mint: 'Mint',
+      lime: 'Limette',
+      holographic: 'Holografisch',
+      gold: 'Gold Edition',
+    },
+  },
   highlights: {
     title: 'Highlights',
     add: 'Teilen',

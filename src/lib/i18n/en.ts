@@ -337,6 +337,26 @@ export const en = {
   common2: {
     cancel: 'Cancel',
   },
+  appIcon: {
+    title: 'App icon',
+    body: 'Choose how UNPLND looks on your home screen.',
+    premium: 'Premium',
+    reset: 'Back to the default icon',
+    unsupported: "Your device doesn't support changing the app icon.",
+    founderNote: 'As a founder every icon is unlocked for testing.',
+    lockedToast: 'Not unlocked yet — %{current} of %{target}.',
+    failed: "The icon couldn't be changed.",
+    names: {
+      classic: 'Classic',
+      white: 'Clean White',
+      marble: 'Marble',
+      lavender: 'Lavender',
+      mint: 'Mint',
+      lime: 'Lime',
+      holographic: 'Holographic',
+      gold: 'Gold Edition',
+    },
+  },
   highlights: {
     title: 'Highlights',
     add: 'Share',
