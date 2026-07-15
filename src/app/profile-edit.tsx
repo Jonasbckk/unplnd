@@ -1,12 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, Input, Text } from '@/components/ui';
 import { useAuthStore } from '@/features/auth/auth-store';
+import { getPublicProfile } from '@/lib/community';
 import { InterestChip } from '@/features/profile/ProfileExtras';
 import { INTERESTS, MAX_INTERESTS, PROMPT_OPTIONS, PROMPTS } from '@/features/profile/profile-extras';
 import { haptics } from '@/lib/haptics';
@@ -42,7 +43,22 @@ export default function EditProfile() {
   const [homeCity, setHomeCity] = useState(meta?.home_city ?? '');
   const [interests, setInterests] = useState<string[]>(meta?.interests ?? []);
   const [promptAnswers, setPromptAnswers] = useState<Record<string, string>>(meta?.prompts ?? {});
-  const [avatar, setAvatar] = useState(meta?.avatar_url ?? '');
+  // Auth metadata can hold '' or a stale local file path (older builds) — trust it only when it's a
+  // real URL, then let the server truth (profiles.photo_url, exactly what every other screen shows)
+  // replace it. Same fix the profile tab already got; this screen had been left behind.
+  const [avatar, setAvatar] = useState(meta?.avatar_url?.startsWith('http') ? meta.avatar_url : '');
+  useEffect(() => {
+    const uid = user?.id;
+    if (!uid) return;
+    let active = true;
+    void getPublicProfile(uid).then((p) => {
+      if (active && p?.avatar) setAvatar(p.avatar);
+    });
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
 

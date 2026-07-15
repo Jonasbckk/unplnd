@@ -51,8 +51,18 @@ interface Camera {
  * The country silhouettes never change while panning — memoised so the reveal ticks and camera
  * commits don't push the ~150 KB path to native again.
  */
-const Countries = memo(function Countries({ d, land, border }: { d: string; land: string; border: string }) {
-  return <Path d={d} fill={land} stroke={border} strokeWidth={0.4} />;
+const Countries = memo(function Countries({
+  d,
+  land,
+  border,
+  strokeWidth,
+}: {
+  d: string;
+  land: string;
+  border: string;
+  strokeWidth: number;
+}) {
+  return <Path d={d} fill={land} stroke={border} strokeWidth={strokeWidth} />;
 });
 
 /**
@@ -127,20 +137,33 @@ export function WorldMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [width, height, fitToPins, worldFit]);
 
-  const { countries, project } = useMemo(() => {
-    const cam = camera ?? worldFit;
-    const projection = geoNaturalEarth1().scale(cam.scale).translate([cam.tx, cam.ty]);
+  // The ~150 KB world path is built ONCE per size, at the base (world-fit) projection. Every camera
+  // is an affine transform of that base — p_cam = k·p_base + (cam.t − k·base.t) with k =
+  // cam.scale/base.scale — so moving the camera is a <G transform> the vector renderer applies
+  // natively. Rebuilding the path per camera (trig over 176 countries + native re-parse) was the
+  // remaining hitch on every gesture end.
+  const countries = useMemo(() => {
+    const projection = geoNaturalEarth1().scale(worldFit.scale).translate([worldFit.tx, worldFit.ty]);
     const path = geoPath(projection);
-    const d = (world as never as { features: unknown[] }).features
+    return (world as never as { features: unknown[] }).features
       .map((f) => path(f as never))
       .filter(Boolean)
       .join(' ');
-    const proj: Project = (lng, lat) => {
+  }, [worldFit]);
+
+  const project = useMemo<Project>(() => {
+    const cam = camera ?? worldFit;
+    const projection = geoNaturalEarth1().scale(cam.scale).translate([cam.tx, cam.ty]);
+    return (lng, lat) => {
       const p = projection([lng, lat]);
       return p ? [p[0], p[1]] : null;
     };
-    return { countries: d, project: proj };
   }, [camera, worldFit]);
+
+  const cam = camera ?? worldFit;
+  const camK = cam.scale / worldFit.scale;
+  const camGx = cam.tx - camK * worldFit.tx;
+  const camGy = cam.ty - camK * worldFit.ty;
 
   const clusters = useMemo(() => clusterPins(pins, project, CLUSTER_RADIUS), [pins, project]);
 
@@ -285,7 +308,10 @@ export function WorldMap({
     // Pure display: touch handling lives on the gesture layer, never inside the SVG.
     <Svg width={width} height={height} pointerEvents="none">
       <Rect width={width} height={height} fill={colors.water} />
-      <Countries d={countries} land={colors.land} border={colors.border} />
+      {/* Border thickness counter-scales so zooming never fattens the hairlines. */}
+      <G transform={`translate(${camGx} ${camGy}) scale(${camK})`}>
+        <Countries d={countries} land={colors.land} border={colors.border} strokeWidth={0.4 / camK} />
+      </G>
 
       {clusters.slice(0, shown).map((c) => {
         const many = c.pins.length > 1;
