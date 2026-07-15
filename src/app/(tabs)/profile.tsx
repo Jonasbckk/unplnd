@@ -12,6 +12,7 @@ import { useAuthStore } from '@/features/auth/auth-store';
 import { useFavoritesStore } from '@/features/favorites/favorites-store';
 import { BadgesCollection } from '@/features/profile/BadgesCollection';
 import { EveningDNA } from '@/features/profile/EveningDNA';
+import { ProfileHighlights } from '@/features/profile/ProfileHighlights';
 import { PublishedPlansGrid } from '@/features/profile/PublishedPlansGrid';
 import { SavedPlaces } from '@/features/profile/SavedPlaces';
 import { ProfileBanner } from '@/features/profile/ProfileBanner';
@@ -468,6 +469,12 @@ export default function ProfileScreen() {
           />
         )}
       </View>
+
+      {user?.id && (
+        <Animated.View entering={FadeInUp.duration(400).delay(210)}>
+          <ProfileHighlights userId={user.id} accent={accent} editable />
+        </Animated.View>
+      )}
 
       <Animated.View entering={FadeInUp.duration(400).delay(240)}>
         <EveningDNA albums={albums} accent={accent} />

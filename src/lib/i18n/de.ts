@@ -377,6 +377,19 @@ export const de = {
   },
   common2: {
     cancel: 'Abbrechen',
+    close: 'Schließen',
+  },
+  highlights: {
+    title: 'Highlights',
+    add: 'Teilen',
+    pickTitle: 'Abende teilen',
+    pickBody:
+      'Deine Alben sind privat. Was du hier auswählst, erscheint mit Fotos auf deinem Profil — und lässt sich jederzeit wieder entfernen.',
+    needPhotos: 'Nur Abende mit Fotos lassen sich als Highlight erzählen.',
+    emptyOwn: 'Teile einen Abend, den andere sehen dürfen.',
+    photoCount: '%{count} Fotos',
+    prev: 'Vorheriges Foto',
+    next: 'Nächstes Foto',
   },
   notifs: {
     nextStopTitle: 'Zeit für deinen nächsten Stopp',

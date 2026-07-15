@@ -336,6 +336,19 @@ export const en = {
   },
   common2: {
     cancel: 'Cancel',
+    close: 'Close',
+  },
+  highlights: {
+    title: 'Highlights',
+    add: 'Share',
+    pickTitle: 'Share evenings',
+    pickBody:
+      'Your albums are private. Whatever you pick here appears on your profile, photos included — and you can remove it again at any time.',
+    needPhotos: 'Only evenings with photos can be told as a highlight.',
+    emptyOwn: 'Share an evening others may see.',
+    photoCount: '%{count} photos',
+    prev: 'Previous photo',
+    next: 'Next photo',
   },
   notifs: {
     nextStopTitle: 'Time for your next stop',

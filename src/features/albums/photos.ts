@@ -30,6 +30,23 @@ function rememberSignedUrl(path: string, url: string): void {
   signedUrlCache.set(path, { url, expiresAt: Date.now() + SIGNED_URL_REUSE_MS });
 }
 
+/**
+ * Signed URLs for storage paths, sharing the cache above so expo-image's disk cache still hits.
+ * Works for any photo the caller is allowed to READ: your own, or one shared via a profile
+ * highlight (0034). Paths you may not read are dropped rather than surfaced as broken images.
+ */
+export async function signedPhotoUrls(paths: string[]): Promise<string[]> {
+  if (paths.length === 0) return [];
+  const missing = paths.filter((p) => !cachedSignedUrl(p));
+  if (missing.length > 0) {
+    const { data: signed } = await supabase.storage.from('photos').createSignedUrls(missing, SIGNED_URL_TTL_SECONDS);
+    signed?.forEach((entry, i) => {
+      if (entry?.signedUrl) rememberSignedUrl(missing[i], entry.signedUrl);
+    });
+  }
+  return paths.map((p) => cachedSignedUrl(p) ?? '').filter((url) => url.length > 0);
+}
+
 /** Users choose which photos to include — never auto-upload (Memory Album Spec). */
 export async function pickPhotos(): Promise<ImagePicker.ImagePickerAsset[]> {
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();

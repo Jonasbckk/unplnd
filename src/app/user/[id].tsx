@@ -12,6 +12,7 @@ import { BadgesCollection } from '@/features/profile/BadgesCollection';
 import { EveningDNA } from '@/features/profile/EveningDNA';
 import { ProfileBanner } from '@/features/profile/ProfileBanner';
 import { ProfileExtras } from '@/features/profile/ProfileExtras';
+import { ProfileHighlights } from '@/features/profile/ProfileHighlights';
 import { computeAllBadgesFromCtx, computeDNAFromMoodCounts } from '@/features/profile/evening-dna';
 import { getProfileStyle } from '@/features/profile/profile-styles';
 import { VerifyBadge } from '@/features/verify/VerifyBadge';
@@ -399,6 +400,9 @@ export default function PublicProfileScreen() {
               </Card>
             </View>
           )}
+
+          {/* Evenings they chose to share (27_SOCIAL_VISION: "Recent Albums (if shared)"). */}
+          {id ? <ProfileHighlights userId={id} accent={accent} /> : null}
 
           <ProfileExtras interests={profile.interests} prompts={profile.prompts} accent={accent} />
 
