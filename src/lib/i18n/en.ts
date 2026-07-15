@@ -337,6 +337,11 @@ export const en = {
   common2: {
     cancel: 'Cancel',
   },
+  map: {
+    title: 'Memory Map',
+    open: 'Open map',
+    summary: '%{cities} cities · %{evenings} evenings',
+  },
   appIcon: {
     title: 'App icon',
     body: 'Choose how UNPLND looks on your home screen.',

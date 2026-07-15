@@ -12,6 +12,7 @@ import { useAuthStore } from '@/features/auth/auth-store';
 import { useFavoritesStore } from '@/features/favorites/favorites-store';
 import { BadgesCollection } from '@/features/profile/BadgesCollection';
 import { EveningDNA } from '@/features/profile/EveningDNA';
+import { MemoryMap } from '@/features/map/MemoryMap';
 import { ProfileHighlights } from '@/features/profile/ProfileHighlights';
 import { PublishedPlansGrid } from '@/features/profile/PublishedPlansGrid';
 import { SavedPlaces } from '@/features/profile/SavedPlaces';
@@ -492,6 +493,11 @@ export default function ProfileScreen() {
           <BadgesCollection albums={albums} accent={accent} />
         </Animated.View>
       )}
+
+      {/* 22_PROFILE's open animation is "Stats count up → Map appears → Albums slide in". */}
+      <Animated.View entering={FadeInUp.duration(400).delay(285)}>
+        <MemoryMap accent={accent} onOpen={() => router.push('/map' as Href)} />
+      </Animated.View>
 
       <Animated.View entering={FadeInUp.duration(400).delay(300)}>
         {albums.length > 0 ? (

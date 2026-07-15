@@ -378,6 +378,11 @@ export const de = {
   common2: {
     cancel: 'Abbrechen',
   },
+  map: {
+    title: 'Memory Map',
+    open: 'Karte öffnen',
+    summary: '%{cities} Städte · %{evenings} Abende',
+  },
   appIcon: {
     title: 'App-Icon',
     body: 'Wähle, wie UNPLND auf deinem Homescreen aussieht.',
