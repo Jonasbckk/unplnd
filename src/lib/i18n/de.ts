@@ -379,6 +379,8 @@ export const de = {
     cancel: 'Abbrechen',
   },
   map: {
+    minutesAgo: 'vor %{min} Min',
+    openProfile: 'Profil öffnen',
     title: 'Memory Map',
     open: 'Karte öffnen',
     summary: '%{cities} Städte · %{evenings} Abende',
@@ -407,7 +409,6 @@ export const de = {
     title: 'Highlights',
     add: 'Teilen',
     save: 'Speichern',
-    editHint: 'Lange drücken zum Umbenennen oder Titelbild wählen.',
     editTitle: 'Highlight bearbeiten',
     chooseCover: 'Titelbild wählen',
     unshare: 'Nicht mehr teilen',
@@ -838,6 +839,9 @@ export const de = {
     empty: 'Deine Statistik beginnt mit deinem ersten Abend.',
   },
   settings: {
+    privacy: 'Privatsphäre',
+    liveLocation: 'Live-Standort teilen',
+    liveLocationSub: 'Nur für deine Verbindungen sichtbar, auf etwa 1 km gerundet, nur solange du die App nutzt. Ausschalten entfernt dich sofort von der Karte.',
     title: 'Einstellungen',
     getPremium: 'Premium freischalten',
     appearance: 'Darstellung',

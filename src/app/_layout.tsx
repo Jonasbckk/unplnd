@@ -12,7 +12,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { View } from 'react-native';
+import { AppState, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -28,6 +28,7 @@ import { useCelebrateStore } from '@/features/celebrate/celebrate-store';
 import { recordActivity } from '@/lib/activity';
 import { useAuthStore } from '@/features/auth/auth-store';
 import { useRevenueCatStore } from '@/store/revenuecat-store';
+import { publishLiveLocation } from '@/features/map/live';
 import { useAppStore } from '@/store/app-store';
 import { useConnectivityStore } from '@/store/connectivity-store';
 import { ThemeProvider, useTheme } from '@/theme';
@@ -108,6 +109,20 @@ function RootLayout() {
     return useConnectivityStore.subscribe((s, prev) => {
       if (s.isOnline && !prev.isOnline) void flushAll();
     });
+  }, []);
+
+  // Live location updates only while the app is actually USED (foreground) — deliberately no
+  // background tracking. Coming back to the app refreshes the shared position; closing it lets the
+  // row go stale (<60 min) and quietly drops you off connections' maps.
+  useEffect(() => {
+    const push = () => {
+      if (useAppStore.getState().shareLiveLocation) void publishLiveLocation();
+    };
+    push();
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') push();
+    });
+    return () => sub.remove();
   }, []);
 
   const ready = (fontsLoaded || !!fontError) && hasHydrated && authInitialized;

@@ -338,6 +338,8 @@ export const en = {
     cancel: 'Cancel',
   },
   map: {
+    minutesAgo: '%{min} min ago',
+    openProfile: 'Open profile',
     title: 'Memory Map',
     open: 'Open map',
     summary: '%{cities} cities · %{evenings} evenings',
@@ -366,7 +368,6 @@ export const en = {
     title: 'Highlights',
     add: 'Share',
     save: 'Save',
-    editHint: 'Long-press to rename or pick a cover.',
     editTitle: 'Edit highlight',
     chooseCover: 'Choose cover',
     unshare: 'Stop sharing',
@@ -797,6 +798,9 @@ export const en = {
     empty: 'Your stats begin with your first evening.',
   },
   settings: {
+    privacy: 'Privacy',
+    liveLocation: 'Share live location',
+    liveLocationSub: 'Visible only to your connections, rounded to about 1 km, and only while you use the app. Turning it off removes you from the map immediately.',
     title: 'Settings',
     getPremium: 'Unlock Premium',
     appearance: 'Appearance',

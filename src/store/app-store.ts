@@ -39,6 +39,8 @@ interface AppState {
   appThemeId: string;
   /** Whether to show the verification badge on your profile. Persisted. */
   showVerifyBadge: boolean;
+  /** Share live location with connections (Memory Map). OPT-IN — defaults to off. Persisted. */
+  shareLiveLocation: boolean;
   /** Local date (YYYY-M-D) the streak was last celebrated — so we celebrate once per day. Persisted. */
   lastStreakCelebrationDate: string | null;
   /** Highest verification tier the user has already been congratulated for. Persisted. */
@@ -61,6 +63,7 @@ interface AppState {
   setLanguagePreference: (preference: LanguagePreference) => void;
   setAppThemeId: (id: string) => void;
   setShowVerifyBadge: (value: boolean) => void;
+  setShareLiveLocation: (value: boolean) => void;
   setLastStreakCelebrationDate: (date: string) => void;
   setLastSeenTier: (level: number) => void;
   setNotificationPref: (key: keyof NotificationPrefs, value: boolean) => void;
@@ -75,6 +78,7 @@ export const useAppStore = create<AppState>()(
       languagePreference: 'system',
       appThemeId: 'terracotta',
       showVerifyBadge: true,
+      shareLiveLocation: false,
       lastStreakCelebrationDate: null,
       lastSeenTier: 0,
       notificationPrefs: { eveningReminders: true, albumReady: true, weatherChanges: true, streakReminders: true },
@@ -103,6 +107,7 @@ export const useAppStore = create<AppState>()(
       setLanguagePreference: (preference) => set({ languagePreference: preference }),
       setAppThemeId: (id) => set({ appThemeId: id }),
       setShowVerifyBadge: (value) => set({ showVerifyBadge: value }),
+      setShareLiveLocation: (value) => set({ shareLiveLocation: value }),
       setLastStreakCelebrationDate: (date) => set({ lastStreakCelebrationDate: date }),
       setLastSeenTier: (level) => set({ lastSeenTier: level }),
       setNotificationPref: (key, value) =>
@@ -118,6 +123,7 @@ export const useAppStore = create<AppState>()(
         languagePreference: state.languagePreference,
         appThemeId: state.appThemeId,
         showVerifyBadge: state.showVerifyBadge,
+        shareLiveLocation: state.shareLiveLocation,
         lastStreakCelebrationDate: state.lastStreakCelebrationDate,
         lastSeenTier: state.lastSeenTier,
         notificationPrefs: state.notificationPrefs,

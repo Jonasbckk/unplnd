@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, SegmentedControl, Text } from '@/components/ui';
 import { useAuthStore } from '@/features/auth/auth-store';
+import { clearLiveLocation, publishLiveLocation } from '@/features/map/live';
 import { maybeShowUpsell } from '@/features/premium/upsell';
 import { confirmDialog } from '@/lib/confirm';
 import { haptics } from '@/lib/haptics';
@@ -67,6 +68,21 @@ export default function SettingsScreen() {
   const languagePreference = useAppStore((s) => s.languagePreference);
   const setLanguagePreference = useAppStore((s) => s.setLanguagePreference);
   const notificationPrefs = useAppStore((s) => s.notificationPrefs);
+  const shareLiveLocation = useAppStore((s) => s.shareLiveLocation);
+  const setShareLiveLocation = useAppStore((s) => s.setShareLiveLocation);
+
+  const toggleLiveLocation = async (value: boolean) => {
+    haptics.selection();
+    setShareLiveLocation(value);
+    if (value) {
+      // Needs a real position to mean anything — if location is denied, flip straight back.
+      const ok = await publishLiveLocation();
+      if (!ok) setShareLiveLocation(false);
+    } else {
+      // Off means OFF: the row is deleted right away, not left to expire.
+      await clearLiveLocation();
+    }
+  };
   const setNotificationPref = useAppStore((s) => s.setNotificationPref);
   const resetOnboarding = useAppStore((s) => s.resetOnboarding);
   const email = useAuthStore((s) => s.user?.email);
@@ -198,6 +214,25 @@ export default function SettingsScreen() {
                 }
               />
             ))}
+          </Section>
+
+          <Section title={tr('settings.privacy')}>
+            <Row
+              label={tr('settings.liveLocation')}
+              right={
+                <Switch
+                  value={shareLiveLocation}
+                  onValueChange={(v) => void toggleLiveLocation(v)}
+                  trackColor={switchColors}
+                  thumbColor="#FFFFFF"
+                />
+              }
+            />
+            <View style={{ paddingBottom: t.spacing.md }}>
+              <Text variant="caption" color="textSecondary">
+                {tr('settings.liveLocationSub')}
+              </Text>
+            </View>
           </Section>
 
           <Section title={tr('settings.account')}>

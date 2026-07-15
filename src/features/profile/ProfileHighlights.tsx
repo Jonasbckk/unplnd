@@ -192,9 +192,9 @@ export function ProfileHighlights({
         ))}
       </ScrollView>
 
-      {editable ? (
+      {editable && highlights.length === 0 ? (
         <Text variant="small" color="textSecondary">
-          {highlights.length === 0 ? tr('highlights.emptyOwn') : tr('highlights.editHint')}
+          {tr('highlights.emptyOwn')}
         </Text>
       ) : null}
 

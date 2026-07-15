@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useRouter, type Href } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,7 +8,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text } from '@/components/ui';
 import { MemoryCard } from '@/features/albums/MemoryCard';
 import { useAlbumsStore } from '@/features/albums/albums-store';
-import { WorldMap } from '@/features/map/WorldMap';
+import { WorldMap, type FriendDot } from '@/features/map/WorldMap';
+import { getLiveConnections, type LiveConnection } from '@/features/map/live';
 import { cityCount, pinsFromAlbums, type PinCluster } from '@/features/map/pins';
 import { useProfileStyle } from '@/features/profile/profile-styles';
 import { haptics } from '@/lib/haptics';
@@ -24,6 +25,19 @@ export default function MapScreen() {
   const accent = useProfileStyle().accent;
   const albums = useAlbumsStore((s) => s.albums);
   const [selected, setSelected] = useState<PinCluster | null>(null);
+  const [live, setLive] = useState<LiveConnection[]>([]);
+  const [friend, setFriend] = useState<LiveConnection | null>(null);
+
+  // Connections sharing right now — server-side the RPC only ever returns accepted connections.
+  useEffect(() => {
+    let active = true;
+    void getLiveConnections().then((rows) => {
+      if (active) setLive(rows);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const pins = useMemo(() => pinsFromAlbums(albums), [albums]);
   const cities = cityCount(pins);
@@ -39,19 +53,28 @@ export default function MapScreen() {
     <View style={{ flex: 1, backgroundColor: t.colors.background }}>
       <WorldMap
         pins={pins}
+        friends={live.map((l): FriendDot => ({ userId: l.userId, name: l.name, lat: l.lat, lng: l.lng }))}
         width={width}
         height={height}
         fitToPins
+        interactive
         colors={{
           water: t.colors.background,
           land: t.colors.surfaceSecondary,
           border: t.colors.border,
           pin: accent,
           pinText: '#1a120c',
+          friend: t.colors.accentOcean,
         }}
         onPressCluster={(c) => {
           haptics.light();
+          setFriend(null);
           setSelected(c);
+        }}
+        onPressFriend={(f) => {
+          haptics.light();
+          setSelected(null);
+          setFriend(live.find((l) => l.userId === f.userId) ?? null);
         }}
       />
 
@@ -130,6 +153,70 @@ export default function MapScreen() {
               />
             ))}
           </ScrollView>
+        </Animated.View>
+      )}
+
+      {friend && (
+        <Animated.View
+          entering={FadeInDown.duration(260)}
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: t.colors.surface,
+            borderTopLeftRadius: t.radius.sheet,
+            borderTopRightRadius: t.radius.sheet,
+            paddingTop: t.spacing.md,
+            paddingBottom: t.spacing.xl,
+            paddingHorizontal: t.spacing.lg,
+            gap: t.spacing.md,
+          }}
+        >
+          <View style={{ width: 34, height: 4, borderRadius: 2, backgroundColor: t.colors.border, alignSelf: 'center' }} />
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.md }}>
+            <View
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: t.colors.accentOcean,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Text variant="body" style={{ color: '#FFFFFF', fontWeight: '700' }}>
+                {(friend.name || '?').charAt(0).toUpperCase()}
+              </Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text variant="body" style={{ fontWeight: '600' }} numberOfLines={1}>
+                {friend.name}
+              </Text>
+              <Text variant="caption" color="textSecondary" numberOfLines={1}>
+                {[friend.city, tr('map.minutesAgo', { min: friend.minutesAgo })].filter(Boolean).join(' · ')}
+              </Text>
+            </View>
+            <Pressable onPress={() => setFriend(null)} hitSlop={10} accessibilityLabel={tr('common.close')}>
+              <Ionicons name="close" size={18} color={t.colors.textSecondary} />
+            </Pressable>
+          </View>
+
+          <Pressable
+            onPress={() => router.push(`/user/${friend.userId}` as Href)}
+            accessibilityRole="button"
+            style={{
+              backgroundColor: t.colors.primary,
+              borderRadius: t.radius.md,
+              paddingVertical: t.spacing.md,
+              alignItems: 'center',
+            }}
+          >
+            <Text variant="small" style={{ color: t.colors.onPrimary, fontWeight: '600' }}>
+              {tr('map.openProfile')}
+            </Text>
+          </Pressable>
         </Animated.View>
       )}
     </View>
