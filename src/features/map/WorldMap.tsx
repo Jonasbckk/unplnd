@@ -1,5 +1,5 @@
 import { geoNaturalEarth1, geoPath } from 'd3-geo';
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
@@ -16,6 +16,8 @@ import world from './world.json';
 const CLUSTER_RADIUS = 22;
 /** Delay between pins appearing — 09_ANIMATIONS: "Pins appear progressively." */
 const REVEAL_STEP_MS = 90;
+/** Tap tolerance around a pin/friend dot — comfortably beyond the drawn radius (≥44pt targets). */
+const TAP_RADIUS = 26;
 
 /** A connection sharing their live location (phase 2) — drawn as a ringed dot with their initial. */
 export interface FriendDot {
@@ -46,6 +48,14 @@ interface Camera {
 }
 
 /**
+ * The country silhouettes never change while panning — memoised so the reveal ticks and camera
+ * commits don't push the ~150 KB path to native again.
+ */
+const Countries = memo(function Countries({ d, land, border }: { d: string; land: string; border: string }) {
+  return <Path d={d} fill={land} stroke={border} strokeWidth={0.4} />;
+});
+
+/**
  * The Memory Map — a vector world drawn from bundled country geometry (22_PROFILE: "Memory Map.
  * Interactive map. Shows visited locations. Clusters nearby memories.").
  *
@@ -53,10 +63,15 @@ interface Camera {
  * third party learns where anyone has been. The trade-off, chosen deliberately: a world overview,
  * never street level.
  *
- * Gestures: while panning/pinching we only transform the rendered SVG (UI thread, stays smooth).
- * When the gesture ends the transform is folded into the projection — screen = translate + scale ×
- * unit(lng,lat), so view ∘ projection composes to scale' = s·scale, translate' = s·t + pan — and the
- * map re-renders crisp with pins back at constant size.
+ * Performance model (the founder hit real jank here):
+ * - The SVG is pure display — pointerEvents="none", NO onPress inside it. Touch handlers on SVG
+ *   elements made every pan movement hit-test the giant world path; taps are now a Tap gesture
+ *   with a manual distance check against the known pin positions (bigger targets, too).
+ * - While panning/pinching only the rendered SVG is transformed (UI thread). On release the
+ *   transform folds into the projection — screen = translate + scale × unit(lng,lat), so view ∘
+ *   projection composes to scale' = s·scale, translate' = s·t + pan — and the map re-renders crisp.
+ * - The pin reveal drips ONCE per pin set, not after every camera commit — otherwise each pan end
+ *   re-rendered the whole map every 90 ms straight into the next swipe.
  */
 export function WorldMap({
   pins,
@@ -140,9 +155,15 @@ export function WorldMap({
     [friends, project],
   );
 
-  // Reveal one pin at a time. Reduce Motion → all at once, no drip.
+  // Reveal one pin at a time — ONCE per pin set. Camera commits must not restart the drip.
   const [shown, setShown] = useState(0);
+  const revealedFor = useRef(-1);
   useEffect(() => {
+    if (revealedFor.current === pins.length) {
+      setShown(clusters.length);
+      return;
+    }
+    revealedFor.current = pins.length;
     if (reduced || clusters.length === 0) {
       setShown(clusters.length);
       return;
@@ -155,7 +176,7 @@ export function WorldMap({
       if (i >= clusters.length) clearInterval(id);
     }, REVEAL_STEP_MS);
     return () => clearInterval(id);
-  }, [clusters, reduced]);
+  }, [clusters, reduced, pins.length]);
 
   // ---- Gestures: transform live on the UI thread, fold into the projection on release. ----
   const panX = useSharedValue(0);
@@ -198,6 +219,26 @@ export function WorldMap({
     zoom.value = 1;
   };
 
+  // Taps resolve in JS against the projected positions — friends first (drawn on top).
+  const handleTap = (x: number, y: number) => {
+    if (onPressFriend) {
+      const friend = friendDots.find((f) => Math.hypot(f.x - x, f.y - y) <= TAP_RADIUS);
+      if (friend) {
+        onPressFriend(friend);
+        return;
+      }
+    }
+    if (onPressCluster) {
+      // Search back to front: busier clusters are drawn last, so they win overlapping taps.
+      for (let i = clusters.length - 1; i >= 0; i--) {
+        if (Math.hypot(clusters[i].x - x, clusters[i].y - y) <= TAP_RADIUS) {
+          onPressCluster(clusters[i]);
+          return;
+        }
+      }
+    }
+  };
+
   const pan = Gesture.Pan()
     .enabled(interactive)
     .maxPointers(1)
@@ -222,7 +263,15 @@ export function WorldMap({
       runOnJS(commit)(zoom.value, panX.value, panY.value, focalX.value, focalY.value);
     });
 
-  const gesture = Gesture.Simultaneous(pan, pinch);
+  const tap = Gesture.Tap()
+    .enabled(interactive)
+    .maxDuration(260)
+    .onEnd((e) => {
+      runOnJS(handleTap)(e.x, e.y);
+    });
+
+  // Pan/pinch take priority; a tap only lands when the finger didn't travel.
+  const gesture = Gesture.Exclusive(Gesture.Simultaneous(pan, pinch), tap);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -233,15 +282,16 @@ export function WorldMap({
   }));
 
   const svg = (
-    <Svg width={width} height={height}>
+    // Pure display: touch handling lives on the gesture layer, never inside the SVG.
+    <Svg width={width} height={height} pointerEvents="none">
       <Rect width={width} height={height} fill={colors.water} />
-      <Path d={countries} fill={colors.land} stroke={colors.border} strokeWidth={0.4} />
+      <Countries d={countries} land={colors.land} border={colors.border} />
 
       {clusters.slice(0, shown).map((c) => {
         const many = c.pins.length > 1;
         const r = many ? 9 : 3.6;
         return (
-          <G key={c.pins[0].albumId} onPress={onPressCluster ? () => onPressCluster(c) : undefined}>
+          <G key={c.pins[0].albumId}>
             <Circle cx={c.x} cy={c.y} r={many ? 16 : 10} fill={colors.pin} opacity={0.16} />
             <Circle cx={c.x} cy={c.y} r={r} fill={colors.pin} />
             {many ? (
@@ -254,7 +304,7 @@ export function WorldMap({
       })}
 
       {friendDots.map((f) => (
-        <G key={f.userId} onPress={onPressFriend ? () => onPressFriend(f) : undefined}>
+        <G key={f.userId}>
           <Circle cx={f.x} cy={f.y} r={13} fill={colors.friend} opacity={0.18} />
           <Circle cx={f.x} cy={f.y} r={8.5} fill={colors.friend} />
           <SvgText x={f.x} y={f.y + 3.2} fontSize={9} fontWeight="500" fill="#FFFFFF" textAnchor="middle">
@@ -269,7 +319,7 @@ export function WorldMap({
 
   return (
     <GestureDetector gesture={gesture}>
-      <Animated.View style={[{ width, height, backgroundColor: colors.water, overflow: 'hidden' }]}>
+      <Animated.View style={{ width, height, backgroundColor: colors.water, overflow: 'hidden' }}>
         <Animated.View style={animatedStyle}>{svg}</Animated.View>
       </Animated.View>
     </GestureDetector>
