@@ -525,6 +525,34 @@ export const de = {
       surprise: 'und lass mich überraschen',
     },
   },
+  challenges: {
+    thisWeek: 'Diese Woche',
+    done: 'Geschafft — schön, dass du draußen warst.',
+    newPlace: {
+      title: 'Ein Abend an einem neuen Ort',
+      body: 'Geh irgendwohin, wo du noch nie warst.',
+    },
+    photos: {
+      title: 'Halt drei Momente fest',
+      body: 'Drei Fotos an einem Abend — mehr braucht es nicht.',
+    },
+    multiStop: {
+      title: 'Ein Abend mit drei Stationen',
+      body: 'Nicht nur hin und zurück, sondern eine kleine Reise.',
+    },
+    note: {
+      title: 'Schreib einen Satz dazu',
+      body: 'Halt in einem Album fest, was dir geblieben ist.',
+    },
+    adventure: {
+      title: 'Ein Abend voller Abenteuer',
+      body: 'Plan etwas, das du sonst nie machen würdest.',
+    },
+    cozy: {
+      title: 'Ein gemütlicher Abend',
+      body: 'Langsam, warm, ohne Eile.',
+    },
+  },
   dna: {
     title: 'Deine Abend-DNA',
     badges: 'Badges',

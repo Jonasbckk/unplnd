@@ -9,11 +9,13 @@ export interface CardProps {
   padded?: boolean;
   /** Hero cards sit higher — a deeper, warmer shadow for more premium depth. */
   elevated?: boolean;
+  /** Announced by screen readers. A pressable card is exposed as a button. */
+  accessibilityLabel?: string;
   style?: StyleProp<ViewStyle>;
 }
 
 /** Warm surface card — radius 28, padding 24, soft warm shadow (08_COMPONENTS). */
-export function Card({ children, onPress, padded = true, elevated = false, style }: CardProps) {
+export function Card({ children, onPress, padded = true, elevated = false, accessibilityLabel, style }: CardProps) {
   const t = useTheme();
   const scale = useRef(new Animated.Value(1)).current;
 
@@ -28,7 +30,11 @@ export function Card({ children, onPress, padded = true, elevated = false, style
   ];
 
   if (!onPress) {
-    return <View style={cardStyle}>{children}</View>;
+    return (
+      <View style={cardStyle} accessibilityLabel={accessibilityLabel}>
+        {children}
+      </View>
+    );
   }
 
   const animate = (to: number, duration: number) =>
@@ -45,6 +51,8 @@ export function Card({ children, onPress, padded = true, elevated = false, style
         onPressIn={() => animate(t.motion.scalePressed, t.motion.duration.tap)}
         onPressOut={() => animate(1, t.motion.duration.release)}
         onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
         style={cardStyle}
       >
         {children}

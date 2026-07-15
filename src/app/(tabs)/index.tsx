@@ -8,6 +8,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Button, Card, Screen, Text } from '@/components/ui';
 import { MemoryCard } from '@/features/albums/MemoryCard';
 import { useAlbumsStore } from '@/features/albums/albums-store';
+import { WeeklyChallenge } from '@/features/challenges/WeeklyChallenge';
 import { useEveningStore } from '@/features/evening/evening-store';
 import { getGreetingSegment } from '@/features/home/greeting';
 import { HomeHero } from '@/features/home/HomeHero';
@@ -137,6 +138,11 @@ export default function HomeScreen() {
             onPress={() => router.navigate('/planner')}
           />
         )}
+      </Animated.View>
+
+      {/* This week's invitation — one idea for a real evening, fulfilled by living it (not by tapping). */}
+      <Animated.View entering={FadeInDown.duration(350).delay(215)} style={{ marginTop: t.spacing.md }}>
+        <WeeklyChallenge onAccept={() => router.navigate('/planner')} />
       </Animated.View>
 
       <Animated.View entering={FadeInDown.duration(350).delay(250)}>

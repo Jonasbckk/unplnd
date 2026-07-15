@@ -484,6 +484,34 @@ export const en = {
       surprise: 'and love a surprise',
     },
   },
+  challenges: {
+    thisWeek: 'This week',
+    done: 'Done — good to hear you were out there.',
+    newPlace: {
+      title: 'An evening somewhere new',
+      body: "Go somewhere you've never been.",
+    },
+    photos: {
+      title: 'Capture three moments',
+      body: "Three photos in one evening — that's all it takes.",
+    },
+    multiStop: {
+      title: 'An evening with three stops',
+      body: 'Not just there and back, but a little journey.',
+    },
+    note: {
+      title: 'Write one line about it',
+      body: 'Keep what stayed with you in an album.',
+    },
+    adventure: {
+      title: 'An evening of adventure',
+      body: "Plan something you'd normally never do.",
+    },
+    cozy: {
+      title: 'A cosy evening',
+      body: 'Slow, warm, no rush.',
+    },
+  },
   dna: {
     title: 'Your Evening DNA',
     badges: 'Badges',
