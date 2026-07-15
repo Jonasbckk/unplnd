@@ -1089,50 +1089,48 @@ Deno.serve(async (req) => {
   }
   if (rateLimited) return rateLimitedResponse();
 
-  // ---- At-home evenings: no venues, no opening hours, never "nothing open". Used when the AI
-  //      decides no venues are needed, when the user picked the "Stay In" mood, or as the fallback
-  //      for a FREE evening with nothing open (see below) — a night in is always a real answer.
-  const respondAtHome = async (): Promise<Response> => {
+  // ---- At-home evenings: no venues, no opening hours, never "nothing open". The AI decides
+  //      whether venues are even needed (or the user picked the "Stay In" mood).
+  if (body.mood === 'Stay In' || intent?.at_home) {
     let plan = await runAI(homeSystemPrompt(language), homeUserPrompt(body), false);
     if (!validate(plan) && !rateLimited) {
       plan = await runAI(homeSystemPrompt(language), homeUserPrompt(body), false);
     }
     if (rateLimited) return rateLimitedResponse();
-    if (!validate(plan)) return generationFailedResponse();
-
-    const stops: StopOut[] = plan.stops.map((s) => ({
-      time: s.time,
-      category: s.category,
-      title: s.title,
-      reason: s.reason,
-      memoryMoment: Boolean(s.memory_moment),
-    }));
-    if (!stops.some((s) => s.memoryMoment) && stops.length > 1) stops[stops.length - 2].memoryMoment = true;
-    // Count this successful generation against the user's daily limit (best effort).
-    if (admin && userId) {
-      try {
-        await admin.from('plan_generations').insert({ user_id: userId });
-      } catch (e) {
-        console.error('record_generation_error', String(e).slice(0, 200));
+    if (validate(plan)) {
+      const stops: StopOut[] = plan.stops.map((s) => ({
+        time: s.time,
+        category: s.category,
+        title: s.title,
+        reason: s.reason,
+        memoryMoment: Boolean(s.memory_moment),
+      }));
+      if (!stops.some((s) => s.memoryMoment) && stops.length > 1) stops[stops.length - 2].memoryMoment = true;
+      // Count this successful generation against the user's daily limit (best effort).
+      if (admin && userId) {
+        try {
+          await admin.from('plan_generations').insert({ user_id: userId });
+        } catch (e) {
+          console.error('record_generation_error', String(e).slice(0, 200));
+        }
       }
-    }
-    const score = Math.min(96, 84 + stops.length * 2);
-    return Response.json(
-      {
-        plan: {
-          title: plan.title,
-          summary: plan.summary,
-          stops,
-          estimatedCost: plan.estimated_cost,
-          duration: plan.duration,
-          score,
+      const score = Math.min(96, 84 + stops.length * 2);
+      return Response.json(
+        {
+          plan: {
+            title: plan.title,
+            summary: plan.summary,
+            stops,
+            estimatedCost: plan.estimated_cost,
+            duration: plan.duration,
+            score,
+          },
         },
-      },
-      { headers: CORS },
-    );
-  };
-
-  if (body.mood === 'Stay In' || intent?.at_home) return respondAtHome();
+        { headers: CORS },
+      );
+    }
+    return generationFailedResponse();
+  }
 
   // ---- Phase A + B: real places, when we have Google + a location ----
   const canSearchReal = Boolean(googleKey) && typeof body.latitude === 'number' && typeof body.longitude === 'number';
@@ -1170,13 +1168,6 @@ Deno.serve(async (req) => {
     if (fresh.length >= 2) candidates = fresh;
   }
 
-  // A FREE evening must never dead-end in "nothing open": the only venues we may offer are parks,
-  // viewpoints and the like, and Google marks those closed after dusk — so an evening asked for at
-  // €0 would almost always fail after dark. A night in costs nothing and is a genuine answer to
-  // "free", not a consolation prize. (Paid budgets keep the honest no-options message: someone who
-  // asked to go out with €50 should not silently be sent home.)
-  if (body.budget === 'Free' && candidates.length < 2) return respondAtHome();
-
   if (candidates.length >= 2) {
     const byId = new Map(candidates.map((c) => [c.id, c]));
     let plan = await runAI(curationSystemPrompt(language), curationUserPrompt(body, candidates), true);
@@ -1184,8 +1175,7 @@ Deno.serve(async (req) => {
       plan = await runAI(curationSystemPrompt(language), curationUserPrompt(body, candidates), true);
     }
     if (rateLimited) return rateLimitedResponse();
-    // Same reasoning as above: a free evening falls back to a night in instead of a dead end.
-    if (plan?.no_options) return body.budget === 'Free' ? respondAtHome() : noOptionsResponse();
+    if (plan?.no_options) return noOptionsResponse();
     if (validate(plan)) {
       const usedIds = new Set<string>();
       const stops: StopOut[] = [];
