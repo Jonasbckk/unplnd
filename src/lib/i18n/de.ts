@@ -457,6 +457,7 @@ export const de = {
     failed: 'Hat nicht geklappt. Versuch es nochmal.',
   },
   extras: {
+    aboutMe: 'Über mich',
     interests: 'Interessen',
     interestsLabel: 'Interessen (max. %{max})',
     promptPlaceholder: 'Deine Antwort…',

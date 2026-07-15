@@ -416,6 +416,7 @@ export const en = {
     failed: "That didn't work. Please try again.",
   },
   extras: {
+    aboutMe: 'About me',
     interests: 'Interests',
     interestsLabel: 'Interests (max %{max})',
     promptPlaceholder: 'Your answer…',
