@@ -241,6 +241,11 @@ export default function SettingsScreen() {
 
           <Section title={tr('settings.support')}>
             <Row
+              label={tr('settings.tutorial')}
+              onPress={() => router.push('/tutorial' as Href)}
+              right={<Ionicons name={'play-circle-outline' as IoniconName} size={18} color={t.colors.textSecondary} />}
+            />
+            <Row
               label={tr('settings.contactSupport')}
               onPress={contactSupport}
               right={<Ionicons name={'mail-outline' as IoniconName} size={18} color={t.colors.textSecondary} />}

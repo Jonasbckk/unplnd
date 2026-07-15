@@ -63,19 +63,44 @@
       [
         "expo-alternate-app-icons",
         [
-          { "name": "Classic", "ios": "./assets/images/app-icons/classic.png" },
-          { "name": "White", "ios": "./assets/images/app-icons/white.png" },
-          { "name": "Marble", "ios": "./assets/images/app-icons/marble.png" },
-          { "name": "Lavender", "ios": "./assets/images/app-icons/lavender.png" },
-          { "name": "Mint", "ios": "./assets/images/app-icons/mint.png" },
-          { "name": "Lime", "ios": "./assets/images/app-icons/lime.png" },
-          { "name": "Holographic", "ios": "./assets/images/app-icons/holographic.png" },
-          { "name": "Gold", "ios": "./assets/images/app-icons/gold.png" }
+          {
+            "name": "Classic",
+            "ios": "./assets/images/app-icons/classic.png"
+          },
+          {
+            "name": "White",
+            "ios": "./assets/images/app-icons/white.png"
+          },
+          {
+            "name": "Marble",
+            "ios": "./assets/images/app-icons/marble.png"
+          },
+          {
+            "name": "Lavender",
+            "ios": "./assets/images/app-icons/lavender.png"
+          },
+          {
+            "name": "Mint",
+            "ios": "./assets/images/app-icons/mint.png"
+          },
+          {
+            "name": "Lime",
+            "ios": "./assets/images/app-icons/lime.png"
+          },
+          {
+            "name": "Holographic",
+            "ios": "./assets/images/app-icons/holographic.png"
+          },
+          {
+            "name": "Gold",
+            "ios": "./assets/images/app-icons/gold.png"
+          }
         ]
       ],
       "expo-notifications",
       "expo-audio",
-      "expo-asset"
+      "expo-asset",
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true,

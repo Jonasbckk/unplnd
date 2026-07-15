@@ -378,6 +378,11 @@ export const de = {
   common2: {
     cancel: 'Abbrechen',
   },
+  tutorial: {
+    title: 'Tutorial',
+    body: 'So erstellst du deinen eigenen Abend und teilst ihn mit der Community.',
+    unavailable: 'Aktualisiere die App auf die neueste Version, um das Tutorial zu sehen.',
+  },
   map: {
     minutesAgo: 'vor %{min} Min',
     openProfile: 'Profil öffnen',
@@ -839,6 +844,7 @@ export const de = {
     empty: 'Deine Statistik beginnt mit deinem ersten Abend.',
   },
   settings: {
+    tutorial: 'Tutorial',
     privacy: 'Privatsphäre',
     liveLocation: 'Live-Standort teilen',
     liveLocationSub: 'Nur für deine Verbindungen sichtbar, auf etwa 1 km gerundet, nur solange du die App nutzt. Ausschalten entfernt dich sofort von der Karte.',

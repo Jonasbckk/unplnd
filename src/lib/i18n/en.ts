@@ -337,6 +337,11 @@ export const en = {
   common2: {
     cancel: 'Cancel',
   },
+  tutorial: {
+    title: 'Tutorial',
+    body: 'How to build your own evening and share it with the community.',
+    unavailable: 'Update the app to the latest version to watch the tutorial.',
+  },
   map: {
     minutesAgo: '%{min} min ago',
     openProfile: 'Open profile',
@@ -798,6 +803,7 @@ export const en = {
     empty: 'Your stats begin with your first evening.',
   },
   settings: {
+    tutorial: 'Tutorial',
     privacy: 'Privacy',
     liveLocation: 'Share live location',
     liveLocationSub: 'Visible only to your connections, rounded to about 1 km, and only while you use the app. Turning it off removes you from the map immediately.',
