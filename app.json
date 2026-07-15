@@ -64,14 +64,6 @@
         "expo-alternate-app-icons",
         [
           {
-            "name": "Classic",
-            "ios": "./assets/images/app-icons/classic.png"
-          },
-          {
-            "name": "White",
-            "ios": "./assets/images/app-icons/white.png"
-          },
-          {
             "name": "Marble",
             "ios": "./assets/images/app-icons/marble.png"
           },
@@ -90,10 +82,6 @@
           {
             "name": "Holographic",
             "ios": "./assets/images/app-icons/holographic.png"
-          },
-          {
-            "name": "Gold",
-            "ios": "./assets/images/app-icons/gold.png"
           }
         ]
       ],

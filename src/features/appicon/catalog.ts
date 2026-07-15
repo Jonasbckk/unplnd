@@ -1,20 +1,23 @@
 import type { VerifyMetrics } from '@/features/verify/verification';
 
-export type IconTier = 'free' | 'premium' | 'achievement';
+export type IconTier = 'default' | 'premium' | 'achievement';
 
 export interface AppIconDef {
-  /** Stable key used in code + i18n. Never derived from the artwork's file number. */
+  /** Stable key — used in code + i18n. Never derived from the artwork's file number. */
   key: string;
-  /** The name registered with iOS — must match app.json's expo-alternate-app-icons entry exactly. */
-  iosName: string;
+  /**
+   * The name registered with iOS, matching app.json's expo-alternate-app-icons entry.
+   * null = the app's built-in icon (the white UNPLND logo) — selecting it resets to default.
+   */
+  iosName: string | null;
   tier: IconTier;
   /** The bundled artwork (1024×1024, RGB, no alpha — iOS rounds the corners itself). */
   source: number;
   /**
    * What has to be true to use it, from REAL activity (no fakes).
-   * - free: an easy first goal
    * - achievement: earned, never buyable — that's what makes it worth something
    * - premium: undefined here; the subscription IS the condition
+   * - default: always yours
    */
   requires?: { metric: keyof VerifyMetrics; target: number };
 }
@@ -25,51 +28,40 @@ export interface AppIconDef {
  * always costs a new build.
  */
 export const APP_ICONS: AppIconDef[] = [
-  // Free — but still earned with a small first goal (founder: "unter der Voraussetzung, dass man 3 Abende plant").
+  // The app's own logo. Always available — you can't lock someone out of the default icon.
   {
-    key: 'classic',
-    iosName: 'Classic',
-    tier: 'free',
-    source: require('../../../assets/images/app-icons/classic.png'),
-    requires: { metric: 'eveningsCreated', target: 3 },
+    key: 'standard',
+    iosName: null,
+    tier: 'default',
+    source: require('../../../assets/images/icon.png'),
   },
 
   // Premium — pure taste. The subscription unlocks them, nothing to grind.
-  { key: 'white',
-    iosName: 'White', tier: 'premium', source: require('../../../assets/images/app-icons/white.png') },
-  { key: 'marble',
-    iosName: 'Marble', tier: 'premium', source: require('../../../assets/images/app-icons/marble.png') },
-  { key: 'lavender',
-    iosName: 'Lavender', tier: 'premium', source: require('../../../assets/images/app-icons/lavender.png') },
-  { key: 'mint',
-    iosName: 'Mint', tier: 'premium', source: require('../../../assets/images/app-icons/mint.png') },
-  { key: 'lime',
-    iosName: 'Lime', tier: 'premium', source: require('../../../assets/images/app-icons/lime.png') },
+  { key: 'lavender', iosName: 'Lavender', tier: 'premium', source: require('../../../assets/images/app-icons/lavender.png') },
+  { key: 'mint', iosName: 'Mint', tier: 'premium', source: require('../../../assets/images/app-icons/mint.png') },
+  { key: 'lime', iosName: 'Lime', tier: 'premium', source: require('../../../assets/images/app-icons/lime.png') },
 
-  // Achievement — earned only. Deliberately NOT buyable: if money could unlock these, they'd mean nothing.
+  // Earned only. Deliberately NOT buyable: if money unlocked these, they'd mean nothing.
+  {
+    key: 'marble',
+    iosName: 'Marble',
+    tier: 'achievement',
+    source: require('../../../assets/images/app-icons/marble.png'),
+    requires: { metric: 'eveningsCreated', target: 25 },
+  },
   {
     key: 'holographic',
     iosName: 'Holographic',
     tier: 'achievement',
     source: require('../../../assets/images/app-icons/holographic.png'),
-    requires: { metric: 'streakDays', target: 7 },
-  },
-  {
-    key: 'gold',
-    iosName: 'Gold',
-    tier: 'achievement',
-    source: require('../../../assets/images/app-icons/gold.png'),
-    requires: { metric: 'published', target: 25 },
+    requires: { metric: 'streakDays', target: 14 },
   },
 ];
-
-/** No alternate icon set → iOS shows the app's built-in icon (app.json "icon"). */
-export const DEFAULT_ICON_KEY = null;
 
 export interface IconState {
   def: AppIconDef;
   unlocked: boolean;
-  /** Progress toward `requires`, capped at the target. Absent for premium icons. */
+  /** Progress toward `requires`, capped at the target. Absent when there's nothing to earn. */
   current?: number;
   target?: number;
   /** Locked only because there's no subscription (as opposed to not earned yet). */
@@ -86,17 +78,17 @@ export function iconState(
   isPremium: boolean,
   isFounder: boolean,
 ): IconState {
-  if (isFounder) return { def, unlocked: true, needsPremium: false };
+  const current = def.requires ? Math.min(metrics?.[def.requires.metric] ?? 0, def.requires.target) : undefined;
 
-  const earned = def.requires
-    ? (metrics?.[def.requires.metric] ?? 0) >= def.requires.target
-    : true;
+  if (isFounder) return { def, unlocked: true, current, target: def.requires?.target, needsPremium: false };
+
+  const earned = def.requires ? (metrics?.[def.requires.metric] ?? 0) >= def.requires.target : true;
   const paid = def.tier !== 'premium' || isPremium;
 
   return {
     def,
     unlocked: earned && paid,
-    current: def.requires ? Math.min(metrics?.[def.requires.metric] ?? 0, def.requires.target) : undefined,
+    current,
     target: def.requires?.target,
     needsPremium: earned && !paid,
   };
