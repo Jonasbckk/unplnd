@@ -8,9 +8,8 @@ import Animated, { FadeInUp } from 'react-native-reanimated';
 import { Card, Skeleton, Text } from '@/components/ui';
 import { VerifyBadge } from '@/features/verify/VerifyBadge';
 import {
-  currentTierLevel,
   getVerifyMetrics,
-  nextTier,
+  resolveVerifyLevel,
   tierByLevel,
   tierProgress,
   TIERS,
@@ -41,16 +40,21 @@ export default function VerifyScreen() {
 
   const [metrics, setMetrics] = useState<VerifyMetrics | null>(null);
 
+  const [level, setLevel] = useState(0);
+
   useEffect(() => {
-    void getVerifyMetrics().then((m) => {
+    void getVerifyMetrics().then(async (m) => {
       setMetrics(m);
-      maybeCelebrateTier(currentTierLevel(m));
+      // Ratcheted: once a tier is earned it stays earned, even if the streak later breaks.
+      const lvl = await resolveVerifyLevel(m);
+      setLevel(lvl);
+      maybeCelebrateTier(lvl);
     });
   }, []);
 
-  const level = metrics ? currentTierLevel(metrics) : 0;
   const current = tierByLevel(level);
-  const next = metrics ? nextTier(metrics) : null;
+  // "Next" counts from the earned level — never re-offers a tier that's already yours.
+  const next = tierByLevel(level + 1) ?? null;
 
   // Group thousands without Intl (Hermes-safe): 1000 -> "1.000" (de) / "1,000" (en).
   const fmt = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, locale === 'de' ? '.' : ',');

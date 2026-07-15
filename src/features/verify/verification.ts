@@ -117,10 +117,34 @@ export function tierMet(m: VerifyMetrics, tier: Tier): boolean {
   return (Object.entries(tier.requirements) as [MetricKey, number][]).every(([k, v]) => m[k] >= v);
 }
 
-/** Highest fully-met tier level (0 = not verified yet). */
+/** Highest fully-met tier level right now (0 = none). LIVE ONLY — display goes through the ratchet. */
 export function currentTierLevel(m: VerifyMetrics): number {
   let level = 0;
   for (const tier of TIERS) if (tierMet(m, tier)) level = tier.level;
+  return level;
+}
+
+/** A tier, once earned, is earned forever — a broken streak must never take a badge away. */
+export function effectiveVerifyLevel(stored: number, live: number): number {
+  return Math.max(stored, live, 0);
+}
+
+/**
+ * The level to DISPLAY: the highest ever reached. Reads the stored level, ratchets it up when the
+ * live metrics now exceed it (the DB trigger from 0037 refuses any decrease), and returns the max.
+ */
+export async function resolveVerifyLevel(m: VerifyMetrics): Promise<number> {
+  const live = currentTierLevel(m);
+  const uid = useAuthStore.getState().user?.id;
+  if (!uid) return live;
+
+  const { data } = await supabase.from('profiles').select('verify_level').eq('id', uid).maybeSingle();
+  const stored = (data?.verify_level as number | undefined) ?? 0;
+  const level = effectiveVerifyLevel(stored, live);
+  if (live > stored) {
+    // Best effort — if this write fails, the level is still shown; it just ratchets next time.
+    void supabase.from('profiles').update({ verify_level: live }).eq('id', uid);
+  }
   return level;
 }
 

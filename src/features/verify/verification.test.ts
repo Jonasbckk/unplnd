@@ -1,5 +1,6 @@
 import {
   currentTierLevel,
+  effectiveVerifyLevel,
   nextTier,
   tierByLevel,
   tierMet,
@@ -71,5 +72,20 @@ describe('verification tiers', () => {
   it('tierByLevel returns the right tier or undefined', () => {
     expect(tierByLevel(5)?.id).toBe('master');
     expect(tierByLevel(99)).toBeUndefined();
+  });
+});
+
+describe('verify-level ratchet', () => {
+  it('an earned tier survives a broken streak (stored wins over live)', () => {
+    expect(effectiveVerifyLevel(1, 0)).toBe(1);
+  });
+
+  it('ratchets up when the live level passes the stored one', () => {
+    expect(effectiveVerifyLevel(1, 3)).toBe(3);
+  });
+
+  it('never goes negative', () => {
+    expect(effectiveVerifyLevel(0, 0)).toBe(0);
+    expect(effectiveVerifyLevel(-2, -1)).toBe(0);
   });
 });

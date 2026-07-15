@@ -16,7 +16,7 @@ import { ProfileHighlights } from '@/features/profile/ProfileHighlights';
 import { computeAllBadgesFromCtx, computeDNAFromMoodCounts } from '@/features/profile/evening-dna';
 import { getProfileStyle } from '@/features/profile/profile-styles';
 import { VerifyBadge } from '@/features/verify/VerifyBadge';
-import { currentTierLevel, tierByLevel } from '@/features/verify/verification';
+import { currentTierLevel, effectiveVerifyLevel, tierByLevel } from '@/features/verify/verification';
 import {
   getPublicProfile,
   getPublicProfileStats,
@@ -217,17 +217,21 @@ export default function PublicProfileScreen() {
 
   // Their verification tier — computed here from server aggregates with the SAME ladder the
   // profile tab uses (single source of truth in features/verify), so the seal matches everywhere.
+  // Ratcheted like the owner's own tab: the stored earned level wins over a momentarily broken streak.
   const verifyTier = stats
     ? tierByLevel(
-        currentTierLevel({
-          eveningsCreated: stats.evenings,
-          published: stats.published,
-          ownPlans: stats.ownPlans,
-          streakDays: stats.streakDays,
-          connections: stats.connections,
-          ratingsReceived: stats.ratings,
-          topPlans: stats.topPlans,
-        }),
+        effectiveVerifyLevel(
+          stats.verifyLevel,
+          currentTierLevel({
+            eveningsCreated: stats.evenings,
+            published: stats.published,
+            ownPlans: stats.ownPlans,
+            streakDays: stats.streakDays,
+            connections: stats.connections,
+            ratingsReceived: stats.ratings,
+            topPlans: stats.topPlans,
+          }),
+        ),
       )
     : undefined;
 

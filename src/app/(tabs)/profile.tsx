@@ -21,7 +21,7 @@ import { ProfileExtras } from '@/features/profile/ProfileExtras';
 import { useProfileStyle } from '@/features/profile/profile-styles';
 import { maybeCelebrateTier } from '@/features/celebrate/celebrate-store';
 import { VerifyBadge } from '@/features/verify/VerifyBadge';
-import { currentTierLevel, getVerifyMetrics, tierByLevel, type VerifyMetrics } from '@/features/verify/verification';
+import { getVerifyMetrics, resolveVerifyLevel, tierByLevel, type VerifyMetrics } from '@/features/verify/verification';
 import { getPublicProfile, getUserPublishedPlans, type CommunityPlan } from '@/lib/community';
 import { getPendingCount } from '@/lib/connections';
 import { haptics } from '@/lib/haptics';
@@ -236,10 +236,12 @@ export default function ProfileScreen() {
     const userId = user?.id;
     if (!userId) return;
     let active = true;
-    void getVerifyMetrics().then((m) => {
+    void getVerifyMetrics().then(async (m) => {
       if (!active) return;
-      const lvl = currentTierLevel(m);
       setMetrics(m);
+      // Ratcheted: the highest tier ever reached — a broken streak never takes the badge away.
+      const lvl = await resolveVerifyLevel(m);
+      if (!active) return;
       setVerifyLevel(lvl);
       maybeCelebrateTier(lvl);
     });

@@ -225,6 +225,8 @@ export interface PublicProfileStats {
   connections: number;
   ratings: number;
   topPlans: number;
+  /** Highest tier ever earned (ratcheted server-side, 0037) — never decreases with a broken streak. */
+  verifyLevel: number;
 }
 
 /** Aggregate stats for someone's public profile — powers their Evening DNA + badges + verify tier (RPC 0032/0033).
@@ -245,6 +247,7 @@ export async function getPublicProfileStats(userId: string): Promise<PublicProfi
     connections: (row.connections as number) ?? 0,
     ratings: (row.ratings as number) ?? 0,
     topPlans: (row.top_plans as number) ?? 0,
+    verifyLevel: (row.verify_level as number) ?? 0,
   };
 }
 
