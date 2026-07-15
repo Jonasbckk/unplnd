@@ -35,7 +35,7 @@ Die App hat native Module (In-App-Käufe/RevenueCat, Sprachnachrichten) → **Ex
 2. **RevenueCat scharf schalten** (Blocker für Käufe): 3 Produkte in **App Store Connect** auf „Bereit zum Senden" (Preis + Lokalisierung + Review-Screenshot) **+ Paid-Apps-Vertrag**. Erst dann echte Preise + Käufe.
 3. **Premium-Gates** scharf ziehen (Album-Foto-Limit, Discover-Favoriten) + **RevenueCat-Webhook → `profiles.premium`**.
 4. **App-Icon-Picker** verdrahten (`expo-alternate-app-icons` + Premium-Auswahl) → Native-Rebuild.
-5. Noch offen aus der 7er-Liste: **Sprachnachrichten** für Planer (1×/Woche frei, sonst Premium), **Creator-Programm** (Bewerbung + Badge wie CEO), **Freunde treten Abend bei**, **Weekly Challenges**.
+5. Noch offen aus der 7er-Liste: **Sprachnachrichten** für Planer (1×/Woche frei, sonst Premium), **Creator-Programm** (Bewerbung + Badge wie CEO), **Freunde treten Abend bei**. *(Weekly Challenges sind fertig — eine Einladung pro Woche auf Home, ohne Punkte/Level, erfüllt durch echte Abende.)*
 6. Optional: Redesign-Feinschliff auf Chat-Screens + Community-Feed. App-Store-Screenshots aus echten iPhone-Shots rahmen.
 
 ## 5. Vor jedem Commit (Verifizierungs-Gates)
