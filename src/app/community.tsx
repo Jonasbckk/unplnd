@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, type Href } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button, Card, EmptyState, FadeInUp, Skeleton, Text } from '@/components/ui';
+import { Button, Card, EmptyState, FadeInUp, Skeleton, StatementTitle, Text } from '@/components/ui';
 import { getCommunityPlans, toggleStar, type CommunityPlan } from '@/lib/community';
 import { haptics } from '@/lib/haptics';
 import { useT } from '@/lib/i18n';
@@ -41,78 +42,117 @@ function CommunityCard({ plan }: { plan: CommunityPlan }) {
 
   return (
     <Card padded={false} onPress={() => router.push(`/community/${plan.id}` as Href)} style={{ overflow: 'hidden' }}>
-      {plan.photos[0] ? (
-        <Image source={{ uri: plan.photos[0] }} style={{ width: '100%', height: 190 }} contentFit="cover" transition={220} />
-      ) : (
-        <View style={{ width: '100%', height: 190, backgroundColor: t.colors.surfaceSecondary }} />
-      )}
-      <View style={{ padding: t.spacing.base, gap: 6 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
-          <Pressable
-            onPress={() => plan.authorId && router.push(`/user/${plan.authorId}` as Href)}
-            disabled={!plan.authorId}
-            hitSlop={4}
+      <View style={{ width: '100%', height: 210 }}>
+        {plan.photos[0] ? (
+          <Image source={{ uri: plan.photos[0] }} style={{ width: '100%', height: '100%' }} contentFit="cover" transition={220} />
+        ) : (
+          <View style={{ width: '100%', height: '100%', backgroundColor: t.colors.surfaceSecondary }} />
+        )}
+
+        {/* Scrim so the title stays readable on any photo — the v2 image-led look. */}
+        <LinearGradient
+          colors={['transparent', 'rgba(10,9,8,0.85)']}
+          style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 130, justifyContent: 'flex-end', padding: t.spacing.base }}
+        >
+          <Text variant="h3" style={{ color: '#FFFFFF' }} numberOfLines={2}>
+            {plan.title}
+          </Text>
+        </LinearGradient>
+
+        {plan.isCustom ? (
+          <View
+            style={{
+              position: 'absolute',
+              top: t.spacing.sm,
+              left: t.spacing.sm,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 4,
+              backgroundColor: 'rgba(10,9,8,0.6)',
+              paddingHorizontal: 10,
+              paddingVertical: 4,
+              borderRadius: t.radius.pill,
+            }}
           >
-            <Text
-              variant="small"
-              style={{
-                color: plan.authorId ? t.colors.primary : t.colors.textSecondary,
-                fontWeight: plan.authorId ? '600' : '400',
-              }}
-            >
-              {tr('community.by', { name: plan.authorName ?? tr('community.someone') })}
+            <Ionicons name="create-outline" size={11} color={t.colors.accentOrange} />
+            <Text variant="caption" style={{ color: '#FFFFFF', fontWeight: '600' }}>
+              {tr('community.customBadge')}
             </Text>
-          </Pressable>
-          {meta ? (
-            <Text variant="small" color="textSecondary">
-              {` · ${meta}`}
-            </Text>
-          ) : null}
-          {plan.isCustom ? (
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 3,
-                marginLeft: 6,
-                backgroundColor: t.colors.surfaceSecondary,
-                paddingHorizontal: 8,
-                paddingVertical: 2,
-                borderRadius: t.radius.pill,
-              }}
-            >
-              <Ionicons name="create-outline" size={11} color={t.colors.primary} />
-              <Text variant="caption" style={{ color: t.colors.primary, fontWeight: '600' }}>
-                {tr('community.customBadge')}
+          </View>
+        ) : null}
+
+        {/* Stars sit on the photo as a tappable pill — the one interaction that isn't "open". */}
+        <Pressable
+          onPress={onStar}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={tr('community.starsShort', { count })}
+          style={{
+            position: 'absolute',
+            top: t.spacing.sm,
+            right: t.spacing.sm,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 5,
+            backgroundColor: starred ? t.colors.accentOrange : 'rgba(10,9,8,0.6)',
+            paddingHorizontal: 11,
+            paddingVertical: 6,
+            borderRadius: t.radius.pill,
+          }}
+        >
+          <Ionicons name={starred ? 'star' : 'star-outline'} size={15} color={starred ? '#1a120c' : '#FFFFFF'} />
+          <Text variant="caption" style={{ fontWeight: '700', color: starred ? '#1a120c' : '#FFFFFF' }}>
+            {count}
+          </Text>
+        </Pressable>
+      </View>
+
+      <View style={{ padding: t.spacing.base, gap: 8 }}>
+        <Pressable
+          onPress={() => plan.authorId && router.push(`/user/${plan.authorId}` as Href)}
+          disabled={!plan.authorId}
+          hitSlop={4}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}
+        >
+          <View
+            style={{
+              width: 26,
+              height: 26,
+              borderRadius: 13,
+              overflow: 'hidden',
+              backgroundColor: t.colors.primary,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {plan.authorAvatar ? (
+              <Image source={{ uri: plan.authorAvatar }} style={{ width: '100%', height: '100%' }} contentFit="cover" cachePolicy="memory-disk" />
+            ) : (
+              <Text variant="caption" style={{ color: t.colors.onPrimary, fontWeight: '700' }}>
+                {(plan.authorName ?? '?').charAt(0).toUpperCase()}
               </Text>
-            </View>
+            )}
+          </View>
+          <Text
+            variant="small"
+            numberOfLines={1}
+            style={{ flex: 1, color: plan.authorId ? t.colors.textPrimary : t.colors.textSecondary, fontWeight: '600' }}
+          >
+            {plan.authorName ?? tr('community.someone')}
+          </Text>
+          {meta ? (
+            <Text variant="caption" color="textSecondary" numberOfLines={1}>
+              {meta}
+            </Text>
           ) : null}
-        </View>
-        <Text variant="h3" numberOfLines={2}>
-          {plan.title}
-        </Text>
+        </Pressable>
+
         {stops ? (
-          <Text variant="small" color="textSecondary" numberOfLines={1}>
+          <Text variant="caption" color="textSecondary" numberOfLines={1}>
             {stops}
             {plan.route.length > 3 ? ' …' : ''}
           </Text>
         ) : null}
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: t.spacing.xs }}>
-          <Pressable
-            onPress={onStar}
-            hitSlop={8}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}
-          >
-            <Ionicons
-              name={starred ? 'star' : 'star-outline'}
-              size={20}
-              color={starred ? t.colors.accentOrange : t.colors.textSecondary}
-            />
-            <Text variant="small" style={{ fontWeight: '600', color: starred ? t.colors.accentOrange : t.colors.textSecondary }}>
-              {count}
-            </Text>
-          </Pressable>
-        </View>
       </View>
     </Card>
   );
@@ -160,7 +200,7 @@ export default function CommunityScreen() {
           <Pressable onPress={() => router.back()} hitSlop={8}>
             <Ionicons name="chevron-back" size={26} color={t.colors.textPrimary} />
           </Pressable>
-          <Text variant="h2" style={{ flex: 1 }}>{tr('community.title')}</Text>
+          <View style={{ flex: 1 }} />
           <Pressable
             onPress={() => router.push('/plan/create' as Href)}
             hitSlop={8}
@@ -168,6 +208,9 @@ export default function CommunityScreen() {
           >
             <Ionicons name="add-circle-outline" size={28} color={t.colors.primary} />
           </Pressable>
+        </View>
+        <View style={{ paddingHorizontal: t.spacing.lg, paddingBottom: t.spacing.md }}>
+          <StatementTitle text={tr('community.title')} />
         </View>
       </SafeAreaView>
 

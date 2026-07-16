@@ -260,6 +260,7 @@ export const de = {
     failed: 'Hat gerade nicht geklappt. Versuch es später nochmal.',
   },
   community: {
+    starsShort: '%{count} Sterne',
     title: 'Community',
     sub: 'Abende von anderen — in deiner Nähe zuerst.',
     emptyTitle: 'Noch ruhig hier',

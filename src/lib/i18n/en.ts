@@ -219,6 +219,7 @@ export const en = {
     failed: 'That didn’t work just now. Try again later.',
   },
   community: {
+    starsShort: '%{count} stars',
     title: 'Community',
     sub: 'Evenings from others — nearby first.',
     emptyTitle: 'Quiet here for now',

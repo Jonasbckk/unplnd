@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { EmptyState, Text } from '@/components/ui';
+import { EmptyState, StatementTitle, Text } from '@/components/ui';
 import { haptics } from '@/lib/haptics';
 import { useT } from '@/lib/i18n';
 import { getConversations, sendMessage, type ConversationSummary } from '@/lib/messaging';
@@ -125,14 +125,15 @@ export default function MessagesScreen() {
           >
             <Ionicons name="chevron-back" size={26} color={t.colors.textPrimary} />
           </Pressable>
-          <Text variant="h2" style={{ flex: 1 }}>
-            {sharePlan ? tr('messages.shareTitle') : tr('messages.title')}
-          </Text>
+          <View style={{ flex: 1 }} />
           {!sharePlan && (
             <Pressable onPress={() => router.push('/group/new' as Href)} hitSlop={8}>
               <Ionicons name="people-outline" size={24} color={t.colors.primary} />
             </Pressable>
           )}
+        </View>
+        <View style={{ paddingHorizontal: t.spacing.lg, paddingBottom: t.spacing.md }}>
+          <StatementTitle text={sharePlan ? tr('messages.shareTitle') : tr('messages.title')} />
         </View>
       </SafeAreaView>
 
