@@ -52,6 +52,8 @@ interface StopOut {
   title: string;
   reason: string;
   memoryMoment?: boolean;
+  /** What one person pays here, in euros. Drives the code-side budget net. */
+  costEur?: number;
   /** Hidden until you arrive — only ever set for the 'Surprise Me' mood. */
   mystery?: boolean;
   placeId?: string;
@@ -357,6 +359,59 @@ function travelBetween(
  * (e.g. "18:00–00:00", "11:30–14:30, 17:30–23:00"). Past-midnight closes get +24h so an
  * evening comparison works. Returns null if unknown / 24h, or -1 if closed today.
  */
+/** The chosen budget as euros per person. null = Unlimited (no cap to enforce). */
+function budgetCap(budget?: string): number | null {
+  if (!budget || budget === 'Unlimited') return null;
+  if (budget === 'Free') return 0;
+  const m = budget.match(/(\d+)/);
+  return m ? Number(m[1]) : null;
+}
+
+/** Fallback when the AI omits cost_eur: the midpoint of Google's price band, per person. */
+const BAND_EUR: Record<string, number> = { '€0': 0, '€': 10, '€€': 25, '€€€': 50, '€€€€': 90 };
+
+function stopCost(s: StopOut): number {
+  if (typeof s.costEur === 'number' && s.costEur >= 0) return s.costEur;
+  return BAND_EUR[s.priceLevel ?? ''] ?? 0;
+}
+
+/** The evening's real per-person total, derived from the stops we actually kept. */
+function totalCostLabel(stops: StopOut[], language: 'de' | 'en'): string {
+  const total = Math.round(stops.reduce((sum, s) => sum + stopCost(s), 0));
+  if (total === 0) return language === 'de' ? 'Kostenlos' : 'Free';
+  return language === 'de' ? `ca. ${total} € p. P.` : `approx. €${total} pp`;
+}
+
+/**
+ * Budget safety net — enforced in CODE, like the hours check, because prompting an AI to add up
+ * fuzzy price bands does not hold (founder: €20 asked, €35pp and two paid stops delivered, three
+ * times running).
+ *
+ * Keeps the first paid stop (you asked for dinner, you get dinner) and drops any LATER paid stop
+ * that pushes the per-person total over the budget. Free stops always survive — they're what a
+ * tight evening is made of.
+ */
+function trimToBudget(stops: StopOut[], cap: number | null): StopOut[] {
+  if (cap === null) return stops;
+  const kept: StopOut[] = [];
+  let total = 0;
+  for (const s of stops) {
+    const cost = stopCost(s);
+    if (cost === 0) {
+      kept.push(s);
+      continue;
+    }
+    const firstPaid = !kept.some((k) => stopCost(k) > 0);
+    // The anchor stop survives even if it alone exceeds the budget — a €20 evening with one
+    // slightly-too-dear dinner beats no evening. Everything after it must genuinely fit.
+    if (firstPaid || total + cost <= cap) {
+      kept.push(s);
+      total += cost;
+    }
+  }
+  return kept;
+}
+
 function closeMinutesOf(hours?: string): number | null {
   if (!hours) return null;
   const h = hours.toLowerCase();
@@ -605,6 +660,7 @@ function baseRules(language: 'de' | 'en'): string[] {
     '- The rule is the SUM, never a stop count. As many paid stops as the budget genuinely covers: on €50 a €25 dinner AND €20 of drinks is exactly right; on €100 build the full night. Do NOT be stingy — an unspent budget is a wasted evening, and suggesting one coffee to someone with €100 is just as broken as overspending.',
     '- But when one stop already eats most of the budget, every later stop MUST be free (a walk, a park, a viewpoint, a spot by the water) — or there simply is no later paid stop. Two paid stops on €20 per person is a broken plan, not a lean one. Better a single great meal plus a free walk than a plan nobody can afford.',
     '- Treat the budget as a CEILING, not a target: never exceed it, but a lean plan of 1–2 great affordable stops that fits is far better than padding or giving up. If money is tight, pick fewer/cheaper stops — do NOT bail out.',
+    '- EVERY stop must carry cost_eur: what ONE person really pays there, in euros (0 for a park/walk/viewpoint). This is checked in code — a plan whose stops add up over the budget gets trimmed, so be honest rather than optimistic.',
     '- estimated_cost must be the honest total PER PERSON across all stops (e.g. "≈ €18 p. P."), and it must actually match the stops you chose. Never state a number the plan cannot deliver.',
     '- The evening\'s total span (first stop → last stop) and the "duration" field MUST roughly match the available time: 5 hours means an evening that spans ~5 hours (later end time, more or longer stops), not 2.5. Keep travel legs realistic for the transport.',
     '- Adapt to the weather: rain → indoor-first; a clear evening → make the most of the golden hour.',
@@ -772,6 +828,7 @@ interface RawStop {
   title: string;
   reason: string;
   memory_moment?: boolean;
+  cost_eur?: number;
 }
 interface RawPlan {
   title: string;
@@ -790,6 +847,10 @@ function planTool(withPlaceId: boolean) {
     title: { type: 'string' },
     reason: { type: 'string' },
     memory_moment: { type: 'boolean' },
+    cost_eur: {
+      type: 'number',
+      description: 'Estimated cost PER PERSON for this stop in euros. 0 for anything free (park, walk, viewpoint).',
+    },
   };
   const required = ['time', 'category', 'title', 'reason'];
   if (withPlaceId) {
@@ -861,6 +922,7 @@ function geminiSchema(withPlaceId: boolean) {
     title: { type: 'STRING' },
     reason: { type: 'STRING' },
     memory_moment: { type: 'BOOLEAN' },
+    cost_eur: { type: 'NUMBER' },
   };
   const required = ['time', 'category', 'title', 'reason'];
   if (withPlaceId) {
@@ -1315,6 +1377,7 @@ Deno.serve(async (req) => {
           title: c?.name ?? s.title,
           reason: s.reason,
           memoryMoment: Boolean(s.memory_moment),
+          costEur: typeof s.cost_eur === 'number' ? s.cost_eur : undefined,
           placeId: c?.id,
           rating: c?.rating,
           ratingCount: c?.ratingCount,
@@ -1348,6 +1411,16 @@ Deno.serve(async (req) => {
       }
       // If the schedule collapsed to under 2 real stops, be honest rather than show a broken plan.
       if (stops.length < 2) return noOptionsResponse();
+
+      // Budget net, in CODE. Runs AFTER the availability gate on purpose: "nothing is open" and
+      // "you can't afford the second bar" are different answers. Trimming may legitimately leave a
+      // single great stop — that IS the right plan for a small budget.
+      const cap = budgetCap(body.budget);
+      const trimmed = trimToBudget(stops, cap);
+      if (trimmed.length !== stops.length) {
+        stops.length = 0;
+        stops.push(...trimmed);
+      }
 
       if (!stops.some((s) => s.memoryMoment) && stops.length > 1) stops[stops.length - 2].memoryMoment = true;
 
@@ -1404,7 +1477,9 @@ Deno.serve(async (req) => {
             title: plan.title,
             summary: plan.summary,
             stops,
-            estimatedCost: plan.estimated_cost,
+            // Derived from the stops we kept, never the AI's prose: after a budget trim its own
+            // figure is stale, and "never state a number the plan cannot deliver" must bind us too.
+            estimatedCost: totalCostLabel(stops, language),
             duration: plan.duration,
             score,
           },
