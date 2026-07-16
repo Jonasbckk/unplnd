@@ -3,7 +3,7 @@
 > **Hallo Flavio 👋** — kompakte Übergabe, damit du sofort weitermachen kannst.
 > **Wichtig:** Der Claude-Chatverlauf synct **nicht** über Rechner (auch nicht bei gleichem Account) — er lag nur lokal auf Jonas' Rechner. Deshalb steht alles Nötige hier + im Obsidian-Vault. Diese Datei kommt per `git pull` automatisch mit.
 >
-> _Stand: 09.07.2026_
+> _Stand: 16.07.2026_
 
 ## 1. Stand ziehen (immer zuerst)
 ```bash
@@ -28,15 +28,16 @@ Die App hat native Module (In-App-Käufe/RevenueCat, Sprachnachrichten) → **Ex
 - **Kritischer Bugfix:** Auth-Token lief nach ~1 h ab → erster Request danach schlug still fehl. Gefixt (RN AppState-Auto-Refresh).
 - **Premium-Upsell-Popups**, **Bilder laden schneller**, **Monetarisierung** (RevenueCat verdrahtet).
 
-> **⚠️ TestFlight ≠ automatisch aktuell.** Es ist **kein** OTA/EAS-Update eingerichtet. Der vorhandene TestFlight-Build ist ein eingefrorener Stand — GitHub-Pushes erscheinen dort **nicht** von selbst. Um Neues auf TestFlight zu sehen: neuen Build bauen + einreichen (`eas build -p ios --profile production` → `eas submit -p ios --profile production`). Für den allerneusten Stand ohne Build: `git pull` + Dev-Build (`npx expo start --dev-client`).
+> **⚠️ TestFlight ≠ automatisch aktuell.** Es ist **kein** OTA/EAS-Update eingerichtet — GitHub-Pushes erscheinen dort **nicht** von selbst. Neuer Stand = neuer Build: `npx eas-cli@latest build -p ios --profile production` → `npx eas-cli@latest submit -p ios --profile production` (läuft jetzt non-interactive, `ascAppId` steht in `eas.json`). Zum Mitentwickeln: `npx eas-cli@latest build -p ios --profile development` + `npx expo start --dev-client`.
+>
+> **Letzter TestFlight-Build: Nr. 5 (16.07.2026, Commit f2704ba)** — enthält Memory Map + Live-Standort, Tutorial-Video, App-Icons, Highlights, Verifizierungs-Ratsche, Weekly Challenges.
 
 ## 4. Offen / als Nächstes
-1. **Supabase nachziehen** (im SQL-Editor, in Reihenfolge): `0030_sync_author_identity.sql`, `0031_plan_history_places.sql`, `0032_public_profile_stats.sql`, `0033_public_profile_verify.sql`. Und **Edge Function `generate-plan` neu deployen** (`npx supabase functions deploy generate-plan`) für die Planer-Fixes. Danach App neu laden. **CEO-Badge/Admin für Flavios neuen Google-Account:** `supabase/set-founders.sql` ausführen (lokal/untracked, findet ihn per Name; `is_founder=true` gibt Badge **und** Admin-Rechte).
+1. **Supabase nachziehen** (SQL-Editor, in Reihenfolge, falls noch offen): `0034_album_highlights.sql`, `0035_highlight_title_cover.sql`, `0036_live_location.sql`, `0037_verify_level_ratchet.sql`. (0030–0033 sind durch.) Prüfen mit `supabase/check-migrations.sql`.
 2. **RevenueCat scharf schalten** (Blocker für Käufe): 3 Produkte in **App Store Connect** auf „Bereit zum Senden" (Preis + Lokalisierung + Review-Screenshot) **+ Paid-Apps-Vertrag**. Erst dann echte Preise + Käufe.
 3. **Premium-Gates** scharf ziehen (Album-Foto-Limit, Discover-Favoriten) + **RevenueCat-Webhook → `profiles.premium`**.
-4. **App-Icon-Picker** verdrahten (`expo-alternate-app-icons` + Premium-Auswahl) → Native-Rebuild.
 5. Noch offen aus der 7er-Liste: **Sprachnachrichten** für Planer (1×/Woche frei, sonst Premium), **Creator-Programm** (Bewerbung + Badge wie CEO), **Freunde treten Abend bei**. *(Weekly Challenges sind fertig — eine Einladung pro Woche auf Home, ohne Punkte/Level, erfüllt durch echte Abende.)*
-6. Optional: Redesign-Feinschliff auf Chat-Screens + Community-Feed. App-Store-Screenshots aus echten iPhone-Shots rahmen.
+5. **Redesign-Feinschliff offen:** `community.tsx` (Community-Feed) + die Chat-Screens hängen noch im alten Design — der Rest der App ist auf v2. App-Store-Screenshots aus echten iPhone-Shots rahmen.
 
 ## 5. Vor jedem Commit (Verifizierungs-Gates)
 ```bash
