@@ -32,6 +32,8 @@ export const en = {
         body: 'One tap, and your evening is ready — dinner, drinks, the perfect route.',
       },
       route: {
+    mysteryTitle: 'Mystery stop',
+    mysteryBody: "You'll find out when you get there. Let it surprise you.",
     swap: 'Swap this stop',
     swapped: 'Found you another spot.',
     swapNoOptions: 'Nothing else suitable is open at that hour.',

@@ -16,10 +16,13 @@ import { useTheme } from '@/theme';
 
 function TimelineRow({ stop }: { stop: EveningStop }) {
   const t = useTheme();
+  const { t: tr } = useT();
   const done = stop.status === 'completed';
   const skipped = stop.status === 'skipped';
   const current = stop.status === 'current';
   const muted = done || skipped;
+  // The surprise holds only until you get there: once this stop is current, it reveals itself.
+  const hidden = Boolean(stop.mystery) && stop.status === 'upcoming';
 
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.md, opacity: muted ? 0.5 : 1 }}>
@@ -58,7 +61,7 @@ function TimelineRow({ stop }: { stop: EveningStop }) {
         numberOfLines={1}
         style={[{ flex: 1, fontWeight: current ? '600' : '400' }, skipped ? { textDecorationLine: 'line-through' } : undefined]}
       >
-        {stop.title}
+        {hidden ? tr('route.mysteryTitle') : stop.title}
       </Text>
     </View>
   );

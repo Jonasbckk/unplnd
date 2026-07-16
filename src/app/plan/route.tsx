@@ -220,7 +220,7 @@ export default function RouteScreen() {
                   </View>
                 )}
                 <Card style={isMemory ? { borderWidth: 1.5, borderColor: t.colors.accentOrange } : undefined}>
-                  {stop.photoUrl && (
+                  {stop.photoUrl && !stop.mystery && (
                     <Pressable
                       onPress={() => {
                         haptics.light();
@@ -265,7 +265,7 @@ export default function RouteScreen() {
                       <View style={{ flex: 1 }} />
                       {isMemory && <Ionicons name="sparkles" size={15} color={t.colors.accentOrange} />}
                       {/* Swap just this stop — the rest of the evening stays. Only for real venues. */}
-                      {stop.placeId ? (
+                      {stop.placeId && !stop.mystery ? (
                         <Pressable
                           hitSlop={8}
                           disabled={swapping !== null}
@@ -298,11 +298,40 @@ export default function RouteScreen() {
                         />
                       </Pressable>
                     </View>
-                    <Text variant="h3">{stop.title}</Text>
-                    <StopMeta stop={stop} />
-                    <Text variant="small" color="textSecondary">
-                      {stop.reason}
-                    </Text>
+                    {stop.mystery ? (
+                      // "Überrasch mich": the peak stays hidden until you stand in front of it.
+                      // Nothing that identifies it — no name, no photo, no rating.
+                      <View style={{ gap: 6 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}>
+                          <View
+                            style={{
+                              width: 30,
+                              height: 30,
+                              borderRadius: 15,
+                              backgroundColor: t.colors.accentOrange + '26',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <Ionicons name="help" size={17} color={t.colors.accentOrange} />
+                          </View>
+                          <Text variant="h3" style={{ color: t.colors.accentOrange }}>
+                            {tr('route.mysteryTitle')}
+                          </Text>
+                        </View>
+                        <Text variant="small" color="textSecondary">
+                          {tr('route.mysteryBody')}
+                        </Text>
+                      </View>
+                    ) : (
+                      <>
+                        <Text variant="h3">{stop.title}</Text>
+                        <StopMeta stop={stop} />
+                        <Text variant="small" color="textSecondary">
+                          {stop.reason}
+                        </Text>
+                      </>
+                    )}
                   </View>
                 </Card>
               </View>

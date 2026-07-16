@@ -15,6 +15,8 @@ export interface PlanStop {
   title: string;
   reason: string;
   memoryMoment?: boolean;
+  /** Hidden until you arrive — only set for the 'Überrasch mich' mood. */
+  mystery?: boolean;
   // Real-place fields (present when Google Places powered the plan; 19_ROUTE).
   placeId?: string;
   rating?: number;

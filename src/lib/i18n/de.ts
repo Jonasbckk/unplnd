@@ -32,6 +32,8 @@ export const de = {
         body: 'Ein Tipp — und dein Abend steht: Essen, Drinks, die perfekte Route.',
       },
       route: {
+    mysteryTitle: 'Geheimer Stopp',
+    mysteryBody: 'Verrät sich erst, wenn du davorstehst. Lass dich überraschen.',
     swap: 'Diesen Stopp tauschen',
     swapped: 'Neuer Stopp gefunden.',
     swapNoOptions: 'Nichts anderes Passendes offen um diese Zeit.',

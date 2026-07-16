@@ -46,6 +46,8 @@ interface StopOut {
   title: string;
   reason: string;
   memoryMoment?: boolean;
+  /** Hidden until you arrive — only ever set for the 'Surprise Me' mood. */
+  mystery?: boolean;
   placeId?: string;
   rating?: number;
   ratingCount?: number;
@@ -1326,6 +1328,13 @@ Deno.serve(async (req) => {
       if (stops.length < 2) return noOptionsResponse();
 
       if (!stops.some((s) => s.memoryMoment) && stops.length > 1) stops[stops.length - 2].memoryMoment = true;
+
+      // "Überrasch mich" earns one hidden stop — the highlight, revealed only when you get there.
+      // Decided in CODE, not by the AI: it must appear for this mood and NEVER for any other.
+      if (body.mood === 'Surprise Me') {
+        const peak = stops.findIndex((s) => s.memoryMoment && s.placeId);
+        if (peak !== -1) stops[peak].mystery = true;
+      }
 
       // Phase 2 connectors: how you get from each stop to the next (mode + minutes + rough cost).
       for (let i = 1; i < stops.length; i++) {
