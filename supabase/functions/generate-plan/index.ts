@@ -1300,9 +1300,19 @@ Deno.serve(async (req) => {
   if (rateLimited) return rateLimitedResponse();
 
   // Drop venues we suggested this user recently — but never over-filter into an empty plan.
+  // Anti-repeat, but never at the cost of an evening. The old guard (keep the filter while >= 2
+  // fresh remain) left pools of 2-3 that the hours check then wiped out — founder had 38 venues
+  // blocked after 20 plans in one small city and got "nothing open" on a €100 budget. So: prefer
+  // fresh, and top back up from the recently-seen ones only as far as needed. A repeat beats nothing.
   if (recentPlaceIds.size > 0 && candidates.length > 0) {
+    const MIN_POOL = 10;
     const fresh = candidates.filter((c) => !recentPlaceIds.has(c.id));
-    if (fresh.length >= 2) candidates = fresh;
+    if (fresh.length >= MIN_POOL) {
+      candidates = fresh;
+    } else {
+      const seen = candidates.filter((c) => recentPlaceIds.has(c.id));
+      candidates = [...fresh, ...seen.slice(0, MIN_POOL - fresh.length)];
+    }
   }
 
   // ---- Swap mode: one slot, one replacement. The evening around it stays exactly as it is. ----
@@ -1395,7 +1405,14 @@ Deno.serve(async (req) => {
       // copying a place_id from the list: it renders with no photo, no rating and no hours, and the
       // connector logic then mistakes it for home ("Nach Hause" on a restaurant). We never show
       // venues we haven't verified against Google, so drop them.
-      for (let i = stops.length - 2; i >= 0; i--) {
+      // The final stop may skip place_id ONLY as an at-home wind-down — and that can only ever be
+      // ASKED for in free text ("und danach zuhause einen Film"). The guided flow has no such
+      // option (mood "Stay In" goes to the at-home planner entirely), so there EVERY stop must be a
+      // verified venue. Without this the last slot was a free pass for invented stops like
+      // "Cocktails an der Tanke — wir finden schon eine Bar": no venue, no hours, no photo, and the
+      // connector logic stamped "Nach Hause" on it.
+      const allowHomeEnding = Boolean(body.request && body.request.trim());
+      for (let i = allowHomeEnding ? stops.length - 2 : stops.length - 1; i >= 0; i--) {
         if (!stops[i].placeId) stops.splice(i, 1);
       }
 
