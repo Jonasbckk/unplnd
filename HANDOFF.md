@@ -19,21 +19,25 @@ Die App hat native Module (In-App-Käufe/RevenueCat, Sprachnachrichten) → **Ex
 - **Live am Code → Dev-Build** + `npx expo start --dev-client`.
 - Schritt für Schritt: Obsidian-Vault → **„Flavio - App testen"**.
 
-## 3. Zuletzt gemacht
-- **Planer-Überarbeitung (Kern-Feature)** — Backup-Tag `planner-v1-stable`. Fixes: Stopp-Anzahl passt jetzt zur Zeit (5 h → mehr Stopps), keine Wiederholungen mehr (Anti-Repeat pro Nutzer, 3 Tage), Öffnungszeiten werden **im Code** geprüft (geschlossene/gleich-schließende Stopps fliegen raus), Transport-Verbindungen zwischen Stopps, jede Stimmung hat einen eigenen Suchplan, neue Stimmung **„Abseits"** (ruhige Plätze mit Aussicht) + Rollen-Design als animierte Roadmap.
-- **TestFlight:** Production-Build ist drin, Flavio als interner Tester eingeladen.
-- **Profile (heute):** man sieht auf **fremden** Profilen jetzt Abend-DNA + Badges (nur anonyme Aggregate via RPC, Alben bleiben privat) → **braucht Migration `0032`**. „Eigenen Plan erstellen" ist prominenter. **6 Premium-App-Icons** als Assets erstellt (Verdrahtung Picker/Rebuild folgt).
-- **Visuelles Redesign v2** (dunkel-first, zweifarbige Statement-Titel, Gradient-CTAs) — app-weit.
-- **3D-Maskottchen** auf der Paywall (Vektor-SVG, animiert).
-- **Kritischer Bugfix:** Auth-Token lief nach ~1 h ab → erster Request danach schlug still fehl. Gefixt (RN AppState-Auto-Refresh).
-- **Premium-Upsell-Popups**, **Bilder laden schneller**, **Monetarisierung** (RevenueCat verdrahtet).
+## 3. Zuletzt gemacht (16.07.)
+- **Memory Map** — Vektor-Weltkarte im Profil + Vollbild (`/map`): deine Pins aus echten Abenden, Cluster, Pan/Pinch. **Kein Kartendienst, kein Client-Key** (bewusst: dafür kein Zoom auf Straßenebene). Plus **Live-Standort** für Verbindungen: opt-in, standardmäßig AUS, ~1 km gerundet, nur im Vordergrund, Ausschalten löscht sofort.
+- **Planer-Spaßfaktor:** einzelne Stopps **tauschen** (statt alles neu zu würfeln) · **Mystery-Stopp** nur bei Stimmung „Überrasch mich", enthüllt sich beim Ankommen.
+- **Budget rechnet jetzt wirklich:** pro Person für den ganzen Abend, Summe aller Stopps, **im Code erzwungen** (nicht der KI überlassen). Angezeigter Preis wird aus den Stopps berechnet, nicht von der KI behauptet.
+- **Profil-Highlights** (Insta-Stil): Abende bewusst teilen, Story-Ansicht, eigener Name + Titelbild. Alben bleiben privat — geteilt wird nur, was du auswählst.
+- **Verifizierung ist eine Ratsche:** einmal verdient = für immer (vorher nahm eine gerissene Serie den Badge weg).
+- **Tutorial-Video** (Remotion, 38 s, in die App gebündelt) unter Einstellungen → Support.
+- **App-Icons:** Standard · Lavendel/Mint/Limette (Premium) · Holografisch (14 Tage Serie). Unter Einstellungen → Darstellung.
+- **Weekly Challenges**, **Redesign-Feinschliff** (Community-Feed + Posteingang).
 
-> **⚠️ TestFlight ≠ automatisch aktuell.** Es ist **kein** OTA/EAS-Update eingerichtet — GitHub-Pushes erscheinen dort **nicht** von selbst. Neuer Stand = neuer Build: `npx eas-cli@latest build -p ios --profile production` → `npx eas-cli@latest submit -p ios --profile production` (läuft jetzt non-interactive, `ascAppId` steht in `eas.json`). Zum Mitentwickeln: `npx eas-cli@latest build -p ios --profile development` + `npx expo start --dev-client`.
+> **⚠️ TestFlight ≠ automatisch aktuell.** Kein OTA — GitHub-Pushes erscheinen dort **nicht** von selbst. Neuer Stand = neuer Build:
+> `npx eas-cli@latest build -p ios --profile production` → `npx eas-cli@latest submit -p ios --profile production` (läuft non-interactive).
+> Zum Mitentwickeln: `--profile development` + `npx expo start --dev-client`.
 >
-> **Letzter TestFlight-Build: Nr. 5 (16.07.2026, Commit f2704ba)** — enthält Memory Map + Live-Standort, Tutorial-Video, App-Icons, Highlights, Verifizierungs-Ratsche, Weekly Challenges.
+> **⚠️ Der Planer lebt serverseitig.** App-Reload/Build reichen NICHT — nach Änderungen an `supabase/functions/generate-plan`:
+> `npx supabase functions deploy generate-plan`
 
 ## 4. Offen / als Nächstes
-1. **Supabase nachziehen** (SQL-Editor, in Reihenfolge, falls noch offen): `0034_album_highlights.sql`, `0035_highlight_title_cover.sql`, `0036_live_location.sql`, `0037_verify_level_ratchet.sql`. (0030–0033 sind durch.) Prüfen mit `supabase/check-migrations.sql`.
+1. **Supabase nachziehen** (SQL-Editor): Migrationen `0034`–`0037` (Highlights, Titelbild, Live-Standort, Verify-Ratsche). Prüfen mit **`supabase/check-migrations.sql`** — alles muss TRUE sein. Dazu `set-founders.sql` für Flavios CEO-Badge/Admin.
 2. **RevenueCat scharf schalten** (Blocker für Käufe): 3 Produkte in **App Store Connect** auf „Bereit zum Senden" (Preis + Lokalisierung + Review-Screenshot) **+ Paid-Apps-Vertrag**. Erst dann echte Preise + Käufe.
 3. **Premium-Gates** scharf ziehen (Album-Foto-Limit, Discover-Favoriten) + **RevenueCat-Webhook → `profiles.premium`**.
 5. Noch offen aus der 7er-Liste: **Sprachnachrichten** für Planer (1×/Woche frei, sonst Premium), **Creator-Programm** (Bewerbung + Badge wie CEO), **Freunde treten Abend bei**. *(Weekly Challenges sind fertig — eine Einladung pro Woche auf Home, ohne Punkte/Level, erfüllt durch echte Abende.)*
