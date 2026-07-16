@@ -415,11 +415,9 @@ export const de = {
       lavender: 'Lavendel',
       mint: 'Mint',
       lime: 'Limette',
-      marble: 'Marmor',
       holographic: 'Holografisch',
     },
     reqs: {
-      marble: 'Erlebe 25 Abende',
       holographic: 'Halte 14 Tage Serie',
     },
   },

@@ -43,13 +43,6 @@ export const APP_ICONS: AppIconDef[] = [
 
   // Earned only. Deliberately NOT buyable: if money unlocked these, they'd mean nothing.
   {
-    key: 'marble',
-    iosName: 'Marble',
-    tier: 'achievement',
-    source: require('../../../assets/images/app-icons/marble.png'),
-    requires: { metric: 'eveningsCreated', target: 25 },
-  },
-  {
     key: 'holographic',
     iosName: 'Holographic',
     tier: 'achievement',

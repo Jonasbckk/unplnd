@@ -64,10 +64,6 @@
         "expo-alternate-app-icons",
         [
           {
-            "name": "Marble",
-            "ios": "./assets/images/app-icons/marble.png"
-          },
-          {
             "name": "Lavender",
             "ios": "./assets/images/app-icons/lavender.png"
           },

@@ -460,13 +460,6 @@ export default function ProfileScreen() {
           accent={accent}
           onPress={() => router.push('/verify' as Href)}
         />
-        <MenuTile
-          index={4}
-          icon="apps-outline"
-          label={tr('appIcon.title')}
-          accent={accent}
-          onPress={() => router.push('/app-icon' as Href)}
-        />
         {albums.length > 0 && (
           <MenuTile
             index={4}

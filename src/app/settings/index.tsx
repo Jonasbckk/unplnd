@@ -179,6 +179,11 @@ export default function SettingsScreen() {
               right={
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}>
                   <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: t.colors.primary }} />
+            <Row
+              label={tr('appIcon.title')}
+              onPress={() => router.push('/app-icon' as Href)}
+              right={<Ionicons name={'chevron-forward' as IoniconName} size={18} color={t.colors.textSecondary} />}
+            />
                   <Ionicons name={'chevron-forward' as IoniconName} size={18} color={t.colors.textSecondary} />
                 </View>
               }

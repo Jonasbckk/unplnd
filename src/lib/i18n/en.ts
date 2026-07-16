@@ -374,11 +374,9 @@ export const en = {
       lavender: 'Lavender',
       mint: 'Mint',
       lime: 'Lime',
-      marble: 'Marble',
       holographic: 'Holographic',
     },
     reqs: {
-      marble: 'Live 25 evenings',
       holographic: 'Keep a 14-day streak',
     },
   },
