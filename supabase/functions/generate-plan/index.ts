@@ -26,6 +26,11 @@ interface PlanRequest {
   latitude?: number;
   longitude?: number;
   weather?: { condition: string; temperature: number; sunset?: string };
+  /**
+   * Swap mode: replace ONE stop instead of rerolling the whole evening. `keepIds` are the venues
+   * already in the plan (never offer them again); the reply is a single stop for that slot.
+   */
+  swap?: { category: string; time: string; keepIds: string[] };
 }
 
 // One search: either Google place types (Nearby) or a free-text query (Text Search).
@@ -661,6 +666,52 @@ function curationUserPrompt(req: PlanRequest, candidates: Candidate[]): string {
   return parts.join('\n');
 }
 
+/**
+ * Swap ONE stop. The rest of the evening is fixed, so this is a much narrower ask than curation:
+ * fill a single slot with something genuinely different that still fits the hour it sits in.
+ */
+function swapSystemPrompt(language: 'de' | 'en'): string {
+  return [
+    ...baseRules(language),
+    '- You are replacing exactly ONE stop of an evening that already exists. Return EXACTLY ONE stop — never more, never fewer.',
+    '- The other stops are already set and are NOT yours to change. Keep the same slot: same time, same kind of stop.',
+    '- Pick something GENUINELY different from what was there — the user asked for an alternative because they did not like it. Never suggest a venue already in the evening.',
+    '- The venue MUST come from the list with its place_id copied exactly. Never invent one.',
+    '- OPENING HOURS ARE A HARD CONSTRAINT: the venue must be open at this stop\'s time. If nothing in the list is open and usable then, return {"no_options": true} with empty stops.',
+    '- title/summary/estimated_cost/duration are ignored here — put anything short in them and focus on the stop.',
+  ].join('\n');
+}
+
+function swapUserPrompt(req: PlanRequest, candidates: Candidate[]): string {
+  const swap = req.swap;
+  const parts: string[] = [];
+  parts.push(`Replace the stop in the "${swap?.category}" slot at ${swap?.time}.`);
+  parts.push(`Current local time: ${req.now ?? 'unknown'} — the replacement must work at ${swap?.time}, not now.`);
+  if (req.mood) parts.push(`Mood: ${req.mood}`);
+  parts.push(`Group: ${req.group ?? '2'}`);
+  parts.push(`Budget: ${req.budget ?? '€50'}`);
+  if (req.preferences?.length) parts.push(`Preferences: ${req.preferences.join(', ')}`);
+  parts.push('');
+  parts.push('Venues to choose from (pick exactly ONE, copy its id):');
+  parts.push(
+    JSON.stringify(
+      candidates.map((c) => ({
+        id: c.id,
+        name: c.name,
+        type: c.typeName ?? c.types?.[0] ?? c.category,
+        rating: c.rating,
+        ratings: c.ratingCount,
+        price: c.priceLevel,
+        open_now: c.openNow,
+        hours_today: c.hours,
+        distance_m: c.distanceM,
+        vibe: c.summary,
+      })),
+    ),
+  );
+  return parts.join('\n');
+}
+
 function homeSystemPrompt(language: 'de' | 'en'): string {
   return [
     ...baseRules(language),
@@ -1166,6 +1217,56 @@ Deno.serve(async (req) => {
   if (recentPlaceIds.size > 0 && candidates.length > 0) {
     const fresh = candidates.filter((c) => !recentPlaceIds.has(c.id));
     if (fresh.length >= 2) candidates = fresh;
+  }
+
+  // ---- Swap mode: one slot, one replacement. The evening around it stays exactly as it is. ----
+  if (body.swap) {
+    const keep = new Set(body.swap.keepIds);
+    const pool = candidates.filter((c) => !keep.has(c.id));
+    // Nothing else to offer — say so honestly rather than hand back the same venue.
+    if (pool.length === 0) return noOptionsResponse();
+
+    const byId = new Map(pool.map((c) => [c.id, c]));
+    let plan = await runAI(swapSystemPrompt(language), swapUserPrompt(body, pool), true);
+    if (!validate(plan) && !rateLimited) {
+      plan = await runAI(swapSystemPrompt(language), swapUserPrompt(body, pool), true);
+    }
+    if (rateLimited) return rateLimitedResponse();
+    if (plan?.no_options) return noOptionsResponse();
+    if (!plan?.stops?.length) return generationFailedResponse();
+
+    const raw = plan.stops[0];
+    const c = raw.place_id ? byId.get(raw.place_id) : undefined;
+    // Same rule as the full plan: a stop with no verified venue behind it is an invented one.
+    if (!c) return noOptionsResponse();
+
+    // Hours safety net, in CODE — the AI is bad at time maths, and this is the whole point of a swap.
+    const close = closeMinutesOf(c.hours);
+    const st = stopMinutesOf(body.swap.time);
+    if (close === -1 || (close !== null && st !== null && st + 30 > close)) return noOptionsResponse();
+
+    const stop: StopOut = {
+      time: body.swap.time, // the slot is fixed; only the venue changes
+      category: raw.category || body.swap.category,
+      title: c.name,
+      reason: raw.reason,
+      placeId: c.id,
+      rating: c.rating,
+      ratingCount: c.ratingCount,
+      priceLevel: c.priceLevel || undefined,
+      openNow: c.openNow,
+      hours: c.hours,
+      address: c.address,
+      lat: c.lat,
+      lng: c.lng,
+    };
+    if (c.photoNames?.length) {
+      stop.photoUrl = await resolvePhoto(c.photoNames[0], googleKey!, 800);
+      stop.photoNames = c.photoNames;
+    }
+    // Deliberately NOT counted against the daily limit: swapping one stop is refining the plan you
+    // already spent, not generating a new evening.
+    return Response.json({ stop }, { headers: CORS });
   }
 
   if (candidates.length >= 2) {

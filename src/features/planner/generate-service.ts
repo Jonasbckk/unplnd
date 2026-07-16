@@ -2,7 +2,7 @@ import { i18n } from '@/lib/i18n';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import type { AppLocation } from '@/lib/location';
 import { getWeather } from '@/lib/weather';
-import type { GeneratedPlan, PlannerAnswers } from './types';
+import type { GeneratedPlan, PlanStop, PlannerAnswers } from './types';
 
 // The real-places pipeline (Google Places → AI curation → photos) needs more room than a
 // plain AI call — especially on the Gemini free tier, which can be slow. Past this we fall
@@ -11,6 +11,8 @@ const TIMEOUT_MS = 30000;
 
 interface EdgeResponse {
   plan?: GeneratedPlan;
+  /** Swap mode returns a single replacement stop instead of a whole plan. */
+  stop?: PlanStop;
   error?: { code: string; message: string; retryable: boolean };
 }
 
@@ -39,6 +41,62 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 export type GenerateResult =
   | { ok: true; plan: GeneratedPlan }
   | { ok: false; kind: 'no_options' | 'failed' | 'limit' };
+
+/** A replacement stop, or an honest reason we couldn't find one. */
+export type SwapResult = { ok: true; stop: PlanStop } | { ok: false; kind: 'no_options' | 'failed' };
+
+/**
+ * Replace ONE stop, keeping the rest of the evening. The whole point is that liking 2 of 3 stops
+ * shouldn't force you to reroll all three — so we send the venues to keep and get one back.
+ * Doesn't count against the daily plan limit (the server treats it as refining, not generating).
+ */
+export async function swapStop(
+  answers: PlannerAnswers,
+  location: AppLocation,
+  plan: GeneratedPlan,
+  index: number,
+): Promise<SwapResult> {
+  const target = plan.stops[index];
+  if (!isSupabaseConfigured || !target) return { ok: false, kind: 'failed' };
+
+  try {
+    const nowDate = new Date();
+    const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const localNow = `${weekdays[nowDate.getDay()]} ${String(nowDate.getHours()).padStart(2, '0')}:${String(nowDate.getMinutes()).padStart(2, '0')}`;
+
+    const { data } = await withTimeout(
+      supabase.functions.invoke<EdgeResponse>('generate-plan', {
+        body: {
+          mood: answers.mood,
+          group: answers.group,
+          budget: answers.budget,
+          transport: answers.transport,
+          time: answers.time,
+          preferences: answers.preferences,
+          request: answers.request,
+          city: location.city,
+          latitude: location.latitude,
+          longitude: location.longitude,
+          language: i18n.locale,
+          now: localNow,
+          swap: {
+            category: target.category,
+            time: target.time,
+            // Every venue currently in the evening — including the one being replaced.
+            keepIds: plan.stops.map((s) => s.placeId).filter((id): id is string => Boolean(id)),
+          },
+        },
+      }),
+      TIMEOUT_MS,
+    );
+
+    if (data?.stop) return { ok: true, stop: data.stop };
+    if (data?.error?.code === 'NO_OPTIONS') return { ok: false, kind: 'no_options' };
+    return { ok: false, kind: 'failed' };
+  } catch {
+    return { ok: false, kind: 'failed' };
+  }
+}
 
 export async function generateEvening(answers: PlannerAnswers, location: AppLocation): Promise<GenerateResult> {
   if (!isSupabaseConfigured) {

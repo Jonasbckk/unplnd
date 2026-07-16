@@ -32,6 +32,10 @@ export const en = {
         body: 'One tap, and your evening is ready — dinner, drinks, the perfect route.',
       },
       route: {
+    swap: 'Swap this stop',
+    swapped: 'Found you another spot.',
+    swapNoOptions: 'Nothing else suitable is open at that hour.',
+    swapFailed: "That swap didn't work just now.",
         headline: 'One app. Endless evenings.',
         body: 'Discover hidden gems, follow your route, and keep every memory.',
       },

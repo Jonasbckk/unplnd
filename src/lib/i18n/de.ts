@@ -32,6 +32,10 @@ export const de = {
         body: 'Ein Tipp — und dein Abend steht: Essen, Drinks, die perfekte Route.',
       },
       route: {
+    swap: 'Diesen Stopp tauschen',
+    swapped: 'Neuer Stopp gefunden.',
+    swapNoOptions: 'Nichts anderes Passendes offen um diese Zeit.',
+    swapFailed: 'Der Tausch hat gerade nicht geklappt.',
         headline: 'Eine App. Unzählige Abende.',
         body: 'Entdecke versteckte Orte, folge deiner Route und behalte jede Erinnerung.',
       },

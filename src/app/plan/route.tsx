@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useEffect, useState, type ComponentProps } from 'react';
-import { Pressable, View } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp, ZoomIn, useReducedMotion } from 'react-native-reanimated';
 
 import { Button, Card, Screen, Text } from '@/components/ui';
@@ -11,7 +11,10 @@ import { useFavoritesStore } from '@/features/favorites/favorites-store';
 import { StopGallery } from '@/features/planner/StopGallery';
 import { StopMeta } from '@/features/planner/StopMeta';
 import { usePlannerStore } from '@/features/planner/planner-store';
+import { swapStop } from '@/features/planner/generate-service';
 import type { PlanStop } from '@/features/planner/types';
+import { getCurrentLocation } from '@/lib/location';
+import { toast } from '@/store/toast-store';
 import { haptics } from '@/lib/haptics';
 import { useT } from '@/lib/i18n';
 import { useTheme } from '@/theme';
@@ -108,6 +111,36 @@ export default function RouteScreen() {
   const plan = usePlannerStore((s) => s.plan);
   const mood = usePlannerStore((s) => s.answers.mood);
   const reset = usePlannerStore((s) => s.reset);
+  const answers = usePlannerStore((s) => s.answers);
+  const setPlan = usePlannerStore((s) => s.setPlan);
+  const [swapping, setSwapping] = useState<number | null>(null);
+
+  /**
+   * Replace ONE stop. Liking 2 of 3 stops shouldn't force you to reroll all three — so we keep the
+   * evening and ask only for this slot. Failure leaves the plan untouched and says why.
+   */
+  const onSwap = async (index: number) => {
+    if (!plan || swapping !== null) return;
+    haptics.light();
+    setSwapping(index);
+    const location = await getCurrentLocation();
+    if (!location) {
+      setSwapping(null);
+      toast(tr('route.swapFailed'));
+      return;
+    }
+    const result = await swapStop(answers, location, plan, index);
+    setSwapping(null);
+    if (!result.ok) {
+      toast(tr(result.kind === 'no_options' ? 'route.swapNoOptions' : 'route.swapFailed'));
+      return;
+    }
+    haptics.success();
+    // Keep the connector of the slot we replaced — the travel leg belongs to the position, not the venue.
+    const stops = plan.stops.map((s0, i) => (i === index ? { ...result.stop, travel: s0.travel } : s0));
+    setPlan({ ...plan, stops });
+    toast(tr('route.swapped'));
+  };
   const startEvening = useEveningStore((s) => s.startEvening);
   const favorites = useFavoritesStore((s) => s.places);
   const toggleFavorite = useFavoritesStore((s) => s.toggleFavorite);
@@ -231,6 +264,26 @@ export default function RouteScreen() {
                       </Text>
                       <View style={{ flex: 1 }} />
                       {isMemory && <Ionicons name="sparkles" size={15} color={t.colors.accentOrange} />}
+                      {/* Swap just this stop — the rest of the evening stays. Only for real venues. */}
+                      {stop.placeId ? (
+                        <Pressable
+                          hitSlop={8}
+                          disabled={swapping !== null}
+                          onPress={() => void onSwap(i)}
+                          accessibilityRole="button"
+                          accessibilityLabel={tr('route.swap')}
+                        >
+                          {swapping === i ? (
+                            <ActivityIndicator size="small" color={t.colors.primary} />
+                          ) : (
+                            <Ionicons
+                              name="swap-horizontal"
+                              size={18}
+                              color={swapping !== null ? t.colors.border : t.colors.textSecondary}
+                            />
+                          )}
+                        </Pressable>
+                      ) : null}
                       <Pressable
                         hitSlop={8}
                         onPress={() => {
