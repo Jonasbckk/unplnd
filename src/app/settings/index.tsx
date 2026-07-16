@@ -1,11 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
+import { Image } from 'expo-image';
 import { useRouter, type Href } from 'expo-router';
 import { Children, useEffect, useState, type ComponentProps, type ReactNode } from 'react';
 import { Alert, Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, SegmentedControl, Text } from '@/components/ui';
+import { APP_ICONS } from '@/features/appicon/catalog';
+import { currentIconName } from '@/features/appicon/icon';
 import { useAuthStore } from '@/features/auth/auth-store';
 import { clearLiveLocation, publishLiveLocation } from '@/features/map/live';
 import { maybeShowUpsell } from '@/features/premium/upsell';
@@ -96,6 +99,10 @@ export default function SettingsScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fire once per screen visit
   }, []);
 
+  // Which icon is live right now — null means the app's built-in logo (the 'standard' entry).
+  const activeIconName = currentIconName();
+  const activeIcon = APP_ICONS.find((i) => i.iosName === activeIconName) ?? APP_ICONS[0];
+
   const switchColors = { false: t.colors.border, true: t.colors.primary };
 
   const contactSupport = () => {
@@ -179,11 +186,23 @@ export default function SettingsScreen() {
               right={
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}>
                   <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: t.colors.primary }} />
+                  <Ionicons name={'chevron-forward' as IoniconName} size={18} color={t.colors.textSecondary} />
+                </View>
+              }
+            />
+            {/* Its own field, mirroring App-Farbe: a preview of what's live + a chevron. */}
             <Row
               label={tr('appIcon.title')}
               onPress={() => router.push('/app-icon' as Href)}
-              right={<Ionicons name={'chevron-forward' as IoniconName} size={18} color={t.colors.textSecondary} />}
-            />
+              right={
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}>
+                  {activeIcon ? (
+                    <Image
+                      source={activeIcon.source}
+                      style={{ width: 24, height: 24, borderRadius: 6 }}
+                      contentFit="cover"
+                    />
+                  ) : null}
                   <Ionicons name={'chevron-forward' as IoniconName} size={18} color={t.colors.textSecondary} />
                 </View>
               }
