@@ -84,6 +84,12 @@ export async function swapStop(
             time: target.time,
             // Every venue currently in the evening — including the one being replaced.
             keepIds: plan.stops.map((s) => s.placeId).filter((id): id is string => Boolean(id)),
+            // What the rest of the evening already costs, so the replacement fits the budget that's
+            // LEFT instead of spending it a second time.
+            otherPriceLevels: plan.stops
+              .filter((_, i) => i !== index)
+              .map((s) => s.priceLevel)
+              .filter((p): p is string => Boolean(p)),
           },
         },
       }),

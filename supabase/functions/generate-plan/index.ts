@@ -30,7 +30,13 @@ interface PlanRequest {
    * Swap mode: replace ONE stop instead of rerolling the whole evening. `keepIds` are the venues
    * already in the plan (never offer them again); the reply is a single stop for that slot.
    */
-  swap?: { category: string; time: string; keepIds: string[] };
+  swap?: {
+    category: string;
+    time: string;
+    keepIds: string[];
+    /** Price symbols of the stops that STAY — without these the swap can't know what budget is left. */
+    otherPriceLevels?: string[];
+  };
 }
 
 // One search: either Google place types (Nearby) or a free-text query (Text Search).
@@ -594,7 +600,11 @@ function baseRules(language: 'de' | 'en'): string[] {
     lang,
     '- Build a realistic evening of 2 to 5 stops that tells a story: comfort → exploration → peak moment → warm ending. MATCH THE STOP COUNT TO THE AVAILABLE TIME: roughly ~2h → 2 stops, ~3h → 3 stops, ~5h or a whole evening → 4–5 stops that genuinely fill the time. Go lean (2 stops) ONLY when the ask is truly small — short time, tiny budget, or the user wants just one thing (e.g. "2h and hungry"). With plenty of time and budget, build a FULL evening — NEVER stop at 2 stops when the user has 5 hours.',
     '- Exactly ONE stop is the memorable highlight — mark it memory_moment=true.',
+    '- BUDGET IS PER PERSON, FOR THE WHOLE EVENING — the SUM of every stop, not a limit per stop. €20 does NOT mean €20 at each stop; it means the whole night costs one person at most €20.',
+    '- DO THE MATHS BEFORE YOU COMMIT. Rough cost per person per stop, using the venue\'s price symbol: "€0" = free · "€" ≈ €10 · "€€" ≈ €25 · "€€€" ≈ €50 · "€€€€" ≈ €90+. A restaurant/all-you-can-eat is at the TOP of its band, a coffee or one drink at the bottom. Add the stops up and compare the TOTAL against the budget.',
+    '- If one stop already eats most of the budget, every later stop MUST be free (a walk, a park, a viewpoint, a spot by the water) — or there simply is no later paid stop. Two paid stops on €20 per person is a broken plan, not a lean one. Better a single great meal plus a free walk than a plan nobody can afford.',
     '- Treat the budget as a CEILING, not a target: never exceed it, but a lean plan of 1–2 great affordable stops that fits is far better than padding or giving up. If money is tight, pick fewer/cheaper stops — do NOT bail out.',
+    '- estimated_cost must be the honest total PER PERSON across all stops (e.g. "≈ €18 p. P."), and it must actually match the stops you chose. Never state a number the plan cannot deliver.',
     '- The evening\'s total span (first stop → last stop) and the "duration" field MUST roughly match the available time: 5 hours means an evening that spans ~5 hours (later end time, more or longer stops), not 2.5. Keep travel legs realistic for the transport.',
     '- Adapt to the weather: rain → indoor-first; a clear evening → make the most of the golden hour.',
     '- VOICE: witty, a little cheeky and provocative, Gen-Z energy — but sharp, tasteful and professional; never cringe, try-hard, or vulgar. Roast the boring option, hype the great one.',
@@ -651,7 +661,7 @@ function curationUserPrompt(req: PlanRequest, candidates: Candidate[]): string {
   parts.push(`City: ${req.city ?? ''}`);
   if (req.mood) parts.push(`Mood: ${req.mood}`);
   parts.push(`Group: ${req.group ?? '2'}`);
-  parts.push(`Budget: ${req.budget ?? '€50'}`);
+  parts.push(`Budget for the WHOLE evening, per person: ${req.budget ?? '€50'}`);
   parts.push(`Transport: ${req.transport ?? 'Walking'}`);
   parts.push(`Available time: ${req.time ?? 'Whole evening'}`);
   if (req.preferences?.length) parts.push(`Preferences: ${req.preferences.join(', ')}`);
@@ -691,7 +701,18 @@ function swapUserPrompt(req: PlanRequest, candidates: Candidate[]): string {
   parts.push(`Current local time: ${req.now ?? 'unknown'} — the replacement must work at ${swap?.time}, not now.`);
   if (req.mood) parts.push(`Mood: ${req.mood}`);
   parts.push(`Group: ${req.group ?? '2'}`);
-  parts.push(`Budget: ${req.budget ?? '€50'}`);
+  parts.push(`Budget for the WHOLE evening, per person: ${req.budget ?? '€50'}`);
+  // Without this the swap would happily spend the whole budget again on one stop.
+  const others = swap?.otherPriceLevels?.filter(Boolean) ?? [];
+  if (others.length > 0) {
+    parts.push(
+      `The stops that STAY cost roughly (price symbols, per person): ${others.join(', ')}. ` +
+        'Add those up first — the replacement may only use what is LEFT of the budget. If the rest of the evening already ' +
+        'eats most of it, this stop must be free or very cheap.',
+    );
+  } else {
+    parts.push('This is the only paid stop, so it may use the budget.');
+  }
   if (req.preferences?.length) parts.push(`Preferences: ${req.preferences.join(', ')}`);
   parts.push('');
   parts.push('Venues to choose from (pick exactly ONE, copy its id):');
@@ -733,7 +754,7 @@ function homeUserPrompt(req: PlanRequest): string {
   parts.push(`Current local time: ${req.now ?? 'unknown'} — schedule from here; never put a stop in the past.`);
   if (req.mood) parts.push(`Mood: ${req.mood}`);
   parts.push(`Group: ${req.group ?? '2'}`);
-  if (req.budget) parts.push(`Budget: ${req.budget}`);
+  if (req.budget) parts.push(`Budget for the WHOLE evening, per person: ${req.budget}`);
   parts.push(`Available time: ${req.time ?? 'Whole evening'}`);
   if (req.preferences?.length) parts.push(`Preferences: ${req.preferences.join(', ')}`);
   parts.push('');
