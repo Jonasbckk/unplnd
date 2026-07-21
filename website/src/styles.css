@@ -25,14 +25,15 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #171412;
-    --surface: #211d1a;
-    --surface-2: #1d1916;
-    --beige: #2a2522;
+    /* warm browns, not neutral grey: the brand should be readable in the dark too */
+    --bg: #17110e;
+    --surface: #241b16;
+    --surface-2: #1e1613;
+    --beige: #2f2520;
     --ink: #f8f3ef;
-    --ink-2: #bdb2aa;
+    --ink-2: #c3b5ab;
     --heading: #f8f3ef;
-    --line: #403833;
+    --line: #453931;
     --btn: #f8f3ef;
     --btn-text: #33241e;
     --terra-ink: #e89a78; /* lighter terracotta for small text on warm dark */

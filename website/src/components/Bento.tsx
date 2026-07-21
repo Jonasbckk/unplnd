@@ -30,8 +30,8 @@ export function Bento() {
         <Reveal className="md:col-span-4">
           <Cell className="flex h-full flex-col justify-between gap-8">
             <div>
-              <CellIcon>
-                <NavigationArrowIcon size={24} weight="duotone" />
+              <CellIcon tone="bg-coral">
+                <NavigationArrowIcon size={24} weight="fill" />
               </CellIcon>
               <h3 className="mt-4 text-xl font-semibold tracking-tight text-heading">
                 Eine Route statt zehn Tabs
@@ -77,8 +77,8 @@ export function Bento() {
         {/* B — memory albums with real photos */}
         <Reveal index={1} className="md:col-span-2">
           <Cell className="flex h-full flex-col">
-            <CellIcon>
-              <ImagesSquareIcon size={24} weight="duotone" />
+            <CellIcon tone="bg-sunset">
+              <ImagesSquareIcon size={24} weight="fill" />
             </CellIcon>
             <h3 className="mt-4 text-xl font-semibold tracking-tight text-heading">
               Alben, die sich selbst bauen
@@ -112,8 +112,8 @@ export function Bento() {
         {/* C — friends & community */}
         <Reveal className="md:col-span-2">
           <Cell>
-            <CellIcon>
-              <UsersThreeIcon size={24} weight="duotone" />
+            <CellIcon tone="bg-ocean">
+              <UsersThreeIcon size={24} weight="fill" />
             </CellIcon>
             <h3 className="mt-4 text-xl font-semibold tracking-tight text-heading">
               Freunde finden
@@ -148,8 +148,8 @@ export function Bento() {
         {/* D — budget */}
         <Reveal index={1} className="md:col-span-2">
           <Cell>
-            <CellIcon>
-              <CoinsIcon size={24} weight="duotone" />
+            <CellIcon tone="bg-olive">
+              <CoinsIcon size={24} weight="fill" />
             </CellIcon>
             <h3 className="mt-4 text-xl font-semibold tracking-tight text-heading">
               Passt in euer Budget
@@ -206,9 +206,11 @@ function Cell({ children, className = '' }: { children: ReactNode; className?: s
   );
 }
 
-function CellIcon({ children }: { children: ReactNode }) {
+function CellIcon({ children, tone = 'bg-terra' }: { children: ReactNode; tone?: string }) {
   return (
-    <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-terra/12 text-terra">
+    <span
+      className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl text-[#33241E] shadow-warm-sm ${tone}`}
+    >
       {children}
     </span>
   );

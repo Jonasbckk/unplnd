@@ -23,7 +23,8 @@ export function Steps() {
         <Reveal>
           <StepCard
             surface="bg-surface border-line"
-            icon={<ChatCircleDotsIcon size={24} weight="duotone" aria-hidden />}
+            icon={<ChatCircleDotsIcon size={24} weight="fill" aria-hidden />}
+            iconTone="bg-coral"
             title="Sagt, worauf ihr Bock habt"
             body="Stimmung, Budget, Gruppe, Zeit. Fühlt sich an wie Freunden schreiben, nicht wie ein Formular."
           >
@@ -53,7 +54,8 @@ export function Steps() {
         <Reveal index={1} className="md:mt-10">
           <StepCard
             surface="bg-terra/8 border-terra/15"
-            icon={<MapTrifoldIcon size={24} weight="duotone" aria-hidden />}
+            icon={<MapTrifoldIcon size={24} weight="fill" aria-hidden />}
+            iconTone="bg-sunset"
             title="Folgt eurer Route"
             body="Bar, Essen, Überraschung: alles passt zusammen, mit Navigation von Spot zu Spot."
           >
@@ -90,7 +92,8 @@ export function Steps() {
         <Reveal index={2} className="md:mt-20">
           <StepCard
             surface="bg-surface-2 border-line"
-            icon={<ImagesSquareIcon size={24} weight="duotone" aria-hidden />}
+            icon={<ImagesSquareIcon size={24} weight="fill" aria-hidden />}
+            iconTone="bg-honey"
             title="Behaltet den Abend"
             body="Eure Fotos landen automatisch in einem gemeinsamen Album. Am Morgen danach ist es einfach da."
           >
@@ -122,12 +125,14 @@ export function Steps() {
 function StepCard({
   surface,
   icon,
+  iconTone = 'bg-terra',
   title,
   body,
   children,
 }: {
   surface: string;
   icon: ReactNode;
+  iconTone?: string;
   title: string;
   body: string;
   children: ReactNode;
@@ -140,7 +145,9 @@ function StepCard({
       <div className="h-36 overflow-hidden rounded-2xl border border-line/60 bg-bg transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-[1.015]">
         {children}
       </div>
-      <span className="mt-5 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-terra/12 text-terra">
+      <span
+        className={`mt-5 inline-flex h-11 w-11 items-center justify-center rounded-2xl text-[#33241E] shadow-warm-sm ${iconTone}`}
+      >
         {icon}
       </span>
       <h3 className="mt-3 text-xl font-semibold tracking-tight text-heading">{title}</h3>

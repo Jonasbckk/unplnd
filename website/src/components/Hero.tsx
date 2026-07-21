@@ -1,9 +1,21 @@
 import { useRef } from 'react';
 import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react';
-import { ArrowRightIcon } from '@phosphor-icons/react';
+import {
+  ArrowRightIcon,
+  ImagesSquareIcon,
+  LightningIcon,
+  NavigationArrowIcon,
+} from '@phosphor-icons/react';
 import { PinImage } from './ui/PinImage';
 import { PhoneMockup } from './PhoneMockup';
 import { MiniPlanner } from './MiniPlanner';
+
+/* what you get, in three glances — the fastest way to answer "what is this?" */
+const PROOF = [
+  { icon: LightningIcon, label: 'Route in Sekunden', tone: 'bg-coral' },
+  { icon: NavigationArrowIcon, label: 'Navigation inklusive', tone: 'bg-sunset' },
+  { icon: ImagesSquareIcon, label: 'Album automatisch', tone: 'bg-honey' },
+] as const;
 
 export function Hero() {
   const reduce = useReducedMotion();
@@ -24,13 +36,13 @@ export function Hero() {
       className="relative overflow-x-clip pt-24 md:pt-28"
       aria-labelledby="hero-title"
     >
-      {/* warm ambient glow behind the composition */}
+      {/* brand-coloured ambience: the page should read as UNPLND at a glance */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[560px]"
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[680px]"
         style={{
           background:
-            'radial-gradient(560px 380px at 78% 30%, var(--glow), transparent 70%), radial-gradient(420px 300px at 12% 8%, rgba(201,123,99,0.10), transparent 70%)',
+            'radial-gradient(620px 420px at 80% 22%, rgba(242,184,75,0.28), transparent 68%), radial-gradient(520px 380px at 64% 42%, rgba(255,107,90,0.20), transparent 70%), radial-gradient(460px 340px at 8% 6%, rgba(201,123,99,0.18), transparent 70%)',
         }}
       />
 
@@ -44,11 +56,32 @@ export function Hero() {
           >
             Nie wieder &bdquo;Was machen wir heute?&ldquo;
           </motion.h1>
-          <motion.p {...item(1)} className="mt-5 max-w-[46ch] text-[17px] leading-relaxed text-ink-2">
-            UNPLND baut euch in Sekunden die passende Abend-Route: Spots, Navigation und ein
-            Album, das sich von selbst füllt. Bald für iOS und Android.
+          <motion.p
+            {...item(1)}
+            className="mt-5 max-w-[46ch] text-[18px] leading-relaxed text-ink-2"
+          >
+            <strong className="font-semibold text-ink">
+              UNPLND ist die App für spontane Abende mit Freunden.
+            </strong>{' '}
+            Sagt, worauf ihr Bock habt, und ihr bekommt in Sekunden eine fertige Route: Bar,
+            Essen, Aktivität.
           </motion.p>
-          <motion.div {...item(2)} className="mt-8">
+
+          {/* three glances: what you actually get */}
+          <motion.ul {...item(2)} className="mt-6 flex flex-wrap gap-x-5 gap-y-2.5">
+            {PROOF.map((p) => (
+              <li key={p.label} className="flex items-center gap-2">
+                <span
+                  className={`flex h-7 w-7 items-center justify-center rounded-lg text-[#33241E] ${p.tone}`}
+                >
+                  <p.icon size={15} weight="fill" aria-hidden />
+                </span>
+                <span className="text-[14.5px] font-semibold text-ink">{p.label}</span>
+              </li>
+            ))}
+          </motion.ul>
+
+          <motion.div {...item(3)} className="mt-8">
             <a
               href="#early-access"
               className="pressable inline-flex min-h-14 items-center gap-2.5 rounded-(--radius-btn) bg-btn px-7 text-[17px] font-semibold text-btn-text shadow-warm hover:shadow-warm-lg"
