@@ -1,15 +1,18 @@
 // UNPLND — voice planner Edge Function (Deno).
 //
-// The spoken conversation BEFORE a plan exists: the user talks ("wir wollen essen und trinken
-// holen, dann schönen spot abseits und chillen mit musik"), the concierge asks for whatever is
+// The spoken conversation BEFORE a plan exists: the user talks ("wir wollen asiatisch essen, wo
+// nicht viel los ist, danach irgendwohin, wo keiner ist"), the concierge asks for whatever is
 // still missing (where/when/budget), one short question per turn — and once it has enough, it
-// hands back a compact free-text request the EXISTING generate-plan pipeline turns into a real
-// evening. This function never invents venues; it only talks and condenses.
+// hands back a request string the EXISTING generate-plan pipeline turns into a real evening.
+// The request must carry EVERY qualifier the user said; the concierge never invents venues.
 //
-// Transcription + conversation both run on Gemini (multimodal: the recording goes in as inline
-// audio — no separate speech-to-text service, no extra key). All keys stay server-side (31_SECURITY).
+// Transcription + conversation + the spoken reply all run on Gemini with the ONE existing key:
+// the recording goes in as inline audio, and the reply comes back as synthesized speech (PCM,
+// wrapped into a WAV here) so the app can play it with expo-audio — no new native module, which
+// means the voice works on the CURRENT build. All keys stay server-side (31_SECURITY).
 
 const GEMINI_MODEL = Deno.env.get('UNPLND_GEMINI_MODEL') ?? 'gemini-2.5-flash';
+const GEMINI_TTS_MODEL = Deno.env.get('UNPLND_GEMINI_TTS_MODEL') ?? 'gemini-2.5-flash-preview-tts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -34,13 +37,12 @@ interface VoiceRequest {
 }
 
 interface VoiceReply {
-  /** What the user actually said (transcribed server-side). */
   transcript: string;
-  /** The concierge's next line — shown and spoken by the app. */
   reply: string;
-  /** True once everything needed is known; `request` then feeds generate-plan. */
   ready: boolean;
   request?: string;
+  /** Base64 WAV of the spoken reply — absent when synthesis fails (text still shows). */
+  audioB64?: string;
 }
 
 function systemPrompt(language: 'de' | 'en', city?: string, now?: string): string {
@@ -59,8 +61,11 @@ function systemPrompt(language: 'de' | 'en', city?: string, now?: string): strin
       ? 'Wenn der Nutzer vage bleibt oder "egal" sagt, entscheide selbst sinnvoll und frag nicht nach.'
       : 'If the user is vague or says "whatever", decide sensibly yourself instead of asking again.',
     german
-      ? 'Sobald alles da ist (oder der Nutzer loslegen will): setze ready=true und fasse ALLES in request zusammen — ein dichter deutscher Satz mit jedem Detail (z. B. "Essen und Getränke holen, dann ruhiger Spot abseits mit Aussicht, chillen mit Musik im Auto, zu zweit, heute ab 20 Uhr, ca. 3 Stunden, 25 Euro pro Person, mit dem Auto"). In reply kündigst du kurz an, dass du jetzt planst.'
-      : 'Once everything is known (or the user wants to start): set ready=true and condense EVERYTHING into request — one dense sentence with every detail. In reply, briefly say you are planning now.',
+      ? 'Sobald alles da ist (oder der Nutzer loslegen will): setze ready=true und fasse ALLES in request zusammen — ein dichter deutscher Satz. Der request MUSS JEDE Eigenschaft und Einschränkung des Nutzers übernehmen, möglichst wörtlich: "asiatisch essen, wo nicht viel los ist, keine Gaststätte" bleibt GENAU SO drin, "danach irgendwohin, wo keiner ist" wird z. B. zu "danach ein ruhiger, abgelegener Spot ohne Menschen". NIEMALS verallgemeinern ("essen gehen") oder Details weglassen — jede Eigenschaft wird später zu einem passenden Ort. Dazu: wer, wann, wie lange, Budget pro Person, Transport.'
+      : 'Once everything is known (or the user wants to start): set ready=true and condense EVERYTHING into request — one dense sentence. The request MUST carry EVERY qualifier and constraint, as literally as possible ("asian food somewhere quiet, not a pub" stays exactly that; "then somewhere with nobody around" becomes "then a quiet secluded spot away from people"). NEVER generalize or drop details — each qualifier becomes a matching venue later. Plus: who, when, how long, budget per person, transport.',
+    german
+      ? 'In reply kündigst du bei ready=true kurz an, dass du jetzt planst.'
+      : 'In reply, when ready=true, briefly say you are planning now.',
     'Erfinde NIE konkrete Orte oder Namen von Locations — das übernimmt die Planung danach. Du sammelst nur, was der Nutzer will.',
     city ? `Der Nutzer ist in ${city}.` : '',
     now ? `Aktuelle lokale Zeit: ${now}.` : '',
@@ -79,6 +84,80 @@ const REPLY_SCHEMA = {
   },
   required: ['transcript', 'reply', 'ready'],
 };
+
+// ---------------- speech synthesis ----------------
+
+/** Wrap raw 16-bit mono PCM in a 44-byte WAV header so expo-audio can play it. */
+function pcmToWav(pcm: Uint8Array, sampleRate: number): Uint8Array {
+  const header = new ArrayBuffer(44);
+  const v = new DataView(header);
+  const writeStr = (off: number, s: string) => {
+    for (let i = 0; i < s.length; i++) v.setUint8(off + i, s.charCodeAt(i));
+  };
+  writeStr(0, 'RIFF');
+  v.setUint32(4, 36 + pcm.length, true);
+  writeStr(8, 'WAVE');
+  writeStr(12, 'fmt ');
+  v.setUint32(16, 16, true); // PCM chunk size
+  v.setUint16(20, 1, true); // PCM format
+  v.setUint16(22, 1, true); // mono
+  v.setUint32(24, sampleRate, true);
+  v.setUint32(28, sampleRate * 2, true); // byte rate (16-bit mono)
+  v.setUint16(32, 2, true); // block align
+  v.setUint16(34, 16, true); // bits per sample
+  writeStr(36, 'data');
+  v.setUint32(40, pcm.length, true);
+  const out = new Uint8Array(44 + pcm.length);
+  out.set(new Uint8Array(header), 0);
+  out.set(pcm, 44);
+  return out;
+}
+
+function bytesToB64(bytes: Uint8Array): string {
+  let binary = '';
+  const CHUNK = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(binary);
+}
+
+/** The reply as spoken audio (base64 WAV). Null on any failure — the text carries the turn alone. */
+async function synthesize(text: string, geminiKey: string): Promise<string | null> {
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_TTS_MODEL}:generateContent?key=${geminiKey}`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text }] }],
+        generationConfig: {
+          responseModalities: ['AUDIO'],
+          speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } },
+        },
+      }),
+    });
+    if (!response.ok) {
+      console.error('tts_error', response.status, (await response.text()).slice(0, 200));
+      return null;
+    }
+    const data = await response.json();
+    const part = data?.candidates?.[0]?.content?.parts?.[0];
+    const b64 = part?.inlineData?.data ?? part?.inline_data?.data;
+    if (!b64) return null;
+    // Gemini TTS returns raw PCM, 16-bit mono. Default rate is 24 kHz; trust the mime when present.
+    const mime: string = part?.inlineData?.mimeType ?? part?.inline_data?.mime_type ?? '';
+    const rateMatch = mime.match(/rate=(\d+)/);
+    const rate = rateMatch ? Number(rateMatch[1]) : 24000;
+    const pcm = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    return bytesToB64(pcmToWav(pcm, rate));
+  } catch (e) {
+    console.error('tts_error', String(e).slice(0, 200));
+    return null;
+  }
+}
+
+// ---------------- handler ----------------
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
@@ -143,12 +222,17 @@ Deno.serve(async (req) => {
     const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text;
     const parsed = JSON.parse(raw) as VoiceReply;
     if (typeof parsed.reply !== 'string' || parsed.reply.length === 0) throw new Error('empty reply');
+
+    // Speak the reply server-side; on failure the text still carries the turn.
+    const audioB64 = await synthesize(parsed.reply, geminiKey);
+
     return Response.json(
       {
         transcript: typeof parsed.transcript === 'string' ? parsed.transcript : '',
         reply: parsed.reply,
         ready: Boolean(parsed.ready),
         request: typeof parsed.request === 'string' && parsed.request.trim() ? parsed.request : undefined,
+        audioB64: audioB64 ?? undefined,
       } satisfies VoiceReply,
       { headers: CORS },
     );

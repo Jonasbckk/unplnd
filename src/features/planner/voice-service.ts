@@ -1,4 +1,5 @@
-import { File } from 'expo-file-system';
+import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
+import { File, Paths } from 'expo-file-system';
 
 import { i18n } from '@/lib/i18n';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
@@ -15,7 +16,7 @@ export interface VoiceTurn {
 }
 
 export type VoiceStepResult =
-  | { ok: true; transcript: string; reply: string; ready: boolean; request?: string }
+  | { ok: true; transcript: string; reply: string; ready: boolean; request?: string; audioB64?: string }
   | { ok: false; kind: 'failed' | 'rate_limited' };
 
 const TIMEOUT_MS = 30000;
@@ -41,6 +42,8 @@ interface VoiceEdgeResponse {
   reply?: string;
   ready?: boolean;
   request?: string;
+  /** Base64 WAV of the spoken reply, synthesized server-side. */
+  audioB64?: string;
   error?: { code: string };
 }
 
@@ -84,6 +87,7 @@ export async function voiceStep(input: {
         reply: data.reply,
         ready: Boolean(data.ready),
         request: data.request,
+        audioB64: data.audioB64,
       };
     }
     if (data?.error?.code === 'RATE_LIMITED') return { ok: false, kind: 'rate_limited' };
@@ -94,9 +98,10 @@ export async function voiceStep(input: {
 }
 
 // ---- Speaking the reply -------------------------------------------------------------------------
-// expo-speech is a native module: on a build that predates it, a top-level import would crash at
-// module load (same story as the app icons and the tutorial player). Require defensively — until
-// the next native build the concierge simply stays silent and the conversation runs as text.
+// Primary voice: the server synthesizes the reply (Gemini TTS, same key) and we play the WAV with
+// expo-audio — which is ALREADY in the build, so the concierge talks today, no new native module.
+// Fallback: expo-speech (device voice) — a native module that only exists from the next build on,
+// so it's required defensively like the app icons and the tutorial player.
 
 type SpeechModule = typeof import('expo-speech');
 let speech: SpeechModule | null = null;
@@ -109,18 +114,64 @@ try {
 
 export const canSpeak = speech !== null;
 
-/** Read the concierge's line aloud with the device voice. No-op when the module isn't in the build. */
-export function speak(text: string): void {
+let player: AudioPlayer | null = null;
+
+/** Hermes-safe base64 → bytes (atob isn't guaranteed there). */
+const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+function base64ToBytes(b64: string): Uint8Array {
+  const clean = b64.replace(/[^A-Za-z0-9+/]/g, '');
+  const len = Math.floor((clean.length * 3) / 4);
+  const out = new Uint8Array(len);
+  let o = 0;
+  for (let i = 0; i + 3 < clean.length || (i + 1 < clean.length && o < len); i += 4) {
+    const n =
+      (B64.indexOf(clean[i]) << 18) |
+      (B64.indexOf(clean[i + 1]) << 12) |
+      ((B64.indexOf(clean[i + 2]) & 63) << 6) |
+      (B64.indexOf(clean[i + 3]) & 63);
+    if (o < len) out[o++] = (n >> 16) & 255;
+    if (o < len && clean[i + 2] !== undefined) out[o++] = (n >> 8) & 255;
+    if (o < len && clean[i + 3] !== undefined) out[o++] = n & 255;
+  }
+  return out;
+}
+
+/**
+ * Read the concierge's line aloud: server WAV first (works on the current build), device voice as
+ * fallback, silence as the last resort — the text is on screen either way.
+ */
+export async function speak(text: string, audioB64?: string): Promise<void> {
+  stopSpeaking();
+  if (audioB64) {
+    try {
+      // Recording mode mutes playback on iOS — switch back before playing.
+      await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
+      const file = new File(Paths.cache, 'concierge-reply.wav');
+      file.write(base64ToBytes(audioB64));
+      player = createAudioPlayer({ uri: file.uri });
+      player.play();
+      return;
+    } catch {
+      // fall through to the device voice
+    }
+  }
   if (!speech) return;
   try {
     speech.stop();
     speech.speak(text, { language: i18n.locale === 'de' ? 'de-DE' : 'en-US', rate: 1.0 });
   } catch {
-    // Silence is an acceptable failure mode — the text is on screen either way.
+    // ignore
   }
 }
 
 export function stopSpeaking(): void {
+  try {
+    player?.pause();
+    player?.remove();
+  } catch {
+    // ignore
+  }
+  player = null;
   try {
     speech?.stop();
   } catch {

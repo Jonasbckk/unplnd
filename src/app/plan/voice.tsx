@@ -57,18 +57,20 @@ export default function VoicePlannerScreen() {
     requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
   };
 
-  const handleResult = (transcript: string, reply: string, ready: boolean, request?: string) => {
+  const handleResult = (transcript: string, reply: string, ready: boolean, request?: string, audioB64?: string) => {
     if (transcript) pushTurn({ role: 'user', text: transcript });
     pushTurn({ role: 'assistant', text: reply });
-    speak(reply);
+    void speak(reply, audioB64);
     if (ready && request && !doneRef.current) {
       doneRef.current = true;
       // Hand over to the normal pipeline — the concierge only collects, generate-plan plans.
       setRequest(request);
+      // Let the spoken send-off finish before the screen changes.
+      const spoken = Boolean(audioB64) || canSpeak;
       setTimeout(() => {
         stopSpeaking();
         router.replace('/plan/generating');
-      }, canSpeak ? 2200 : 900);
+      }, spoken ? 2600 : 900);
     }
   };
 
@@ -85,7 +87,7 @@ export default function VoicePlannerScreen() {
       return;
     }
     // With audio the transcript arrives from the server; typed turns are already on screen.
-    handleResult(optimisticText ? '' : result.transcript, result.reply, result.ready, result.request);
+    handleResult(optimisticText ? '' : result.transcript, result.reply, result.ready, result.request, result.audioB64);
   };
 
   const toggleRecording = async () => {
@@ -167,11 +169,6 @@ export default function VoicePlannerScreen() {
             <Text variant="body" color="textSecondary">
               {tr('voice.emptyBody')}
             </Text>
-            {!canSpeak && (
-              <Text variant="caption" color="textSecondary">
-                {tr('voice.noSpeech')}
-              </Text>
-            )}
           </Animated.View>
         )}
 
