@@ -102,9 +102,15 @@ export default function VoicePlannerScreen() {
       toast(tr('voice.micDenied'));
       return;
     }
-    haptics.selection();
-    await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
-    recorder.record();
+    try {
+      await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+      // Without prepareToRecordAsync, record() silently does nothing — the chat flow knew this.
+      await recorder.prepareToRecordAsync();
+      recorder.record();
+      haptics.light();
+    } catch {
+      toast(tr('voice.micDenied'));
+    }
   };
 
   const sendTyped = () => {
