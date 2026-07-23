@@ -414,6 +414,19 @@ function trimToBudget(stops: StopOut[], cap: number | null): StopOut[] {
   return kept;
 }
 
+/**
+ * Open-air spots — viewpoints, parks, trails, lakesides. Google files them with opening hours and
+ * marks them "closed" at night, but a viewpoint at 23:00 is not closed, it is the whole point of
+ * the evening. These are exempt from the hours net; everything with a door keeps the hard rule.
+ */
+const OPEN_AIR_TYPES = ['park', 'hiking_area', 'tourist_attraction', 'natural_feature', 'national_park', 'state_park', 'garden'];
+
+function isOpenAir(c?: Candidate): boolean {
+  if (!c) return false;
+  const types = c.types ?? [];
+  return types.some((t) => OPEN_AIR_TYPES.includes(t)) && c.priceLevel !== '€€' && c.priceLevel !== '€€€' && c.priceLevel !== '€€€€';
+}
+
 function closeMinutesOf(hours?: string): number | null {
   if (!hours) return null;
   const h = hours.toLowerCase();
@@ -686,7 +699,7 @@ function curationSystemPrompt(language: 'de' | 'en'): string {
     '- Skip generic fast-food chains and takeaways — a fried-chicken counter is not an evening destination; prefer places with character. EXCEPTION: when the user explicitly wants food TO GO ("mitnehmen", "holen", takeaway), a good takeaway IS the right stop — then prefer venues with takeout=true and say in the reason that they should order to take away. A supermarket works ONLY as a quick pre-party drinks run, never as a real stop.',
     '- BUDGET "Free" (€0) = genuinely FREE stops only: parks, walks, viewpoints, free public spaces or free events. NEVER a café, restaurant, bar or anything that costs money. If nothing free fits, return no_options rather than a paid stop.',
     '- The arc should feel like a real night out: a proper sit-down dinner or nice drinks early, the highlight in the middle/peak, a relaxed close — not junk food dropped in the middle.',
-    '- OPENING HOURS ARE A HARD CONSTRAINT: each venue has "hours_today" (open–close today) and "open_now" (true = open at the CURRENT time, Google-accurate). Only schedule a stop when the venue is actually open at that stop\'s time. If the plan starts around NOW (evening/night), every venue MUST be open_now=true. NEVER schedule a venue that is closed at the stop\'s time — e.g. at 03:00 a restaurant with hours 11:00–22:00 is CLOSED; drop it. If fewer than 2 venues are genuinely open, return no_options instead of scheduling closed ones.',
+    '- OPENING HOURS ARE A HARD CONSTRAINT: each venue has "hours_today" (open–close today) and "open_now" (true = open at the CURRENT time, Google-accurate). Only schedule a stop when the venue is actually open at that stop\'s time. If the plan starts around NOW (evening/night), every venue MUST be open_now=true. NEVER schedule a venue that is closed at the stop\'s time — e.g. at 03:00 a restaurant with hours 11:00–22:00 is CLOSED; drop it. EXCEPTION: open-air spots (viewpoint, park, trail, lakeside) may be scheduled after their listed hours — they have no door to lock, and a quiet spot at night is often the whole point. This exception applies ONLY to open-air nature spots, never to anything with a door. If fewer than 2 venues are genuinely usable, return no_options instead of scheduling closed ones.',
     '- ENOUGH TIME BEFORE CLOSING: give every stop at least ~45 minutes of open time AFTER its arrival — nobody sits in a café or restaurant for 15 minutes. A venue closing at 18:00 must NOT host an 18:00 or 17:30 stop; schedule it earlier or drop it. If a venue still closes fairly soon after the stop, add a friendly heads-up in the reason (e.g. „komm nicht zu spät, macht um 22:00 zu").',
     '- LATER STOPS ARE LATER AT NIGHT — use each venue\'s "closes_at": order stops so EARLY-CLOSING venues (cafés, most restaurants) come FIRST and LATE-OPEN ones (bars, clubs, late-night eateries) come LAST. A venue with closes_at 22:00 CANNOT host a stop at or after ~21:15. For a LONG evening (e.g. 5h), every later stop MUST have a closes_at well past its stop time — if you do not have enough late-open venues, make the plan SHORTER rather than scheduling any stop that its venue will be closed for. A closed stop is worse than a shorter plan.',
     "- START TIME — anchor the plan to the user's current local time (given below): if it is still daytime (before ~17:00), plan for THIS EVENING and start around 18:00–19:00; if it is already evening or night (17:00 onward, incl. after midnight), the user wants to head out soon — start the first stop within ~30–45 min of NOW. NEVER place a stop in the past. If it is very late and little is open, make a shorter, honest plan with only what is genuinely open at that hour.",
@@ -1346,9 +1359,13 @@ Deno.serve(async (req) => {
     if (!c) return noOptionsResponse();
 
     // Hours safety net, in CODE — the AI is bad at time maths, and this is the whole point of a swap.
-    const close = closeMinutesOf(c.hours);
-    const st = stopMinutesOf(body.swap.time);
-    if (close === -1 || (close !== null && st !== null && st + 30 > close)) return noOptionsResponse();
+    // Same exemptions as the main net: open-air spots don't really close, pickups are in-and-out.
+    if (!isOpenAir(c)) {
+      const close = closeMinutesOf(c.hours);
+      const st = stopMinutesOf(body.swap.time);
+      const dwell = c.takeout ? 10 : 30;
+      if (close === -1 || (close !== null && st !== null && st + dwell > close)) return noOptionsResponse();
+    }
 
     const stop: StopOut = {
       time: body.swap.time, // the slot is fixed; only the venue changes
@@ -1429,9 +1446,16 @@ Deno.serve(async (req) => {
       // venue scheduled at a time it is already closed or closing within 30 min. This is the
       // #1 "macht keinen Sinn" bug — a stop the venue will be shut for. Unknown/24h hours are kept.
       for (let i = stops.length - 1; i >= 0; i--) {
+        const pid = stops[i].placeId;
+        const cand = pid ? byId.get(pid) : undefined;
+        // A viewpoint/park "closes" on paper but not in reality — the quiet spot after dark is the
+        // founder's flagship evening, and the net used to kill it structurally.
+        if (isOpenAir(cand)) continue;
         const close = closeMinutesOf(stops[i].hours);
         const st = stopMinutesOf(stops[i].time);
-        if (close === -1 || (close !== null && st !== null && st + 30 > close)) {
+        // Picking food up is in-and-out — 10 min suffice; sitting down needs the full 30.
+        const dwell = cand?.takeout ? 10 : 30;
+        if (close === -1 || (close !== null && st !== null && st + dwell > close)) {
           stops.splice(i, 1);
         }
       }
