@@ -146,6 +146,44 @@ export default function PlannerScreen() {
         <Button title={tr('planner.freeGo')} disabled={!freeText.trim()} onPress={planFromText} />
       </View>
 
+      {/* Talk the evening into existence — the concierge (premium; Constitution: never say "AI"). */}
+      <Card
+        onPress={() => router.push('/plan/voice')}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: t.spacing.md,
+          backgroundColor: t.colors.surface,
+          borderWidth: 1,
+          borderColor: t.colors.primary + '40',
+        }}
+      >
+        <View
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: t.radius.sm,
+            backgroundColor: t.colors.primary + '1A',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Ionicons name="mic-outline" size={22} color={t.colors.primary} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text variant="body" style={{ fontWeight: '600' }}>
+              {tr('planner.voiceTitle')}
+            </Text>
+            <Ionicons name="diamond" size={12} color={t.colors.primary} />
+          </View>
+          <Text variant="small" color="textSecondary">
+            {tr('planner.voiceSub')}
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={t.colors.textSecondary} />
+      </Card>
+
       {/* Build-your-own — was buried in the community feed; surfaced here as a clear, calm option. */}
       <Card
         onPress={() => router.push('/plan/create')}
