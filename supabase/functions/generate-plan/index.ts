@@ -102,6 +102,8 @@ interface Candidate {
   photoNames?: string[];
   summary?: string;
   distanceM: number;
+  /** Google-confirmed: you can order to go here. Never guessed. */
+  takeout?: boolean;
 }
 
 // Mood → the kinds of stops that make up that evening. The AI picks & sequences from the pool.
@@ -474,7 +476,7 @@ async function searchNearby(
       'Content-Type': 'application/json',
       'X-Goog-Api-Key': key,
       'X-Goog-FieldMask':
-        'places.id,places.displayName,places.primaryType,places.primaryTypeDisplayName,places.rating,places.userRatingCount,places.currentOpeningHours,places.location,places.priceLevel,places.photos,places.editorialSummary,places.formattedAddress,places.types',
+        'places.id,places.displayName,places.primaryType,places.primaryTypeDisplayName,places.rating,places.userRatingCount,places.currentOpeningHours,places.location,places.priceLevel,places.photos,places.editorialSummary,places.formattedAddress,places.types,places.takeout',
     },
     body: JSON.stringify({
       includedTypes: types,
@@ -509,7 +511,7 @@ async function searchText(
       'Content-Type': 'application/json',
       'X-Goog-Api-Key': key,
       'X-Goog-FieldMask':
-        'places.id,places.displayName,places.primaryType,places.primaryTypeDisplayName,places.rating,places.userRatingCount,places.currentOpeningHours,places.location,places.priceLevel,places.photos,places.editorialSummary,places.formattedAddress,places.types',
+        'places.id,places.displayName,places.primaryType,places.primaryTypeDisplayName,places.rating,places.userRatingCount,places.currentOpeningHours,places.location,places.priceLevel,places.photos,places.editorialSummary,places.formattedAddress,places.types,places.takeout',
     },
     body: JSON.stringify({
       textQuery,
@@ -573,6 +575,7 @@ async function findCandidates(req: PlanRequest, key: string, plan: SearchGroup[]
           rating: p.rating ?? 0,
           ratingCount: p.userRatingCount ?? 0,
           priceLevel: PRICE_MAP[p.priceLevel] ?? '',
+          takeout: p.takeout === true,
           openNow: p.currentOpeningHours?.openNow,
           hours: typeof today === 'string' ? today.replace(/^[A-Za-zäöü]+:\s*/, '') : undefined,
           address: p.formattedAddress,
@@ -680,7 +683,7 @@ function curationSystemPrompt(language: 'de' | 'en'): string {
     '- Describe and categorize each venue by what it ACTUALLY is, using its "type" and name — never claim it is something it is not (e.g. a hookah/shisha lounge is NOT a dance club; do not write about dancing there). Set each stop\'s category from its real type.',
     '- Use each venue AT MOST ONCE — never repeat a place in the same evening.',
     '- HYBRID / AT-HOME ENDING: if the request implies going out and then ending AT HOME (e.g. "danach zuhause einen Film schauen", "grab food then head home", "essen holen und dann Film"), that IS the plan: give the going-out stops with real place_ids, then add ONE final at-home wind-down stop WITHOUT a place_id (a concrete film/series vibe + a snack/drink pairing). Do not force extra venues just to fill the night.',
-    '- Skip generic fast-food chains and takeaways — a fried-chicken counter is not an evening destination; prefer places with character. A supermarket works ONLY as a quick pre-party drinks run, never as a real stop.',
+    '- Skip generic fast-food chains and takeaways — a fried-chicken counter is not an evening destination; prefer places with character. EXCEPTION: when the user explicitly wants food TO GO ("mitnehmen", "holen", takeaway), a good takeaway IS the right stop — then prefer venues with takeout=true and say in the reason that they should order to take away. A supermarket works ONLY as a quick pre-party drinks run, never as a real stop.',
     '- BUDGET "Free" (€0) = genuinely FREE stops only: parks, walks, viewpoints, free public spaces or free events. NEVER a café, restaurant, bar or anything that costs money. If nothing free fits, return no_options rather than a paid stop.',
     '- The arc should feel like a real night out: a proper sit-down dinner or nice drinks early, the highlight in the middle/peak, a relaxed close — not junk food dropped in the middle.',
     '- OPENING HOURS ARE A HARD CONSTRAINT: each venue has "hours_today" (open–close today) and "open_now" (true = open at the CURRENT time, Google-accurate). Only schedule a stop when the venue is actually open at that stop\'s time. If the plan starts around NOW (evening/night), every venue MUST be open_now=true. NEVER schedule a venue that is closed at the stop\'s time — e.g. at 03:00 a restaurant with hours 11:00–22:00 is CLOSED; drop it. If fewer than 2 venues are genuinely open, return no_options instead of scheduling closed ones.',
@@ -689,6 +692,10 @@ function curationSystemPrompt(language: 'de' | 'en'): string {
     "- START TIME — anchor the plan to the user's current local time (given below): if it is still daytime (before ~17:00), plan for THIS EVENING and start around 18:00–19:00; if it is already evening or night (17:00 onward, incl. after midnight), the user wants to head out soon — start the first stop within ~30–45 min of NOW. NEVER place a stop in the past. If it is very late and little is open, make a shorter, honest plan with only what is genuinely open at that hour.",
     '- Sequence for a tight route: keep consecutive stops close together (use the distances), and order them so the arc makes geographic and opening-hours sense — no long detours back and forth.',
     '- Be clever and money-smart when it fits the mood: e.g. for a budget party, a quick stop at a supermarket to grab drinks before the club is a great move.',
+    '- The summary must read like ONE connected evening told by a friend who knows the area — the flow from stop to stop ("erst holt ihr euch …, dann fahrt ihr raus zu …, am Ende …"), not a description of separate places. Make the user feel: genau so will ich den Abend verbringen.',
+    '- In a food stop\'s reason you may suggest WHAT KIND of order fits the remaining budget ("zwei Hauptgerichte aus der Nudel- oder Reiskarte passen ins Budget") — always generic, NEVER a specific dish name or exact price, we have no menu data.',
+    '- For quiet/secluded spots, promise honestly: say it is USUALLY much quieter there in the evening — never guarantee that nobody is around.',
+    '- When the final stop is outdoors at night, one short practical hint in its reason is welcome (Decke, Jacke, Taschenlampe) — one hint, not a packing list.',
     '- VIBE OVER STARS: match each venue to the MOOD\'s character using its type, name and "about" — e.g. Date = intimate/romantic, Abseits (Secluded) = quiet/scenic/undisturbed, Party = loud/lively, Cozy = warm/small, Adventure = active/outdoorsy, Live Music = gigs/DJ. Prefer the venue with the RIGHT vibe over a slightly higher-rated but generic one. Let the reason carry that vibe where it fits (a "hidden gem", a "golden-hour spot", "main-character energy") — always specific, never a hashtag dump.',
     '- VARIETY: make each plan fresh. Do not just pick the single highest-rated options — curate a characterful, non-obvious mix, and choose differently each time you are asked.',
     '- Before finalizing, RE-READ the plan and verify: no venue repeats, no fast-food chains, every description matches the venue\'s real type, the stops flow geographically and by opening hours, and there are zero clichés. Fix anything that fails.',
@@ -709,6 +716,7 @@ function curationUserPrompt(req: PlanRequest, candidates: Candidate[]): string {
     open_now: c.openNow, // true = open at the CURRENT time (Google-accurate)
     distance_m: c.distanceM,
     about: c.summary ?? undefined,
+    takeout: c.takeout || undefined, // Google-confirmed to-go — needed for "mitnehmen" wishes
   }));
   const parts: string[] = [];
   if (req.request) {
