@@ -204,7 +204,7 @@ export function ProfileHighlights({
       <Modal
         visible={!!editing}
         transparent
-        animationType="fade"
+        animationType="slide"
         onRequestClose={() => setEditing(null)}
         onDismiss={() => {
           const pending = pendingRef.current;
@@ -215,7 +215,7 @@ export function ProfileHighlights({
         <View style={{ flex: 1, backgroundColor: t.colors.overlay, justifyContent: 'flex-end' }}>
           <View
             style={{
-              backgroundColor: t.colors.background,
+              backgroundColor: t.colors.card,
               borderTopLeftRadius: t.radius.sheet,
               borderTopRightRadius: t.radius.sheet,
               padding: t.spacing.lg,
@@ -229,7 +229,7 @@ export function ProfileHighlights({
             <Button title={tr('highlights.chooseCover')} variant="secondary" onPress={chooseCover} />
             <Button title={tr('highlights.save')} onPress={() => void saveName()} />
 
-            <Pressable onPress={() => void unshare()} hitSlop={8} style={{ alignSelf: 'center' }}>
+            <Pressable onPress={() => void unshare()} accessibilityRole="button" style={{ alignSelf: 'center', minHeight: 44, justifyContent: 'center', paddingHorizontal: 16 }}>
               <Text variant="small" style={{ color: t.colors.error, fontWeight: '600' }}>
                 {tr('highlights.unshare')}
               </Text>
@@ -245,11 +245,11 @@ export function ProfileHighlights({
       </Modal>
 
       {/* Picker — your evenings, tap to share or unshare. */}
-      <Modal visible={picking} transparent animationType="fade" onRequestClose={() => setPicking(false)}>
+      <Modal visible={picking} transparent animationType="slide" onRequestClose={() => setPicking(false)}>
         <View style={{ flex: 1, backgroundColor: t.colors.overlay, justifyContent: 'flex-end' }}>
           <View
             style={{
-              backgroundColor: t.colors.background,
+              backgroundColor: t.colors.card,
               borderTopLeftRadius: t.radius.sheet,
               borderTopRightRadius: t.radius.sheet,
               padding: t.spacing.lg,

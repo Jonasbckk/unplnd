@@ -243,14 +243,14 @@ export default function RouteScreen() {
                             flexDirection: 'row',
                             alignItems: 'center',
                             gap: 4,
-                            backgroundColor: 'rgba(0,0,0,0.6)',
+                            backgroundColor: t.colors.overlay,
                             paddingHorizontal: 8,
                             paddingVertical: 4,
                             borderRadius: t.radius.pill,
                           }}
                         >
-                          <Ionicons name="images-outline" size={13} color="#FFFFFF" />
-                          <Text variant="small" style={{ color: '#FFFFFF', fontWeight: '600' }}>
+                          <Ionicons name="images-outline" size={13} color={t.colors.onPrimary} />
+                          <Text variant="small" style={{ color: t.colors.onPrimary, fontWeight: '600' }}>
                             {stop.photoNames?.length}
                           </Text>
                         </View>
@@ -285,7 +285,10 @@ export default function RouteScreen() {
                         </Pressable>
                       ) : null}
                       <Pressable
-                        hitSlop={8}
+                        hitSlop={13}
+                        accessibilityRole="button"
+                        accessibilityLabel={stop.title}
+                        accessibilityState={{ selected: favorites.includes(stop.title) }}
                         onPress={() => {
                           haptics.light();
                           void toggleFavorite(stop.title);
@@ -355,8 +358,8 @@ export default function RouteScreen() {
           onPress={() => router.replace('/plan/generating')}
         />
         <Button
-          title={tr('route.planAnother')}
           variant="secondary"
+          title={tr('route.planAnother')}
           onPress={() => {
             reset();
             router.back();

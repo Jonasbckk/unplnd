@@ -141,9 +141,9 @@ export default function PlannerScreen() {
           onChangeText={setFreeText}
           placeholder={tr('planner.freePlaceholder')}
           multiline
-          style={{ height: 104, paddingTop: t.spacing.md, textAlignVertical: 'top' }}
+          style={{ minHeight: 104, paddingTop: t.spacing.md, textAlignVertical: 'top' }}
         />
-        <Button title={tr('planner.freeGo')} disabled={!freeText.trim()} onPress={planFromText} />
+        <Button title={tr('planner.freeGo')} variant="secondary" disabled={!freeText.trim()} onPress={planFromText} />
       </View>
 
       {/* Talk the evening into existence — the concierge (premium; Constitution: never say "AI"). */}

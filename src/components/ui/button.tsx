@@ -52,26 +52,44 @@ export function Button({
     }).start();
 
   return (
-    <Animated.View style={[{ transform: [{ scale }] }, fullWidth && { alignSelf: 'stretch' }]}>
+    // Shadow lives OUT here: iOS suppresses layer shadows under overflow:'hidden', so putting it on
+    // the clipping Pressable rendered every primary CTA flat on the one mandatory platform. The
+    // wrapper needs its own radius + an opaque background for the iOS shadow path.
+    <Animated.View
+      style={[
+        { transform: [{ scale }] },
+        fullWidth && { alignSelf: 'stretch' },
+        isPrimary && {
+          borderRadius: t.radius.button,
+          backgroundColor: t.colors.primary,
+        },
+        isPrimary && !disabled && t.shadows.sm,
+      ]}
+    >
       <Pressable
+        disabled={disabled || loading}
         onPressIn={() => animate(t.motion.scalePressed, t.motion.duration.tap)}
         onPressOut={() => animate(1, t.motion.duration.release)}
-        onPress={
-          disabled || loading
-            ? undefined
-            : () => {
-                if (isPrimary) haptics.primary();
-                else haptics.light();
-                onPress?.();
-              }
-        }
+        onPress={() => {
+          if (isPrimary) haptics.primary();
+          else haptics.light();
+          onPress?.();
+        }}
         accessibilityRole="button"
         accessibilityState={{ disabled: disabled || loading }}
-        style={[
+        style={({ pressed }) => [
           {
             height: isPrimary ? 56 : 52,
             borderRadius: isPrimary ? t.radius.button : t.radius.buttonSecondary,
-            backgroundColor: useGradient ? 'transparent' : isPrimary ? t.colors.primary : 'transparent',
+            backgroundColor: useGradient
+              ? 'transparent'
+              : isPrimary
+                ? pressed
+                  ? t.colors.primaryPressed
+                  : t.colors.primary
+                : pressed
+                  ? t.colors.surfaceSecondary
+                  : 'transparent',
             borderWidth: isPrimary ? 0 : 1.5,
             borderColor: isPrimary ? 'transparent' : t.colors.border,
             alignItems: 'center',
@@ -80,10 +98,11 @@ export function Button({
             opacity: disabled ? 0.5 : 1,
             overflow: 'hidden',
           },
-          isPrimary && t.shadows.sm,
           style,
         ]}
       >
+        {({ pressed }) => (
+          <>
         {useGradient && (
           <LinearGradient
             colors={[t.colors.accentOrange, t.colors.primary]}
@@ -91,6 +110,10 @@ export function Button({
             end={{ x: 1, y: 1 }}
             style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
           />
+        )}
+        {useGradient && pressed && (
+          // The gradient can't swap to primaryPressed — darken it instead.
+          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.08)' }} />
         )}
         {loading ? (
           <ActivityIndicator color={isPrimary ? t.colors.onPrimary : t.colors.primary} />
@@ -103,6 +126,8 @@ export function Button({
               <Ionicons name={iconRight} size={19} color={isPrimary ? t.colors.onPrimary : t.colors.textPrimary} />
             ) : null}
           </View>
+        )}
+          </>
         )}
       </Pressable>
     </Animated.View>

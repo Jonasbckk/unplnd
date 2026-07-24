@@ -2,11 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { AudioModule, RecordingPresets, setAudioModeAsync, useAudioRecorder, useAudioRecorderState } from 'expo-audio';
 import { useRouter, type Href } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Keyboard, Platform, Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Input, Text } from '@/components/ui';
+import { Input, StatementTitle, Text } from '@/components/ui';
 import { usePlannerStore } from '@/features/planner/planner-store';
 import { canSpeak, speak, stopSpeaking, voiceStep, type VoiceTurn } from '@/features/planner/voice-service';
 import { fetchIsPremium } from '@/features/profile/use-premium';
@@ -33,6 +33,19 @@ export default function VoicePlannerScreen() {
   const [turns, setTurns] = useState<VoiceTurn[]>([]);
   const [busy, setBusy] = useState(false);
   const [typed, setTyped] = useState('');
+  // Measured keyboard height (chat pattern) — without it the composer hides under the iOS keyboard,
+  // and the typed path is the ONLY one when mic permission is denied.
+  const [kbHeight, setKbHeight] = useState(0);
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const show = Keyboard.addListener(showEvent, (e) => setKbHeight(e.endCoordinates.height));
+    const hide = Keyboard.addListener(hideEvent, () => setKbHeight(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const scrollRef = useRef<ScrollView>(null);
   const doneRef = useRef(false);
@@ -116,6 +129,7 @@ export default function VoicePlannerScreen() {
   };
 
   const sendTyped = () => {
+    haptics.light();
     const text = typed.trim();
     if (!text || busy) return;
     setTyped('');
@@ -165,7 +179,7 @@ export default function VoicePlannerScreen() {
       >
         {turns.length === 0 && (
           <Animated.View entering={FadeInUp.duration(400)} style={{ gap: t.spacing.sm, marginTop: t.spacing.xl }}>
-            <Text variant="h1">{tr('voice.emptyTitle')}</Text>
+            <StatementTitle text={tr('voice.emptyTitle')} />
             <Text variant="body" color="textSecondary">
               {tr('voice.emptyBody')}
             </Text>
@@ -204,25 +218,39 @@ export default function VoicePlannerScreen() {
       </ScrollView>
 
       <SafeAreaView edges={['bottom']}>
-        <View style={{ paddingHorizontal: t.spacing.lg, paddingBottom: t.spacing.md, gap: t.spacing.md }}>
+        <View style={{ paddingHorizontal: t.spacing.lg, paddingBottom: t.spacing.md + kbHeight, gap: t.spacing.md }}>
           {/* The mic is the hero: tap to talk, tap again to send. */}
           <Pressable
             onPress={() => void toggleRecording()}
             disabled={busy}
             accessibilityRole="button"
             accessibilityLabel={recording ? tr('voice.stop') : tr('voice.talk')}
-            style={{
+            style={({ pressed }) => ({
               alignSelf: 'center',
               width: 84,
               height: 84,
               borderRadius: 42,
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: recording ? t.colors.error : t.colors.primary,
+              // Recording is a state, not an error — it wears the warm accent, not alarm red.
+              backgroundColor: recording ? t.colors.accentOrange : t.colors.primary,
               opacity: busy ? 0.5 : 1,
-            }}
+              transform: [{ scale: pressed ? 0.94 : 1 }],
+            })}
           >
-            <Ionicons name={recording ? 'stop' : 'mic'} size={36} color="#FFFFFF" />
+            {recording && (
+              <View
+                style={{
+                  position: 'absolute',
+                  width: 100,
+                  height: 100,
+                  borderRadius: 50,
+                  borderWidth: 3,
+                  borderColor: t.colors.accentOrange + '55',
+                }}
+              />
+            )}
+            <Ionicons name={recording ? 'stop' : 'mic'} size={36} color={t.colors.onPrimary} />
           </Pressable>
           <Text variant="caption" color="textSecondary" center>
             {recording ? tr('voice.listening') : tr('voice.hint')}

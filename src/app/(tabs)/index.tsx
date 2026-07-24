@@ -84,6 +84,8 @@ export default function HomeScreen() {
             style={{
               marginTop: t.spacing.md,
               backgroundColor: t.colors.surface,
+              borderWidth: 1,
+              borderColor: t.colors.border,
               paddingVertical: t.spacing.md,
               paddingHorizontal: t.spacing.base,
             }}
@@ -127,7 +129,7 @@ export default function HomeScreen() {
                   {currentStop ? tr('home.next', { title: currentStop.title }) : evening.plan.title}
                 </Text>
               </View>
-              <Ionicons name="arrow-forward" size={22} color="#FFFFFF" />
+              <Ionicons name="arrow-forward" size={22} color={t.colors.onPrimary} />
             </View>
           </Card>
         ) : (
@@ -190,7 +192,9 @@ export default function HomeScreen() {
             <Text variant="h3">{tr('discover.nearby')}</Text>
             <Text
               variant="small"
-              style={{ color: t.colors.primary, fontWeight: '600' }}
+              accessibilityRole="button"
+              suppressHighlighting
+              style={{ color: t.colors.primary, fontWeight: '600', paddingVertical: 12, paddingLeft: 16 }}
               onPress={() => router.navigate('/discover')}
             >
               {tr('common.seeAll')}
@@ -231,7 +235,9 @@ export default function HomeScreen() {
             <Text variant="h3">{tr('discover.communityTitle')}</Text>
             <Text
               variant="small"
-              style={{ color: t.colors.primary, fontWeight: '600' }}
+              accessibilityRole="button"
+              suppressHighlighting
+              style={{ color: t.colors.primary, fontWeight: '600', paddingVertical: 12, paddingLeft: 16 }}
               onPress={() => router.push('/community' as Href)}
             >
               {tr('common.seeAll')}
@@ -283,7 +289,9 @@ export default function HomeScreen() {
             <Text variant="h3">{tr('home.recentMemories')}</Text>
             <Text
               variant="small"
-              style={{ color: t.colors.primary, fontWeight: '600' }}
+              accessibilityRole="button"
+              suppressHighlighting
+              style={{ color: t.colors.primary, fontWeight: '600', paddingVertical: 12, paddingLeft: 16 }}
               onPress={() => router.navigate('/albums')}
             >
               {tr('common.seeAll')}

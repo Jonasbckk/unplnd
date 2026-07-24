@@ -8,7 +8,7 @@ import { useColorScheme } from 'react-native';
 import { useAppStore } from '@/store/app-store';
 import { applyAppTheme } from './app-themes';
 import { darkColors, lightColors, type ColorTokens } from './colors';
-import { motion, radius, shadows, spacing, typography } from './tokens';
+import { darkShadows, motion, radius, shadows, spacing, typography } from './tokens';
 
 export interface Theme {
   scheme: 'light' | 'dark';
@@ -37,7 +37,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       radius,
       typography,
       motion,
-      shadows,
+      // Elevation must exist in BOTH schemes — the warm set vanishes on the dark ground.
+      shadows: scheme === 'dark' ? darkShadows : shadows,
     }),
     [scheme, appThemeId],
   );

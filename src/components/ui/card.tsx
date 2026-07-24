@@ -24,6 +24,9 @@ export function Card({ children, onPress, padded = true, elevated = false, acces
       backgroundColor: t.colors.card,
       borderRadius: t.radius.card,
       padding: padded ? t.spacing.lg : 0,
+      // On the near-black ground a card needs an edge — the shadow alone can't define it.
+      borderWidth: t.scheme === 'dark' ? 1 : 0,
+      borderColor: t.colors.border,
     },
     elevated ? t.shadows.md : t.shadows.sm,
     style,

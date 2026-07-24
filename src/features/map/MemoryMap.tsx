@@ -58,7 +58,7 @@ export function MemoryMap({ accent, onOpen }: { accent: string; onOpen: () => vo
                 land: t.colors.surfaceSecondary,
                 border: t.colors.border,
                 pin: accent,
-                pinText: '#1a120c',
+                pinText: t.colors.onPrimary,
                 friend: t.colors.accentOcean,
               }}
             />

@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState, type ComponentProps } from 'react';
 import { Pressable, ScrollView, Share, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
-import { Card, Screen, Text, useCountUp } from '@/components/ui';
+import { Button, Card, EmptyState, Screen, Text, useCountUp } from '@/components/ui';
 import { MemoryCard } from '@/features/albums/MemoryCard';
 import { useAlbumsStore } from '@/features/albums/albums-store';
 import { useAuthStore } from '@/features/auth/auth-store';
@@ -511,9 +511,12 @@ export default function ProfileScreen() {
           </ScrollView>
         </View>
       ) : (
-        <Text variant="body" color="textSecondary">
-          {tr('profile.emptyStory')}
-        </Text>
+        <EmptyState
+          icon="images-outline"
+          title={tr('profile.recentMemories')}
+          body={tr('profile.emptyStory')}
+          action={<Button title={tr('home.planMyEvening')} onPress={() => router.push('/planner' as Href)} />}
+        />
       )}
       </Animated.View>
 

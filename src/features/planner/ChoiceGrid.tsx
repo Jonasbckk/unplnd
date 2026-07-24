@@ -1,9 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 
-import { Text } from '@/components/ui';
-import { haptics } from '@/lib/haptics';
+import { PressableScale, Text } from '@/components/ui';
 import { optionLabel } from '@/lib/i18n';
 import { useTheme } from '@/theme';
 import { optionIcon } from './optionIcons';
@@ -36,14 +35,12 @@ export function ChoiceGrid({ options, selected, multi = false, onSelect }: Choic
         options.map((option) => {
           const sel = isSelected(option);
           return (
-            <Pressable
+            <PressableScale
               key={option}
               accessibilityRole={multi ? 'checkbox' : 'radio'}
               accessibilityState={{ selected: sel }}
-              onPress={() => {
-                haptics.selection();
-                onSelect(option);
-              }}
+              feedback="selection"
+              onPress={() => onSelect(option)}
               style={{ width: cardWidth }}
             >
               <View
@@ -69,7 +66,7 @@ export function ChoiceGrid({ options, selected, multi = false, onSelect }: Choic
                   {optionLabel(option)}
                 </Text>
               </View>
-            </Pressable>
+            </PressableScale>
           );
         })}
     </View>

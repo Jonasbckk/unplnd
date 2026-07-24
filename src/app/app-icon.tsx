@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, type Href } from 'expo-router';
 import { useCallback, useEffect, useState, type ComponentProps } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Card, Text } from '@/components/ui';
@@ -48,10 +48,11 @@ function IconTile({
   const t = useTheme();
   const { t: tr } = useT();
   const { def, unlocked, current, target, needsPremium } = state;
+  const reduced = useReducedMotion();
   const earning = !unlocked && !needsPremium && target !== undefined;
 
   return (
-    <Animated.View entering={FadeInDown.duration(300).delay(index * 55)} style={{ width: '48%' }}>
+    <Animated.View entering={reduced ? undefined : FadeInDown.duration(300).delay(index * 55)} style={{ width: '48%' }}>
       <Pressable
         onPress={onPress}
         accessibilityRole="button"

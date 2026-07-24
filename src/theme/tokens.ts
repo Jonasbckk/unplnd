@@ -89,8 +89,46 @@ export const motion = {
   scalePressed: 0.97,
 } as const;
 
+interface ShadowLevel {
+  shadowColor: string;
+  shadowOpacity: number;
+  shadowRadius: number;
+  shadowOffset: { width: number; height: number };
+  elevation: number;
+}
+export type ShadowSet = Record<'sm' | 'md' | 'lg', ShadowLevel>;
+
+/**
+ * Dark-scheme shadows. The warm 6–12% set below is invisible on #131110 — elevation was a no-op in
+ * the very theme that IS the redesign. Black is allowed here: on a near-black ground a shadow is
+ * darkness, not a color.
+ */
+export const darkShadows: ShadowSet = {
+  sm: {
+    shadowColor: '#000000',
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  md: {
+    shadowColor: '#000000',
+    shadowOpacity: 0.45,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+  },
+  lg: {
+    shadowColor: '#000000',
+    shadowOpacity: 0.55,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 12,
+  },
+};
+
 /** Warm-tinted shadows only. Opacity 6–12%, soft large blur. Never black. */
-export const shadows = {
+export const shadows: ShadowSet = {
   sm: {
     shadowColor: '#6D4C41',
     shadowOpacity: 0.06,
@@ -112,4 +150,4 @@ export const shadows = {
     shadowOffset: { width: 0, height: 12 },
     elevation: 12,
   },
-} as const;
+};
