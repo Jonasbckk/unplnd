@@ -367,6 +367,14 @@ export const en = {
     failed: "That didn't work just now. Try again.",
     rateLimited: 'Busy right now — try again in a moment.',
   },
+  liveEvening: {
+    liveNow: 'Live',
+    title: '%{name} is out right now.',
+    over: "The evening is over — nothing to see here right now.",
+    rightNow: 'Right now',
+    joinThere: 'Head over & join',
+    view: 'Evening live · watch',
+  },
   map: {
     minutesAgo: '%{min} min ago',
     openProfile: 'Open profile',

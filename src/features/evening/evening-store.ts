@@ -6,6 +6,7 @@ import { useAuthStore } from '@/features/auth/auth-store';
 import type { GeneratedPlan, PlanStop } from '@/features/planner/types';
 import { track } from '@/lib/analytics';
 import { cancelEveningReminders, scheduleStopReminders } from '@/lib/notifications';
+import { publishEveningProgress } from './live-evening';
 import { supabase } from '@/lib/supabase';
 import { useAppStore } from '@/store/app-store';
 
@@ -94,14 +95,24 @@ export const useEveningStore = create<EveningState>()(
                 ? { evening: { ...s.evening, planRowId: data.id as string } }
                 : s,
             );
+            // Initial live progress (0038) as a SEPARATE best-effort update — deliberately not part
+            // of the insert: an unknown column would fail the whole row before the migration runs.
+            void publishEveningProgress(data.id as string, stops.map((s) => s.status));
           });
       },
 
-      completeCurrentStop: () =>
-        set((s) => (s.evening ? { evening: { ...s.evening, stops: advance(s.evening.stops, 'completed') } } : s)),
+      completeCurrentStop: () => {
+        set((s) => (s.evening ? { evening: { ...s.evening, stops: advance(s.evening.stops, 'completed') } } : s));
+        // Connections watching the live evening (0038) see the progress move — best effort.
+        const e = get().evening;
+        if (e?.planRowId) void publishEveningProgress(e.planRowId, e.stops.map((s) => s.status));
+      },
 
-      skipCurrentStop: () =>
-        set((s) => (s.evening ? { evening: { ...s.evening, stops: advance(s.evening.stops, 'skipped') } } : s)),
+      skipCurrentStop: () => {
+        set((s) => (s.evening ? { evening: { ...s.evening, stops: advance(s.evening.stops, 'skipped') } } : s));
+        const e = get().evening;
+        if (e?.planRowId) void publishEveningProgress(e.planRowId, e.stops.map((s) => s.status));
+      },
 
       finishEvening: async () => {
         const evening = get().evening;

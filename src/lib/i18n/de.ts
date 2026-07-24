@@ -408,6 +408,14 @@ export const de = {
     failed: 'Das hat gerade nicht geklappt. Versuch es nochmal.',
     rateLimited: 'Gerade viel los — versuch es gleich nochmal.',
   },
+  liveEvening: {
+    liveNow: 'Live',
+    title: '%{name} ist gerade unterwegs.',
+    over: 'Der Abend ist vorbei — hier gibt es gerade nichts zu sehen.',
+    rightNow: 'Gerade hier',
+    joinThere: 'Hin & dazustoßen',
+    view: 'Abend läuft · ansehen',
+  },
   map: {
     minutesAgo: 'vor %{min} Min',
     openProfile: 'Profil öffnen',

@@ -10,6 +10,7 @@ import { MemoryCard } from '@/features/albums/MemoryCard';
 import { useAlbumsStore } from '@/features/albums/albums-store';
 import { WorldMap, type FriendDot } from '@/features/map/WorldMap';
 import { getLiveConnections, type LiveConnection } from '@/features/map/live';
+import { getLiveEveningOf } from '@/features/evening/live-evening';
 import { cityCount, pinsFromAlbums, type PinCluster } from '@/features/map/pins';
 import { useProfileStyle } from '@/features/profile/profile-styles';
 import { haptics } from '@/lib/haptics';
@@ -27,6 +28,7 @@ export default function MapScreen() {
   const [selected, setSelected] = useState<PinCluster | null>(null);
   const [live, setLive] = useState<LiveConnection[]>([]);
   const [friend, setFriend] = useState<LiveConnection | null>(null);
+  const [friendLive, setFriendLive] = useState(false);
 
   // Connections sharing right now — server-side the RPC only ever returns accepted connections.
   useEffect(() => {
@@ -63,7 +65,7 @@ export default function MapScreen() {
           land: t.colors.surfaceSecondary,
           border: t.colors.border,
           pin: accent,
-          pinText: '#1a120c',
+          pinText: t.colors.onPrimary,
           friend: t.colors.accentOcean,
         }}
         onPressCluster={(c) => {
@@ -74,7 +76,11 @@ export default function MapScreen() {
         onPressFriend={(f) => {
           haptics.light();
           setSelected(null);
-          setFriend(live.find((l) => l.userId === f.userId) ?? null);
+          const match = live.find((l) => l.userId === f.userId) ?? null;
+          setFriend(match);
+          setFriendLive(false);
+          // Is their evening running? Then the sheet offers to watch and join it (0038).
+          if (match) void getLiveEveningOf(match.userId).then((e) => setFriendLive(Boolean(e)));
         }}
       />
 
@@ -202,6 +208,28 @@ export default function MapScreen() {
               <Ionicons name="close" size={18} color={t.colors.textSecondary} />
             </Pressable>
           </View>
+
+          {friendLive && (
+            <Pressable
+              onPress={() => router.push(`/evening/${friend.userId}` as Href)}
+              accessibilityRole="button"
+              style={{
+                borderWidth: 1.5,
+                borderColor: t.colors.success,
+                borderRadius: t.radius.md,
+                paddingVertical: t.spacing.md,
+                alignItems: 'center',
+                flexDirection: 'row',
+                justifyContent: 'center',
+                gap: 8,
+              }}
+            >
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: t.colors.success }} />
+              <Text variant="small" style={{ color: t.colors.success, fontWeight: '700' }}>
+                {tr('liveEvening.view')}
+              </Text>
+            </Pressable>
+          )}
 
           <Pressable
             onPress={() => router.push(`/user/${friend.userId}` as Href)}
