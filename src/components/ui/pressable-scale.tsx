@@ -15,6 +15,13 @@ export interface PressableScaleProps {
   accessibilityRole?: 'button' | 'radio' | 'checkbox';
   accessibilityState?: { selected?: boolean; disabled?: boolean };
   hitSlop?: number;
+  /**
+   * Guarantee a 44×44pt target by growing the INNER pressable (icon stays centred).
+   * Use for bare icons: hitSlop alone dies at the wrapper's bounds — the content-sized
+   * Animated.View clips hit-testing on both platforms under Fabric, so a slop ring
+   * around a 24px glyph is unreachable. Padding inside the wrapper is not.
+   */
+  hitTarget?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -33,6 +40,7 @@ export function PressableScale({
   accessibilityRole = 'button',
   accessibilityState,
   hitSlop,
+  hitTarget = false,
   style,
 }: PressableScaleProps) {
   const t = useTheme();
@@ -51,6 +59,7 @@ export function PressableScale({
       <Pressable
         disabled={disabled}
         hitSlop={hitSlop}
+        style={hitTarget ? { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' } : undefined}
         onPressIn={() => animate(t.motion.scalePressed, t.motion.duration.tap)}
         onPressOut={() => animate(1, t.motion.duration.release)}
         onPress={() => {

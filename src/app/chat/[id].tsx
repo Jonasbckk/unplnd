@@ -13,7 +13,7 @@ import { Image } from 'expo-image';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Text } from '@/components/ui';
+import { PressableScale, Skeleton, Text } from '@/components/ui';
 import { useAuthStore } from '@/features/auth/auth-store';
 import { pickPhotos } from '@/features/albums/photos';
 import { AttachSheet } from '@/features/messaging/AttachSheet';
@@ -116,26 +116,34 @@ function ReactionChips({
       {Object.entries(counts).map(([emoji, count]) => {
         const isMine = emoji === myEmoji;
         return (
-          <Pressable
+          // feedback 'none' — onToggle → onReact already fires its own haptic.
+          <PressableScale
             key={emoji}
             onPress={() => onToggle(emoji)}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 3,
-              paddingHorizontal: 7,
-              paddingVertical: 2,
-              borderRadius: t.radius.pill,
-              backgroundColor: isMine ? t.colors.primary + '22' : t.colors.surfaceSecondary,
-              borderWidth: 1,
-              borderColor: isMine ? t.colors.primary : 'transparent',
-            }}
+            feedback="none"
+            hitSlop={8}
+            accessibilityLabel={`${emoji} ${count}`}
+            accessibilityState={{ selected: isMine }}
           >
-            <Text style={{ fontSize: 12 }}>{emoji}</Text>
-            <Text variant="caption" color="textSecondary" style={{ fontWeight: '600' }}>
-              {count}
-            </Text>
-          </Pressable>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 3,
+                paddingHorizontal: 7,
+                paddingVertical: 2,
+                borderRadius: t.radius.pill,
+                backgroundColor: isMine ? t.colors.primary + '22' : t.colors.surfaceSecondary,
+                borderWidth: 1,
+                borderColor: isMine ? t.colors.primary : 'transparent',
+              }}
+            >
+              <Text style={{ fontSize: 12 }}>{emoji}</Text>
+              <Text variant="caption" color="textSecondary" style={{ fontWeight: '600' }}>
+                {count}
+              </Text>
+            </View>
+          </PressableScale>
         );
       })}
     </View>
@@ -175,7 +183,7 @@ function ChatImage({ path }: { path: string }) {
 function LocationCard({ location, mine }: { location: SharedLocation; mine: boolean }) {
   const t = useTheme();
   const { t: tr } = useT();
-  const fg = mine ? '#FFFFFF' : t.colors.textPrimary;
+  const fg = mine ? t.colors.onPrimary : t.colors.textPrimary;
   const sub = mine ? 'rgba(255,255,255,0.8)' : t.colors.textSecondary;
   return (
     <Pressable
@@ -190,7 +198,7 @@ function LocationCard({ location, mine }: { location: SharedLocation; mine: bool
           justifyContent: 'center',
         }}
       >
-        <Ionicons name="location" size={30} color={mine ? '#FFFFFF' : t.colors.primary} />
+        <Ionicons name="location" size={30} color={mine ? t.colors.onPrimary : t.colors.primary} />
       </View>
       <View style={{ padding: t.spacing.sm, gap: 2 }}>
         <Text variant="small" style={{ color: fg, fontWeight: '700' }} numberOfLines={1}>
@@ -220,7 +228,7 @@ function PlanCard({
 }) {
   const t = useTheme();
   const { t: tr } = useT();
-  const fg = onDark ? '#FFFFFF' : t.colors.textPrimary;
+  const fg = onDark ? t.colors.onPrimary : t.colors.textPrimary;
   const sub = onDark ? 'rgba(255,255,255,0.8)' : t.colors.textSecondary;
   const stops = plan.route.map((s) => s.title).slice(0, 3).join(' · ');
   return (
@@ -304,7 +312,7 @@ function Bubble({
           sticker ? (
             <Text style={{ fontSize: 52, lineHeight: 60 }}>{message.body}</Text>
           ) : (
-            <Text variant="body" style={{ color: mine ? '#FFFFFF' : t.colors.textPrimary }}>
+            <Text variant="body" style={{ color: mine ? t.colors.onPrimary : t.colors.textPrimary }}>
               {message.body}
             </Text>
           )
@@ -345,26 +353,27 @@ function RsvpButton({
 }) {
   const t = useTheme();
   return (
-    <Pressable
-      onPress={onPress}
-      hitSlop={6}
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 5,
-        paddingHorizontal: t.spacing.md,
-        paddingVertical: 7,
-        borderRadius: t.radius.pill,
-        backgroundColor: active ? activeColor : t.colors.surfaceSecondary,
-        borderWidth: 1,
-        borderColor: active ? activeColor : t.colors.border,
-      }}
-    >
-      <Ionicons name={icon} size={15} color={active ? '#FFFFFF' : t.colors.textSecondary} />
-      <Text variant="small" style={{ fontWeight: '700', color: active ? '#FFFFFF' : t.colors.textSecondary }}>
-        {label}
-      </Text>
-    </Pressable>
+    // feedback 'none' — onPress → onRsvp already fires its own haptic.
+    <PressableScale onPress={onPress} feedback="none" hitSlop={6} accessibilityLabel={label} accessibilityState={{ selected: active }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 5,
+          paddingHorizontal: t.spacing.md,
+          paddingVertical: 7,
+          borderRadius: t.radius.pill,
+          backgroundColor: active ? activeColor : t.colors.surfaceSecondary,
+          borderWidth: 1,
+          borderColor: active ? activeColor : t.colors.border,
+        }}
+      >
+        <Ionicons name={icon} size={15} color={active ? t.colors.onPrimary : t.colors.textSecondary} />
+        <Text variant="small" style={{ fontWeight: '700', color: active ? t.colors.onPrimary : t.colors.textSecondary }}>
+          {label}
+        </Text>
+      </View>
+    </PressableScale>
   );
 }
 
@@ -421,6 +430,8 @@ export default function ChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const me = useAuthStore((s) => s.user?.id);
   const [messages, setMessages] = useState<Message[]>([]);
+  // Gate the empty state on the initial load — no empty-chat flash before messages arrive.
+  const [loaded, setLoaded] = useState(false);
   const [isGroup, setIsGroup] = useState(false);
   const [title, setTitle] = useState('');
   const [otherId, setOtherId] = useState<string | null>(null);
@@ -447,7 +458,11 @@ export default function ChatScreen() {
   useEffect(() => {
     if (!id) return;
     let active = true;
-    void getMessages(id).then((m) => active && setMessages(m));
+    void getMessages(id).then((m) => {
+      if (!active) return;
+      setMessages(m);
+      setLoaded(true);
+    });
     void getBlockedIds().then((b) => {
       if (active) setBlocked(b);
     });
@@ -724,9 +739,9 @@ export default function ChatScreen() {
     <View style={{ flex: 1, backgroundColor: t.colors.background }}>
       <SafeAreaView edges={['top']}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm, paddingHorizontal: t.spacing.lg, paddingVertical: t.spacing.md }}>
-          <Pressable onPress={() => router.back()} hitSlop={8}>
+          <PressableScale onPress={() => router.back()} feedback="light" hitTarget accessibilityLabel={tr('location.back')}>
             <Ionicons name="chevron-back" size={26} color={t.colors.textPrimary} />
-          </Pressable>
+          </PressableScale>
           <Pressable
             disabled={!isGroup && !otherId}
             onPress={() => {
@@ -750,7 +765,7 @@ export default function ChatScreen() {
                 groupAvatar ? (
                   <Image source={{ uri: groupAvatar }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
                 ) : (
-                  <Ionicons name="people" size={19} color="#FFFFFF" />
+                  <Ionicons name="people" size={19} color={t.colors.onPrimary} />
                 )
               ) : partner?.avatar ? (
                 <Image source={{ uri: partner.avatar }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
@@ -765,7 +780,12 @@ export default function ChatScreen() {
                 <Text variant="h3" numberOfLines={1}>
                   {title || tr('chat.title')}
                 </Text>
-                {!isGroup && partner?.isFounder ? <Ionicons name="ribbon" size={14} color={t.colors.primary} /> : null}
+                {/* Founder wins; creators get the sparkles (same rule as connections/profiles). */}
+                {!isGroup && partner?.isFounder ? (
+                  <Ionicons name="ribbon" size={14} color={t.colors.primary} />
+                ) : !isGroup && partner?.isCreator ? (
+                  <Ionicons name="sparkles" size={14} color={t.colors.primary} />
+                ) : null}
               </View>
               {isGroup ? (
                 <Text variant="caption" color="textSecondary">
@@ -775,17 +795,20 @@ export default function ChatScreen() {
             </View>
           </Pressable>
           {isGroup ? (
-            <Pressable
+            <PressableScale
               onPress={() => router.push(`/group/${id}` as Href)}
-              hitSlop={8}
+              feedback="light"
+              hitTarget
+              accessibilityLabel={tr('groupInfo.title')}
               style={{ marginRight: t.spacing.sm }}
             >
               <Ionicons name="people-circle-outline" size={25} color={t.colors.textPrimary} />
-            </Pressable>
+            </PressableScale>
           ) : null}
-          <Pressable onPress={() => setMenuOpen(true)} hitSlop={8}>
+          {/* feedback 'light' doubles as the menu-open haptic. */}
+          <PressableScale onPress={() => setMenuOpen(true)} feedback="light" hitTarget accessibilityLabel={tr('chat.menu')}>
             <Ionicons name="ellipsis-horizontal" size={22} color={t.colors.textPrimary} />
-          </Pressable>
+          </PressableScale>
         </View>
       </SafeAreaView>
 
@@ -798,7 +821,13 @@ export default function ChatScreen() {
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
         >
-          {visible.length === 0 ? (
+          {!loaded ? (
+            <View style={{ gap: t.spacing.md, marginTop: t.spacing.sm }}>
+              <Skeleton width="55%" height={44} radius={t.radius.lg} />
+              <Skeleton width="70%" height={44} radius={t.radius.lg} />
+              <Skeleton width="50%" height={44} radius={t.radius.lg} style={{ alignSelf: 'flex-end' }} />
+            </View>
+          ) : visible.length === 0 ? (
             <View style={{ alignItems: 'center', gap: t.spacing.md, marginTop: t.spacing.huge }}>
               <View
                 style={{
@@ -840,7 +869,10 @@ export default function ChatScreen() {
                     mine={m.senderId === me}
                     senderName={isGroup ? names[m.senderId] : undefined}
                     onPlan={(p) => setPreview(p)}
-                    onLongPress={() => setReactTarget(m)}
+                    onLongPress={() => {
+                      haptics.selection();
+                      setReactTarget(m);
+                    }}
                     isFavorite={m.id === favoriteMessageId}
                   />
                   <ReactionChips
@@ -911,13 +943,12 @@ export default function ChatScreen() {
               backgroundColor: t.colors.background,
             }}
           >
-            <Pressable
-              onPress={cancelRecording}
-              hitSlop={8}
-              style={{ width: 44, height: 44, borderRadius: t.radius.pill, alignItems: 'center', justifyContent: 'center' }}
-            >
-              <Ionicons name="trash-outline" size={22} color={t.colors.textSecondary} />
-            </Pressable>
+            {/* feedback 'none' — cancelRecording fires its own haptic. */}
+            <PressableScale onPress={cancelRecording} feedback="none" hitSlop={8} accessibilityLabel={tr('common2.cancel')}>
+              <View style={{ width: 44, height: 44, borderRadius: t.radius.pill, alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="trash-outline" size={22} color={t.colors.textSecondary} />
+              </View>
+            </PressableScale>
             <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}>
               <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: t.colors.error }} />
               <Text variant="body" style={{ fontWeight: '700' }}>
@@ -927,19 +958,20 @@ export default function ChatScreen() {
                 {tr('chat.recording')}
               </Text>
             </View>
-            <Pressable
-              onPress={stopAndSend}
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: t.radius.pill,
-                backgroundColor: t.colors.primary,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Ionicons name="arrow-up" size={22} color="#FFFFFF" />
-            </Pressable>
+            <PressableScale onPress={stopAndSend} feedback="light">
+              <View
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: t.radius.pill,
+                  backgroundColor: t.colors.primary,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Ionicons name="arrow-up" size={22} color={t.colors.onPrimary} />
+              </View>
+            </PressableScale>
           </View>
         ) : (
           <View
@@ -955,22 +987,20 @@ export default function ChatScreen() {
               backgroundColor: t.colors.background,
             }}
           >
-            <Pressable
-              onPress={() => {
-                haptics.selection();
-                setAttachOpen(true);
-              }}
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: t.radius.pill,
-                backgroundColor: t.colors.surfaceSecondary,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Ionicons name="add" size={24} color={t.colors.textPrimary} />
-            </Pressable>
+            <PressableScale onPress={() => setAttachOpen(true)} feedback="selection">
+              <View
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: t.radius.pill,
+                  backgroundColor: t.colors.surfaceSecondary,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Ionicons name="add" size={24} color={t.colors.textPrimary} />
+              </View>
+            </PressableScale>
             <TextInput
               value={draft}
               onChangeText={setDraft}
@@ -991,28 +1021,30 @@ export default function ChatScreen() {
                 fontSize: 16,
               }}
             />
-            <Pressable
-              onPress={draft.trim() ? send : startRecording}
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: t.radius.pill,
-                backgroundColor: draft.trim() ? t.colors.primary : t.colors.surfaceSecondary,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Ionicons
-                name={draft.trim() ? 'arrow-up' : 'mic'}
-                size={22}
-                color={draft.trim() ? '#FFFFFF' : t.colors.textPrimary}
-              />
-            </Pressable>
+            {/* feedback 'none' — send() and startRecording() fire their own haptics. */}
+            <PressableScale onPress={draft.trim() ? send : startRecording} feedback="none">
+              <View
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: t.radius.pill,
+                  backgroundColor: draft.trim() ? t.colors.primary : t.colors.surfaceSecondary,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Ionicons
+                  name={draft.trim() ? 'arrow-up' : 'mic'}
+                  size={22}
+                  color={draft.trim() ? t.colors.onPrimary : t.colors.textPrimary}
+                />
+              </View>
+            </PressableScale>
           </View>
         )}
       </View>
 
-      <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
+      <Modal visible={menuOpen} transparent animationType="slide" onRequestClose={() => setMenuOpen(false)}>
         <Pressable
           onPress={() => setMenuOpen(false)}
           style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: t.colors.overlay }}
@@ -1029,26 +1061,32 @@ export default function ChatScreen() {
             }}
           >
             {isGroup ? (
-              <Pressable onPress={leaveGroup} style={{ paddingVertical: t.spacing.md }}>
-                <Text variant="body" color="error" style={{ fontWeight: '600' }}>
-                  {tr('chatMod.leave')}
-                </Text>
-              </Pressable>
+              <PressableScale onPress={leaveGroup} feedback="light" accessibilityLabel={tr('chatMod.leave')}>
+                <View style={{ paddingVertical: t.spacing.md }}>
+                  <Text variant="body" color="error" style={{ fontWeight: '600' }}>
+                    {tr('chatMod.leave')}
+                  </Text>
+                </View>
+              </PressableScale>
             ) : (
-              <Pressable onPress={blockPartner} style={{ paddingVertical: t.spacing.md }}>
-                <Text variant="body" color="error" style={{ fontWeight: '600' }}>
-                  {tr('chatMod.blockUser')}
-                </Text>
-              </Pressable>
+              <PressableScale onPress={blockPartner} feedback="light" accessibilityLabel={tr('chatMod.blockUser')}>
+                <View style={{ paddingVertical: t.spacing.md }}>
+                  <Text variant="body" color="error" style={{ fontWeight: '600' }}>
+                    {tr('chatMod.blockUser')}
+                  </Text>
+                </View>
+              </PressableScale>
             )}
             <Text variant="caption" color="textSecondary" style={{ paddingBottom: t.spacing.sm }}>
               {tr('chatMod.reportHint')}
             </Text>
-            <Pressable onPress={() => setMenuOpen(false)} style={{ paddingVertical: t.spacing.md }}>
-              <Text variant="body" color="textSecondary">
-                {tr('common2.cancel')}
-              </Text>
-            </Pressable>
+            <PressableScale onPress={() => setMenuOpen(false)} feedback="light" accessibilityLabel={tr('common2.cancel')}>
+              <View style={{ paddingVertical: t.spacing.md }}>
+                <Text variant="body" color="textSecondary">
+                  {tr('common2.cancel')}
+                </Text>
+              </View>
+            </PressableScale>
           </Pressable>
         </Pressable>
       </Modal>
@@ -1066,53 +1104,47 @@ export default function ChatScreen() {
         onLocation={shareLocation}
       />
 
-      <Modal visible={!!reactTarget} transparent animationType="fade" onRequestClose={() => setReactTarget(null)}>
+      <Modal visible={!!reactTarget} transparent animationType="slide" onRequestClose={() => setReactTarget(null)}>
         <Pressable
           onPress={() => setReactTarget(null)}
-          style={{
-            flex: 1,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: t.colors.overlay,
-            padding: t.spacing.lg,
-          }}
+          style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: t.colors.overlay }}
         >
           {reactTarget ? (
-            <Pressable onPress={(e) => e.stopPropagation()} style={{ gap: t.spacing.md, alignItems: 'center' }}>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  gap: t.spacing.sm,
-                  backgroundColor: t.colors.card,
-                  borderRadius: t.radius.pill,
-                  paddingHorizontal: t.spacing.base,
-                  paddingVertical: t.spacing.sm,
-                }}
-              >
+            <Pressable
+              onPress={(e) => e.stopPropagation()}
+              style={{
+                backgroundColor: t.colors.card,
+                borderTopLeftRadius: t.radius.sheet,
+                borderTopRightRadius: t.radius.sheet,
+                padding: t.spacing.lg,
+                paddingBottom: t.spacing.xl,
+                gap: t.spacing.md,
+              }}
+            >
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 {QUICK_REACTIONS.map((e) => (
-                  <Pressable key={e} onPress={() => onReact(reactTarget.id, e)} hitSlop={4}>
+                  // feedback 'none' — onReact already fires its own haptic.
+                  <PressableScale key={e} onPress={() => onReact(reactTarget.id, e)} feedback="none" hitSlop={6} accessibilityLabel={e}>
                     <Text style={{ fontSize: 30, lineHeight: 38 }}>{e}</Text>
-                  </Pressable>
+                  </PressableScale>
                 ))}
               </View>
               {reactTarget.senderId !== me ? (
-                <Pressable
+                <PressableScale
                   onPress={() => {
                     const target = reactTarget;
                     setReactTarget(null);
                     void reportMsg(target);
                   }}
-                  style={{
-                    backgroundColor: t.colors.card,
-                    borderRadius: t.radius.pill,
-                    paddingHorizontal: t.spacing.lg,
-                    paddingVertical: t.spacing.sm,
-                  }}
+                  feedback="light"
+                  accessibilityLabel={tr('chatMod.report')}
                 >
-                  <Text variant="small" color="error" style={{ fontWeight: '600' }}>
-                    {tr('chatMod.report')}
-                  </Text>
-                </Pressable>
+                  <View style={{ minHeight: 44, justifyContent: 'center' }}>
+                    <Text variant="small" color="error" style={{ fontWeight: '600' }}>
+                      {tr('chatMod.report')}
+                    </Text>
+                  </View>
+                </PressableScale>
               ) : null}
             </Pressable>
           ) : null}

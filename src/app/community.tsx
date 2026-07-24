@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button, Card, EmptyState, FadeInUp, Skeleton, StatementTitle, Text } from '@/components/ui';
+import { Button, Card, EmptyState, FadeInUp, PressableScale, Skeleton, StatementTitle, Text } from '@/components/ui';
 import { getCommunityPlans, toggleStar, type CommunityPlan } from '@/lib/community';
 import { haptics } from '@/lib/haptics';
 import { useT } from '@/lib/i18n';
@@ -108,44 +108,47 @@ function CommunityCard({ plan }: { plan: CommunityPlan }) {
       </View>
 
       <View style={{ padding: t.spacing.base, gap: 8 }}>
-        <Pressable
+        <PressableScale
           onPress={() => plan.authorId && router.push(`/user/${plan.authorId}` as Href)}
           disabled={!plan.authorId}
+          feedback="light"
           hitSlop={4}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}
+          accessibilityLabel={tr('community.by', { name: plan.authorName ?? tr('community.someone') })}
         >
-          <View
-            style={{
-              width: 26,
-              height: 26,
-              borderRadius: 13,
-              overflow: 'hidden',
-              backgroundColor: t.colors.primary,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            {plan.authorAvatar ? (
-              <Image source={{ uri: plan.authorAvatar }} style={{ width: '100%', height: '100%' }} contentFit="cover" cachePolicy="memory-disk" />
-            ) : (
-              <Text variant="caption" style={{ color: t.colors.onPrimary, fontWeight: '700' }}>
-                {(plan.authorName ?? '?').charAt(0).toUpperCase()}
-              </Text>
-            )}
-          </View>
-          <Text
-            variant="small"
-            numberOfLines={1}
-            style={{ flex: 1, color: plan.authorId ? t.colors.textPrimary : t.colors.textSecondary, fontWeight: '600' }}
-          >
-            {plan.authorName ?? tr('community.someone')}
-          </Text>
-          {meta ? (
-            <Text variant="caption" color="textSecondary" numberOfLines={1}>
-              {meta}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}>
+            <View
+              style={{
+                width: 26,
+                height: 26,
+                borderRadius: 13,
+                overflow: 'hidden',
+                backgroundColor: t.colors.primary,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {plan.authorAvatar ? (
+                <Image source={{ uri: plan.authorAvatar }} style={{ width: '100%', height: '100%' }} contentFit="cover" cachePolicy="memory-disk" />
+              ) : (
+                <Text variant="caption" style={{ color: t.colors.onPrimary, fontWeight: '700' }}>
+                  {(plan.authorName ?? '?').charAt(0).toUpperCase()}
+                </Text>
+              )}
+            </View>
+            <Text
+              variant="small"
+              numberOfLines={1}
+              style={{ flex: 1, color: plan.authorId ? t.colors.textPrimary : t.colors.textSecondary, fontWeight: '600' }}
+            >
+              {plan.authorName ?? tr('community.someone')}
             </Text>
-          ) : null}
-        </Pressable>
+            {meta ? (
+              <Text variant="caption" color="textSecondary" numberOfLines={1}>
+                {meta}
+              </Text>
+            ) : null}
+          </View>
+        </PressableScale>
 
         {stops ? (
           <Text variant="caption" color="textSecondary" numberOfLines={1}>
@@ -197,17 +200,18 @@ export default function CommunityScreen() {
             paddingVertical: t.spacing.md,
           }}
         >
-          <Pressable onPress={() => router.back()} hitSlop={8}>
+          <PressableScale onPress={() => router.back()} feedback="light" hitTarget accessibilityLabel={tr('location.back')}>
             <Ionicons name="chevron-back" size={26} color={t.colors.textPrimary} />
-          </Pressable>
+          </PressableScale>
           <View style={{ flex: 1 }} />
-          <Pressable
+          <PressableScale
             onPress={() => router.push('/plan/create' as Href)}
-            hitSlop={8}
+            feedback="light"
+            hitTarget
             accessibilityLabel={tr('createPlan.title')}
           >
             <Ionicons name="add-circle-outline" size={28} color={t.colors.primary} />
-          </Pressable>
+          </PressableScale>
         </View>
         <View style={{ paddingHorizontal: t.spacing.lg, paddingBottom: t.spacing.md }}>
           <StatementTitle text={tr('community.title')} />

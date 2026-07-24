@@ -2,10 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
+import { ScrollView, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button, Text } from '@/components/ui';
+import { Button, FadeInUp, PressableScale, Skeleton, Text } from '@/components/ui';
 import { useAuthStore } from '@/features/auth/auth-store';
 import { usePlannerStore } from '@/features/planner/planner-store';
 import {
@@ -51,7 +51,6 @@ export default function CommunityPlanDetail() {
 
   const onStar = () => {
     if (!plan) return;
-    haptics.light();
     const next = !starred;
     setStarred(next);
     setCount((c) => Math.max(0, c + (next ? 1 : -1)));
@@ -74,7 +73,6 @@ export default function CommunityPlanDetail() {
 
   const shareToChat = () => {
     if (!plan) return;
-    haptics.light();
     useShareStore.getState().setPlan({
       title: plan.title,
       route: plan.route.map((s) => ({ time: s.time, title: s.title })),
@@ -133,20 +131,33 @@ export default function CommunityPlanDetail() {
     <View style={{ flex: 1, backgroundColor: t.colors.background }}>
       <SafeAreaView edges={['top']}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: t.spacing.lg, paddingVertical: t.spacing.md }}>
-          <Pressable onPress={() => router.back()} hitSlop={8}>
+          <PressableScale onPress={() => router.back()} feedback="light" hitTarget accessibilityLabel={tr('location.back')}>
             <Ionicons name="chevron-back" size={26} color={t.colors.textPrimary} />
-          </Pressable>
+          </PressableScale>
           {plan && (
-            <Pressable onPress={shareToChat} hitSlop={8}>
+            <PressableScale onPress={shareToChat} feedback="light" hitTarget accessibilityLabel={tr('messages.shareTitle')}>
               <Ionicons name="paper-plane-outline" size={22} color={t.colors.primary} />
-            </Pressable>
+            </PressableScale>
           )}
         </View>
       </SafeAreaView>
 
       {loading ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color={t.colors.primary} />
+        // Skeleton mirrors the loaded layout: photo, title, author row, stop rows.
+        <View style={{ flex: 1 }}>
+          <Skeleton width="100%" height={260} radius={0} />
+          <View style={{ padding: t.spacing.lg, gap: t.spacing.md }}>
+            <Skeleton width="60%" height={28} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}>
+              <Skeleton width={34} height={34} radius={17} />
+              <Skeleton width="45%" height={14} />
+            </View>
+            <View style={{ gap: t.spacing.sm, marginTop: t.spacing.sm }}>
+              {[0, 1, 2].map((i) => (
+                <Skeleton key={i} height={64} radius={t.radius.card} />
+              ))}
+            </View>
+          </View>
         </View>
       ) : !plan ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: t.spacing.lg }}>
@@ -158,7 +169,7 @@ export default function CommunityPlanDetail() {
         <>
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
             {plan.photos.length > 0 && (
-              <View>
+              <FadeInUp index={0}>
                 <ScrollView
                   horizontal
                   pagingEnabled
@@ -188,8 +199,8 @@ export default function CommunityPlanDetail() {
                     borderRadius: t.radius.pill,
                   }}
                 >
-                  <Ionicons name="images-outline" size={13} color="#FFFFFF" />
-                  <Text variant="caption" style={{ color: '#FFFFFF', fontWeight: '700' }}>
+                  <Ionicons name="images-outline" size={13} color={t.colors.onPrimary} />
+                  <Text variant="caption" style={{ color: t.colors.onPrimary, fontWeight: '700' }}>
                     {plan.photos.length > 1
                       ? `${tr('community.album')} · ${photoIndex + 1}/${plan.photos.length}`
                       : tr('community.album')}
@@ -215,155 +226,192 @@ export default function CommunityPlanDetail() {
                           width: i === photoIndex ? 18 : 6,
                           height: 6,
                           borderRadius: 3,
-                          backgroundColor: i === photoIndex ? '#FFFFFF' : 'rgba(255,255,255,0.55)',
+                          backgroundColor: i === photoIndex ? t.colors.onPrimary : 'rgba(255,255,255,0.55)',
                         }}
                       />
                     ))}
                   </View>
                 )}
-              </View>
+              </FadeInUp>
             )}
 
             <View style={{ padding: t.spacing.lg, gap: t.spacing.md }}>
-              <Text variant="displayMedium">{plan.title}</Text>
-              <Pressable
-                onPress={() => plan.authorId && router.push(`/user/${plan.authorId}` as Href)}
-                disabled={!plan.authorId}
-                hitSlop={6}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}
-              >
-                {plan.authorAvatar ? (
-                  <Image source={{ uri: plan.authorAvatar }} style={{ width: 28, height: 28, borderRadius: 14 }} contentFit="cover" />
-                ) : (
+              <FadeInUp index={1} style={{ gap: t.spacing.md }}>
+                <Text variant="displayMedium">{plan.title}</Text>
+                <PressableScale
+                  onPress={() => plan.authorId && router.push(`/user/${plan.authorId}` as Href)}
+                  disabled={!plan.authorId}
+                  feedback="light"
+                  hitSlop={6}
+                  accessibilityLabel={tr('community.by', { name: plan.authorName ?? tr('community.someone') })}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm, minHeight: 44 }}>
+                    {plan.authorAvatar ? (
+                      <Image source={{ uri: plan.authorAvatar }} style={{ width: 28, height: 28, borderRadius: 14 }} contentFit="cover" />
+                    ) : (
+                      <View
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: 14,
+                          backgroundColor: t.colors.primary,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Text variant="caption" color="onPrimary">
+                          {(plan.authorName ?? '?').charAt(0).toUpperCase()}
+                        </Text>
+                      </View>
+                    )}
+                    <Text variant="small" color="textSecondary" style={{ flex: 1 }}>
+                      {tr('community.by', { name: plan.authorName ?? tr('community.someone') })}
+                      {plan.city ? ` · ${plan.city}` : ''}
+                    </Text>
+                    {plan.authorId ? <Ionicons name="chevron-forward" size={14} color={t.colors.textSecondary} /> : null}
+                  </View>
+                </PressableScale>
+
+                {plan.isCustom ? (
                   <View
                     style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: 14,
-                      backgroundColor: t.colors.primary,
+                      flexDirection: 'row',
                       alignItems: 'center',
-                      justifyContent: 'center',
+                      gap: 5,
+                      alignSelf: 'flex-start',
+                      backgroundColor: t.colors.surfaceSecondary,
+                      paddingHorizontal: 10,
+                      paddingVertical: 5,
+                      borderRadius: t.radius.pill,
                     }}
                   >
-                    <Text variant="caption" color="onPrimary">
-                      {(plan.authorName ?? '?').charAt(0).toUpperCase()}
+                    <Ionicons name="create-outline" size={13} color={t.colors.primary} />
+                    <Text variant="small" style={{ color: t.colors.primary, fontWeight: '600' }}>
+                      {tr('community.customBadge')}
                     </Text>
-                  </View>
-                )}
-                <Text variant="small" color="textSecondary" style={{ flex: 1 }}>
-                  {tr('community.by', { name: plan.authorName ?? tr('community.someone') })}
-                  {plan.city ? ` · ${plan.city}` : ''}
-                </Text>
-                {plan.authorId ? <Ionicons name="chevron-forward" size={14} color={t.colors.textSecondary} /> : null}
-              </Pressable>
-
-              {plan.isCustom ? (
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 5,
-                    alignSelf: 'flex-start',
-                    backgroundColor: t.colors.surfaceSecondary,
-                    paddingHorizontal: 10,
-                    paddingVertical: 5,
-                    borderRadius: t.radius.pill,
-                  }}
-                >
-                  <Ionicons name="create-outline" size={13} color={t.colors.primary} />
-                  <Text variant="small" style={{ color: t.colors.primary, fontWeight: '600' }}>
-                    {tr('community.customBadge')}
-                  </Text>
-                </View>
-              ) : null}
-
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.lg }}>
-                <Pressable onPress={onStar} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                  <Ionicons
-                    name={starred ? 'star' : 'star-outline'}
-                    size={22}
-                    color={starred ? t.colors.accentOrange : t.colors.textSecondary}
-                  />
-                  <Text variant="body" style={{ fontWeight: '600', color: starred ? t.colors.accentOrange : t.colors.textSecondary }}>
-                    {count}
-                  </Text>
-                </Pressable>
-                {plan.selfRating ? (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <Text variant="small" color="textSecondary">
-                      {tr('community.creatorRated')}
-                    </Text>
-                    <View style={{ flexDirection: 'row', gap: 1 }}>
-                      {[1, 2, 3, 4, 5].map((n) => (
-                        <Ionicons
-                          key={n}
-                          name={n <= (plan.selfRating ?? 0) ? 'star' : 'star-outline'}
-                          size={13}
-                          color={t.colors.accentOrange}
-                        />
-                      ))}
-                    </View>
                   </View>
                 ) : null}
-              </View>
 
-              {plan.summary ? (
-                <Text variant="bodyLarge" color="textSecondary">
-                  {plan.summary}
-                </Text>
-              ) : null}
-
-              <View style={{ gap: t.spacing.sm, marginTop: t.spacing.sm }}>
-                {plan.route.map((stop, i) => (
-                  <View
-                    key={i}
-                    style={{ flexDirection: 'row', gap: t.spacing.base, paddingVertical: t.spacing.sm, alignItems: 'center' }}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.lg }}>
+                  <PressableScale
+                    onPress={onStar}
+                    feedback="selection"
+                    hitTarget
+                    accessibilityLabel={tr('community.starsShort', { count })}
+                    accessibilityState={{ selected: starred }}
                   >
-                    <Text variant="body" color="primary" style={{ width: 52, fontWeight: '600' }}>
-                      {stop.time}
-                    </Text>
-                    <View style={{ flex: 1 }}>
-                      <Text variant="body" style={{ fontWeight: '600' }}>
-                        {stop.title}
-                      </Text>
-                      <Text variant="small" color="textSecondary">
-                        {stop.reason}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                      <Ionicons
+                        name={starred ? 'star' : 'star-outline'}
+                        size={22}
+                        color={starred ? t.colors.accentOrange : t.colors.textSecondary}
+                      />
+                      <Text variant="body" style={{ fontWeight: '600', color: starred ? t.colors.accentOrange : t.colors.textSecondary }}>
+                        {count}
                       </Text>
                     </View>
-                    {stop.photoUrl ? (
-                      <Image
-                        source={{ uri: stop.photoUrl }}
-                        style={{ width: 56, height: 56, borderRadius: t.radius.md }}
-                        contentFit="cover"
-                        transition={200}
-                      />
-                    ) : null}
-                  </View>
-                ))}
-              </View>
+                  </PressableScale>
+                  {plan.selfRating ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Text variant="small" color="textSecondary">
+                        {tr('community.creatorRated')}
+                      </Text>
+                      <View style={{ flexDirection: 'row', gap: 1 }}>
+                        {[1, 2, 3, 4, 5].map((n) => (
+                          <Ionicons
+                            key={n}
+                            name={n <= (plan.selfRating ?? 0) ? 'star' : 'star-outline'}
+                            size={13}
+                            color={t.colors.accentOrange}
+                          />
+                        ))}
+                      </View>
+                    </View>
+                  ) : null}
+                </View>
+              </FadeInUp>
 
-              <View style={{ flexDirection: 'row', gap: t.spacing.lg, marginTop: t.spacing.md }}>
-                {isMine ? (
-                  <Pressable onPress={onDeletePublished} hitSlop={6}>
-                    <Text variant="small" color="error" style={{ fontWeight: '600' }}>
-                      {tr('community.delete')}
-                    </Text>
-                  </Pressable>
-                ) : (
-                  <>
-                    <Pressable onPress={onReport} hitSlop={6}>
-                      <Text variant="small" color="textSecondary">
-                        {tr('community.report')}
+              {plan.summary ? (
+                <FadeInUp index={2}>
+                  <Text variant="bodyLarge" color="textSecondary">
+                    {plan.summary}
+                  </Text>
+                </FadeInUp>
+              ) : null}
+
+              <FadeInUp index={3}>
+                {/* The route reads as one unit — stops grouped on a card surface. */}
+                <View
+                  style={{
+                    gap: t.spacing.sm,
+                    marginTop: t.spacing.sm,
+                    backgroundColor: t.colors.surface,
+                    borderRadius: t.radius.card,
+                    borderWidth: t.scheme === 'dark' ? 1 : 0,
+                    borderColor: t.colors.border,
+                    paddingHorizontal: t.spacing.base,
+                    paddingVertical: t.spacing.sm,
+                  }}
+                >
+                  {plan.route.map((stop, i) => (
+                    <View
+                      key={i}
+                      style={{ flexDirection: 'row', gap: t.spacing.base, paddingVertical: t.spacing.sm, alignItems: 'center' }}
+                    >
+                      <Text variant="body" color="primary" style={{ width: 52, fontWeight: '600' }}>
+                        {stop.time}
                       </Text>
-                    </Pressable>
-                    <Pressable onPress={onBlock} hitSlop={6}>
-                      <Text variant="small" color="textSecondary">
-                        {tr('community.block')}
-                      </Text>
-                    </Pressable>
-                  </>
-                )}
-              </View>
+                      <View style={{ flex: 1 }}>
+                        <Text variant="body" style={{ fontWeight: '600' }}>
+                          {stop.title}
+                        </Text>
+                        <Text variant="small" color="textSecondary">
+                          {stop.reason}
+                        </Text>
+                      </View>
+                      {stop.photoUrl ? (
+                        <Image
+                          source={{ uri: stop.photoUrl }}
+                          style={{ width: 56, height: 56, borderRadius: t.radius.md }}
+                          contentFit="cover"
+                          transition={200}
+                        />
+                      ) : null}
+                    </View>
+                  ))}
+                </View>
+              </FadeInUp>
+
+              <FadeInUp index={4}>
+                <View style={{ flexDirection: 'row', gap: t.spacing.lg, marginTop: t.spacing.md }}>
+                  {isMine ? (
+                    <PressableScale onPress={onDeletePublished} feedback="light" accessibilityLabel={tr('community.delete')}>
+                      <View style={{ minHeight: 44, justifyContent: 'center' }}>
+                        <Text variant="small" color="error" style={{ fontWeight: '600' }}>
+                          {tr('community.delete')}
+                        </Text>
+                      </View>
+                    </PressableScale>
+                  ) : (
+                    <>
+                      <PressableScale onPress={onReport} feedback="light" accessibilityLabel={tr('community.report')}>
+                        <View style={{ minHeight: 44, justifyContent: 'center' }}>
+                          <Text variant="small" color="textSecondary">
+                            {tr('community.report')}
+                          </Text>
+                        </View>
+                      </PressableScale>
+                      <PressableScale onPress={onBlock} feedback="light" accessibilityLabel={tr('community.block')}>
+                        <View style={{ minHeight: 44, justifyContent: 'center' }}>
+                          <Text variant="small" color="textSecondary">
+                            {tr('community.block')}
+                          </Text>
+                        </View>
+                      </PressableScale>
+                    </>
+                  )}
+                </View>
+              </FadeInUp>
             </View>
           </ScrollView>
 
@@ -380,7 +428,9 @@ export default function CommunityPlanDetail() {
               borderTopColor: t.colors.divider,
             }}
           >
-            <Button title={tr('community.usePlan')} onPress={usePlan} />
+            <FadeInUp index={3}>
+              <Button title={tr('community.usePlan')} onPress={usePlan} gradient iconRight="arrow-forward" />
+            </FadeInUp>
           </View>
         </>
       )}
