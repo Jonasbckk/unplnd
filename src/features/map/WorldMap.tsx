@@ -1,11 +1,13 @@
 import { geoNaturalEarth1, geoPath } from 'd3-geo';
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
+  cancelAnimation,
   runOnJS,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
+  withDecay,
 } from 'react-native-reanimated';
 import Svg, { Circle, G, Path, Rect, Text as SvgText } from 'react-native-svg';
 
@@ -18,6 +20,11 @@ const CLUSTER_RADIUS = 22;
 const REVEAL_STEP_MS = 90;
 /** Tap tolerance around a pin/friend dot — comfortably beyond the drawn radius (≥44pt targets). */
 const TAP_RADIUS = 26;
+/** 110m geometry turns blocky past a regional view. */
+const MAX_K = 40;
+/** How long the camera must be at rest before the crisp SVG re-render — the expensive re-raster
+ *  never lands mid-exploration, only when the user actually stops (map tiles sharpen the same way). */
+const SETTLE_MS = 140;
 /**
  * geoNaturalEarth1's raw output half-extents. d3 multiplies raw coordinates by scale() directly,
  * so the projected world half-width is RAW_HALF_X · scale px (adversarial review: an earlier /π
@@ -76,19 +83,23 @@ const Countries = memo(function Countries({
 /**
  * The Memory Map — a vector world from bundled geometry (22_PROFILE). No provider, no key, offline.
  *
- * Rendering/gesture model (v4 — shaped by an adversarial review of v3):
- * - CRISPNESS: the camera is applied INSIDE the Svg as a <G matrix> — react-native-svg re-rasters
- *   vectors under the true CTM, so coastlines and labels stay sharp at every zoom. (v3 put the
- *   camera on the Android/iOS view layer, which magnified a low-res bitmap: permanently blurry,
- *   and vectorEffect can't see layer transforms, so hairlines fattened by k.)
- * - SMOOTHNESS: the LIVE gesture is a view-layer transform driven by worklets — nothing re-renders
- *   while a finger is down. On release the fold is computed in the worklet and committed once via
- *   a tiny React state update (a G-matrix string + a handful of circle props; the path is memoised).
- * - RN scales views about their CENTRE; the live-gesture style compensates with t − c·(1−s), which
- *   also fixed the old "pinch lands with a small jump" bug.
- * - The Svg is pure display (pointerEvents="none"); taps are resolved by distance in JS.
+ * Rendering/gesture model (v5 — after the founder still felt v4 stutter on device):
+ * - CRISPNESS: the rendered camera lives INSIDE the Svg as a <G matrix> — react-native-svg
+ *   re-rasters vectors under the true CTM, so coastlines stay sharp at every zoom.
+ * - SMOOTHNESS: the LIVE camera is a cumulative screen-space affine (a, tx, ty) in shared values,
+ *   driven purely by worklets. Pans/pinches/flicks COMPOSE — no React work, no SVG re-raster
+ *   between gestures. v4 committed (= full re-raster of the world path) on every finger-up, which
+ *   put a hitch at the end of every single swipe; v5 commits only once the map has been at rest
+ *   for SETTLE_MS, exactly like map tiles sharpening after you stop.
+ * - FEEL: release velocity carries into withDecay (inertia), and the pan bounds + zoom range are
+ *   clamped DURING the gesture in the worklet, so nothing ever snaps at commit time.
+ * - The seam: the crisp re-render and the live-transform reset must swap in the same frame —
+ *   the reset happens in useLayoutEffect right after the camera state commits.
+ * - RN scales views about their CENTRE; the live style compensates with t − c·(1−a).
+ * - The Svg is pure display (pointerEvents="none"); taps resolve in JS against the committed
+ *   positions pushed through the CURRENT live transform (so taps are correct even pre-commit).
  */
-export function WorldMap({
+export const WorldMap = memo(function WorldMap({
   pins,
   friends = [],
   width,
@@ -116,11 +127,16 @@ export function WorldMap({
       .join(' ');
   }, [base]);
 
-  // ---- Camera state (React) + a mirror for the fold worklet. ----
+  // ---- Rendered camera (React state) + mirrors the worklets read. ----
   const [cam, setCam] = useState<Camera>({ k: 1, gx: 0, gy: 0 });
   const camK = useSharedValue(1);
   const camGx = useSharedValue(0);
   const camGy = useSharedValue(0);
+
+  // ---- Live camera on top of the rendered one: screen p → a·p + (tx, ty). Identity at rest. ----
+  const liveA = useSharedValue(1);
+  const liveTx = useSharedValue(0);
+  const liveTy = useSharedValue(0);
 
   const applyCamera = (k: number, gx: number, gy: number) => {
     camK.value = k;
@@ -160,9 +176,7 @@ export function WorldMap({
     let k = projection.scale() / base.scale;
     let gx = projection.translate()[0] - k * base.tx;
     let gy = projection.translate()[1] - k * base.ty;
-    // Pins spanning most of the world fit BELOW world scale (k < 1) — but the fold enforces k ≥ 1,
-    // so an unclamped start would snap-zoom ~30% on the first release. Clamp here with the same
-    // centre re-anchoring the fold uses (adversarial review, finding 3).
+    // Pins spanning most of the world fit BELOW world scale (k < 1) — clamp with centre re-anchor.
     if (k < 1) {
       const r = 1 / k;
       k = 1;
@@ -174,7 +188,7 @@ export function WorldMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [width, height, fitToPins, base]);
 
-  // ---- Screen-space projection at the current camera (for pins, clusters, taps). ----
+  // ---- Screen-space projection at the rendered camera (pins, clusters; taps add the live part). ----
   const project = useMemo<Project>(() => {
     const projection = geoNaturalEarth1()
       .scale(cam.k * base.scale)
@@ -221,66 +235,121 @@ export function WorldMap({
     return () => clearInterval(id);
   }, [clusters, reduced, pins.length]);
 
-  // ---- Gestures: live transform on the UI thread; fold computed in the worklet, committed once. ----
-  const panX = useSharedValue(0);
-  const panY = useSharedValue(0);
-  const zoom = useSharedValue(1);
-  const focalX = useSharedValue(width / 2);
-  const focalY = useSharedValue(height / 2);
+  // ---- The settle → crisp-commit cycle. ----
+  // fold() runs on the JS thread AFTER the map has truly come to rest — no finger down AND no
+  // decay gliding (the adversarial review caught v5's first draft folding 140 ms into a 1–2 s
+  // flick: it froze the glide mid-air and jumped backwards). It reads the live transform,
+  // composes it onto the rendered camera and commits ONE React render. The matching live-reset
+  // happens in useLayoutEffect so the crisp SVG and the identity transform swap in the same frame.
+  const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const gestureActive = useRef(0);
+  const decaysActive = useRef(0);
+  // Synchronous touch mirror — runOnJS has queue latency, so fold() double-checks this right
+  // before committing: a finger that landed a few ms ago must never have the rug pulled.
+  const touching = useSharedValue(0);
+  // What fold() baked into the camera — the reset REBASES the live transform by exactly this
+  // amount instead of zeroing it, so deltas that arrived during the commit render survive.
+  const folded = useRef<{ a0: number; tx0: number; ty0: number } | null>(null);
 
-  const commitCamera = (k: number, gx: number, gy: number) => {
-    // Same JS tick: camera state moves to where the gesture left the view, gesture resets. The
-    // residual is a ≤1-frame overlap — the price of crisp SVG-internal rendering.
-    applyCamera(k, gx, gy);
-    panX.value = 0;
-    panY.value = 0;
-    zoom.value = 1;
+  const fold = () => {
+    if (touching.value > 0) return; // a fresh finger is down — its finalize will reschedule
+    const a0 = liveA.value;
+    const tx0 = liveTx.value;
+    const ty0 = liveTy.value;
+    if (a0 === 1 && tx0 === 0 && ty0 === 0) return;
+    folded.current = { a0, tx0, ty0 };
+    applyCamera(camK.value * a0, a0 * camGx.value + tx0, a0 * camGy.value + ty0);
   };
 
+  // After the crisp camera commits: rebase live by the folded amount (identity in the common
+  // case; live′ = live ∘ fold⁻¹ when the map moved during the render). Mount/fit resets plain.
+  useLayoutEffect(() => {
+    const f = folded.current;
+    folded.current = null;
+    if (f) {
+      const a2 = liveA.value / f.a0;
+      const tx2 = liveTx.value - a2 * f.tx0;
+      const ty2 = liveTy.value - a2 * f.ty0;
+      liveA.value = a2;
+      liveTx.value = tx2;
+      liveTy.value = ty2;
+    } else {
+      liveA.value = 1;
+      liveTx.value = 0;
+      liveTy.value = 0;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cam]);
+
+  const maybeSchedule = () => {
+    if (gestureActive.current > 0 || decaysActive.current > 0) return;
+    if (settleTimer.current) clearTimeout(settleTimer.current);
+    settleTimer.current = setTimeout(() => {
+      settleTimer.current = null;
+      if (gestureActive.current > 0 || decaysActive.current > 0) return;
+      fold();
+    }, SETTLE_MS);
+  };
+
+  const beginGesture = () => {
+    gestureActive.current += 1;
+    if (settleTimer.current) {
+      clearTimeout(settleTimer.current);
+      settleTimer.current = null;
+    }
+  };
+
+  const endGesture = () => {
+    gestureActive.current = Math.max(0, gestureActive.current - 1);
+    maybeSchedule();
+  };
+
+  const decayStarted = () => {
+    decaysActive.current += 1;
+  };
+
+  // Fires for finished AND cancelled decays (cancelAnimation invokes the callback with false),
+  // so the counter stays symmetric.
+  const decayFinished = () => {
+    decaysActive.current = Math.max(0, decaysActive.current - 1);
+    maybeSchedule();
+  };
+
+  useEffect(
+    () => () => {
+      if (settleTimer.current) clearTimeout(settleTimer.current);
+    },
+    [],
+  );
+
+  // ---- Worklet-side clamps: bounds hold DURING the gesture, so the commit never snaps. ----
   const baseScale = base.scale;
   const baseTx = base.tx;
   const baseTy = base.ty;
-  const fold = () => {
+
+  /** Clamp (tx, ty) so part of the world stays on screen at the current live scale. */
+  const clampPan = () => {
     'worklet';
-    const s = zoom.value;
-    const fx = focalX.value;
-    const fy = focalY.value;
-    let k = camK.value * s;
-    let gx = fx + s * (camGx.value - fx) + panX.value;
-    let gy = fy + s * (camGy.value - fy) + panY.value;
-    // Floor: never smaller than the world; re-anchor so the shrink doesn't fling the map away.
-    if (k < 1) {
-      const r = 1 / k;
-      k = 1;
-      gx = width / 2 + r * (gx - width / 2);
-      gy = height / 2 + r * (gy - height / 2);
-    }
-    // Ceiling: 110m geometry turns blocky past a regional view.
-    if (k > 40) {
-      const r = 40 / k;
-      k = 40;
-      gx = fx + r * (gx - fx);
-      gy = fy + r * (gy - fy);
-    }
-    // Keep part of the world on screen. Projected half-extents are RAW_HALF · k · baseScale.
+    const k = liveA.value * camK.value;
     const halfW = RAW_HALF_X * k * baseScale;
     const halfH = RAW_HALF_Y * k * baseScale;
-    const cx = k * baseTx + gx; // world centre on screen
-    const cy = k * baseTy + gy;
+    const cx = k * baseTx + liveA.value * camGx.value + liveTx.value; // world centre on screen
+    const cy = k * baseTy + liveA.value * camGy.value + liveTy.value;
     const nx = Math.min(Math.max(cx, width * 0.2 - halfW), width * 0.8 + halfW);
     const ny = Math.min(Math.max(cy, height * 0.2 - halfH), height * 0.8 + halfH);
-    gx += nx - cx;
-    gy += ny - cy;
-    camK.value = k;
-    camGx.value = gx;
-    camGy.value = gy;
-    runOnJS(commitCamera)(k, gx, gy);
+    liveTx.value += nx - cx;
+    liveTy.value += ny - cy;
   };
 
-  // Taps resolve in JS against the projected positions — friends first (drawn on top).
-  const handleTap = (x: number, y: number) => {
+  // Taps resolve in JS against committed positions pushed through the live transform, so they
+  // are correct even while the crisp commit is still pending.
+  const handleTap = (x: number, y: number, a: number, tx: number, ty: number) => {
+    const at = (px: number, py: number): [number, number] => [a * px + tx, a * py + ty];
     if (onPressFriend) {
-      const friend = friendDots.find((f) => Math.hypot(f.x - x, f.y - y) <= TAP_RADIUS);
+      const friend = friendDots.find((f) => {
+        const [fx, fy] = at(f.x, f.y);
+        return Math.hypot(fx - x, fy - y) <= TAP_RADIUS;
+      });
       if (friend) {
         onPressFriend(friend);
         return;
@@ -288,7 +357,8 @@ export function WorldMap({
     }
     if (onPressCluster) {
       for (let i = clusters.length - 1; i >= 0; i--) {
-        if (Math.hypot(clusters[i].x - x, clusters[i].y - y) <= TAP_RADIUS) {
+        const [cx, cy] = at(clusters[i].x, clusters[i].y);
+        if (Math.hypot(cx - x, cy - y) <= TAP_RADIUS) {
           onPressCluster(clusters[i]);
           return;
         }
@@ -299,48 +369,96 @@ export function WorldMap({
   const pan = Gesture.Pan()
     .enabled(interactive)
     .maxPointers(1)
-    .onChange((e) => {
-      panX.value += e.changeX;
-      panY.value += e.changeY;
+    .onBegin(() => {
+      touching.value += 1;
+      cancelAnimation(liveTx);
+      cancelAnimation(liveTy);
+      runOnJS(beginGesture)();
     })
-    .onEnd(() => {
-      fold();
+    .onChange((e) => {
+      liveTx.value += e.changeX;
+      liveTy.value += e.changeY;
+      clampPan();
+    })
+    .onEnd((e, success) => {
+      // A pan that lost to a starting pinch must not fling its last velocity into it.
+      if (!success) return;
+      // Flick inertia — the map glides and eases out instead of stopping dead at the finger.
+      const k = liveA.value * camK.value;
+      const halfW = RAW_HALF_X * k * baseScale;
+      const halfH = RAW_HALF_Y * k * baseScale;
+      const cxNow = k * baseTx + liveA.value * camGx.value; // centre minus liveTx
+      const cyNow = k * baseTy + liveA.value * camGy.value;
+      runOnJS(decayStarted)();
+      runOnJS(decayStarted)();
+      liveTx.value = withDecay(
+        {
+          velocity: e.velocityX,
+          deceleration: 0.994,
+          clamp: [width * 0.2 - halfW - cxNow, width * 0.8 + halfW - cxNow],
+        },
+        () => {
+          runOnJS(decayFinished)();
+        },
+      );
+      liveTy.value = withDecay(
+        {
+          velocity: e.velocityY,
+          deceleration: 0.994,
+          clamp: [height * 0.2 - halfH - cyNow, height * 0.8 + halfH - cyNow],
+        },
+        () => {
+          runOnJS(decayFinished)();
+        },
+      );
+    })
+    .onFinalize(() => {
+      touching.value = Math.max(0, touching.value - 1);
+      runOnJS(endGesture)();
     });
 
   const pinch = Gesture.Pinch()
     .enabled(interactive)
-    .onStart((e) => {
-      focalX.value = e.focalX;
-      focalY.value = e.focalY;
+    .onBegin(() => {
+      touching.value += 1;
+      runOnJS(beginGesture)();
     })
     .onChange((e) => {
-      zoom.value *= e.scaleChange;
+      // Compose the zoom about the CURRENT focal (tracks moving fingers): T' = Z ∘ T.
+      const total = liveA.value * camK.value;
+      let ds = e.scaleChange;
+      // Clamp the zoom range live — no floor/ceiling snap at commit time.
+      if (total * ds < 1) ds = 1 / total;
+      if (total * ds > MAX_K) ds = MAX_K / total;
+      liveA.value *= ds;
+      liveTx.value = ds * liveTx.value + e.focalX * (1 - ds);
+      liveTy.value = ds * liveTy.value + e.focalY * (1 - ds);
+      clampPan();
     })
-    .onEnd(() => {
-      fold();
+    .onFinalize(() => {
+      touching.value = Math.max(0, touching.value - 1);
+      runOnJS(endGesture)();
     });
 
   const tap = Gesture.Tap()
     .enabled(interactive)
     .maxDuration(260)
     .onEnd((e) => {
-      runOnJS(handleTap)(e.x, e.y);
+      runOnJS(handleTap)(e.x, e.y, liveA.value, liveTx.value, liveTy.value);
     });
 
   // Pan/pinch take priority; a tap only lands when the finger didn't travel.
   const gesture = Gesture.Exclusive(Gesture.Simultaneous(pan, pinch), tap);
 
-  // Live-gesture-only view transform (identity at rest). RN scales about the view centre — the
-  // desired origin-space q → z·q + t therefore renders as translate(t − c·(1−z)) scale(z).
+  // Live camera as a view transform (identity at rest). RN scales about the view centre — the
+  // desired screen-space p → a·p + t therefore renders as translate(t − c·(1−a)) scale(a).
   const animatedStyle = useAnimatedStyle(() => {
-    const z = zoom.value;
-    const tx = panX.value + focalX.value * (1 - z);
-    const ty = panY.value + focalY.value * (1 - z);
+    const a = liveA.value;
     return {
       transform: [
-        { translateX: tx - (width / 2) * (1 - z) },
-        { translateY: ty - (height / 2) * (1 - z) },
-        { scale: z },
+        { translateX: liveTx.value - (width / 2) * (1 - a) },
+        { translateY: liveTy.value - (height / 2) * (1 - a) },
+        { scale: a },
       ],
     };
   });
@@ -389,4 +507,4 @@ export function WorldMap({
       </Animated.View>
     </GestureDetector>
   );
-}
+});

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, type Href } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -44,6 +44,41 @@ export default function MapScreen() {
   const pins = useMemo(() => pinsFromAlbums(albums), [albums]);
   const cities = cityCount(pins);
 
+  // Stable props for the memoised WorldMap — opening/closing a sheet must never re-render
+  // (= re-reconcile the whole SVG world) underneath it.
+  const friendDots = useMemo(
+    () => live.map((l): FriendDot => ({ userId: l.userId, name: l.name, lat: l.lat, lng: l.lng })),
+    [live],
+  );
+  const mapColors = useMemo(
+    () => ({
+      water: t.colors.background,
+      land: t.colors.surfaceSecondary,
+      border: t.colors.border,
+      pin: accent,
+      pinText: t.colors.onPrimary,
+      friend: t.colors.accentOcean,
+    }),
+    [t, accent],
+  );
+  const onPressCluster = useCallback((c: PinCluster) => {
+    haptics.light();
+    setFriend(null);
+    setSelected(c);
+  }, []);
+  const onPressFriend = useCallback(
+    (f: FriendDot) => {
+      haptics.light();
+      setSelected(null);
+      const match = live.find((l) => l.userId === f.userId) ?? null;
+      setFriend(match);
+      setFriendLive(false);
+      // Is their evening running? Then the sheet offers to watch and join it (0038).
+      if (match) void getLiveEveningOf(match.userId).then((e) => setFriendLive(Boolean(e)));
+    },
+    [live],
+  );
+
   // The evenings behind the tapped bubble, newest first.
   const chosen = useMemo(() => {
     if (!selected) return [];
@@ -55,33 +90,14 @@ export default function MapScreen() {
     <View style={{ flex: 1, backgroundColor: t.colors.background }}>
       <WorldMap
         pins={pins}
-        friends={live.map((l): FriendDot => ({ userId: l.userId, name: l.name, lat: l.lat, lng: l.lng }))}
+        friends={friendDots}
         width={width}
         height={height}
         fitToPins
         interactive
-        colors={{
-          water: t.colors.background,
-          land: t.colors.surfaceSecondary,
-          border: t.colors.border,
-          pin: accent,
-          pinText: t.colors.onPrimary,
-          friend: t.colors.accentOcean,
-        }}
-        onPressCluster={(c) => {
-          haptics.light();
-          setFriend(null);
-          setSelected(c);
-        }}
-        onPressFriend={(f) => {
-          haptics.light();
-          setSelected(null);
-          const match = live.find((l) => l.userId === f.userId) ?? null;
-          setFriend(match);
-          setFriendLive(false);
-          // Is their evening running? Then the sheet offers to watch and join it (0038).
-          if (match) void getLiveEveningOf(match.userId).then((e) => setFriendLive(Boolean(e)));
-        }}
+        colors={mapColors}
+        onPressCluster={onPressCluster}
+        onPressFriend={onPressFriend}
       />
 
       <SafeAreaView edges={['top']} style={{ position: 'absolute', left: 0, right: 0, top: 0 }} pointerEvents="box-none">
