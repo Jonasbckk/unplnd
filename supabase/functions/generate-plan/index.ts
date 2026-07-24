@@ -1202,8 +1202,11 @@ Deno.serve(async (req) => {
       userId = u.user?.id ?? null;
       admin = createClient(supaUrl, serviceKey);
       if (userId) {
-        const { data: profile } = await admin.from('profiles').select('premium').eq('id', userId).single();
-        if (!profile?.premium) {
+        const { data } = await admin.from('profiles').select('premium, is_founder').eq('id', userId).single();
+        // Founders never hit the free limit — they ARE the product team (and use-premium.ts
+        // already treats is_founder as premium client-side; the server said no. Now it agrees.)
+        const profile = data as { premium?: boolean; is_founder?: boolean } | null;
+        if (!profile?.premium && !profile?.is_founder) {
           const startOfDay = new Date();
           startOfDay.setUTCHours(0, 0, 0, 0);
           const { count } = await admin

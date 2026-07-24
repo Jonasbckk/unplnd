@@ -11,6 +11,8 @@
 // wrapped into a WAV here) so the app can play it with expo-audio — no new native module, which
 // means the voice works on the CURRENT build. All keys stay server-side (31_SECURITY).
 
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
 const GEMINI_MODEL = Deno.env.get('UNPLND_GEMINI_MODEL') ?? 'gemini-2.5-flash';
 const GEMINI_TTS_MODEL = Deno.env.get('UNPLND_GEMINI_TTS_MODEL') ?? 'gemini-2.5-flash-preview-tts';
 
@@ -43,6 +45,31 @@ interface VoiceReply {
   request?: string;
   /** Base64 WAV of the spoken reply — absent when synthesis fails (text still shows). */
   audioB64?: string;
+}
+
+/**
+ * Second opinion straight from RevenueCat: a purchase is live there SECONDS before our
+ * webhook lands in profiles.premium. Needs the REVENUECAT_API_KEY secret (the sk_… secret
+ * key); without it this returns false and the profiles flag alone decides.
+ */
+async function hasActiveEntitlement(userId: string): Promise<boolean> {
+  const key = Deno.env.get('REVENUECAT_API_KEY');
+  if (!key) return false;
+  try {
+    const res = await fetch(`https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(userId)}`, {
+      headers: { Authorization: `Bearer ${key}` },
+    });
+    if (!res.ok) return false;
+    const data = await res.json();
+    const entitlements = data?.subscriber?.entitlements ?? {};
+    const now = Date.now();
+    return Object.values(entitlements).some((e) => {
+      const expires = (e as { expires_date?: string | null }).expires_date;
+      return expires == null || new Date(expires).getTime() > now;
+    });
+  } catch {
+    return false;
+  }
 }
 
 function systemPrompt(language: 'de' | 'en', city?: string, now?: string): string {
@@ -165,6 +192,38 @@ Deno.serve(async (req) => {
   const geminiKey = Deno.env.get('GEMINI_API_KEY');
   if (!geminiKey) {
     return Response.json({ error: { code: 'NOT_CONFIGURED', message: 'GEMINI_API_KEY missing.' } }, { status: 500, headers: CORS });
+  }
+
+  // The concierge is premium (25_MONETIZATION) — enforced HERE, not just in the client screen,
+  // so a free user can't reach Gemini by calling the function directly.
+  // Identity fails CLOSED: the app always sends the user's session JWT, so "no resolvable
+  // user" (e.g. the extractable anon key used as bearer) is an abuse pattern, not a hiccup.
+  // Only the profile lookup fails open — a DB blip must never silence a paying user.
+  const supaUrl = Deno.env.get('SUPABASE_URL');
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  const authHeader = req.headers.get('Authorization');
+  if (supaUrl && anonKey && serviceKey && authHeader) {
+    const asUser = createClient(supaUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
+    const userId = await asUser.auth
+      .getUser()
+      .then(({ data }) => data.user?.id ?? null)
+      .catch(() => null);
+    if (!userId) {
+      return Response.json({ error: { code: 'UNAUTHORIZED', message: 'Sign in required.' } }, { status: 401, headers: CORS });
+    }
+    try {
+      const admin = createClient(supaUrl, serviceKey);
+      const { data: profile } = await admin.from('profiles').select('premium, is_founder').eq('id', userId).single();
+      if (profile && !profile.premium && !profile.is_founder && !(await hasActiveEntitlement(userId))) {
+        return Response.json(
+          { error: { code: 'PREMIUM_REQUIRED', message: 'The concierge is part of Premium.' } },
+          { status: 403, headers: CORS },
+        );
+      }
+    } catch {
+      // fail open — never let a DB hiccup silence a paying user's concierge
+    }
   }
 
   let body: VoiceRequest;
