@@ -14,12 +14,15 @@ import { toast } from '@/store/toast-store';
 import { useRevenueCatStore } from '@/store/revenuecat-store';
 import { useTheme } from '@/theme';
 
+// Every line here is a shipped, enforced Premium difference — the paywall never promises
+// something the app doesn't do (Constitution: trust is sacred; 25_MONETIZATION: memories
+// are never locked, so albums deliberately do NOT appear here).
 const BENEFITS: { icon: keyof typeof Ionicons.glyphMap; key: string }[] = [
   { icon: 'infinite', key: 'benefitPlans' },
+  { icon: 'mic-outline', key: 'benefitVoice' },
   { icon: 'color-palette-outline', key: 'benefitStyles' },
-  { icon: 'images-outline', key: 'benefitPhotos' },
   { icon: 'location-outline', key: 'benefitFavorites' },
-  { icon: 'ribbon-outline', key: 'benefitBadge' },
+  { icon: 'apps-outline', key: 'benefitIcons' },
 ];
 
 export default function PaywallScreen() {

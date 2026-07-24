@@ -274,8 +274,19 @@ export default function GeneratingScreen() {
             {tr('generating.limitBody')}
           </Text>
         </Animated.View>
-        <Animated.View entering={FadeInDown.duration(350).delay(120)} style={{ alignSelf: 'stretch' }}>
-          <Button title={tr('generating.limitButton')} onPress={() => router.back()} />
+        <Animated.View
+          entering={FadeInDown.duration(350).delay(120)}
+          style={{ alignSelf: 'stretch', gap: t.spacing.md }}
+        >
+          {/* The one honest upsell moment: the user just demonstrated they want MORE plans
+              (25_MONETIZATION: paywall only after value is demonstrated — this is that). */}
+          <Button
+            title={tr('generating.limitUpgrade')}
+            gradient
+            iconRight="arrow-forward"
+            onPress={() => router.push('/paywall')}
+          />
+          <Button title={tr('generating.limitButton')} variant="secondary" onPress={() => router.back()} />
         </Animated.View>
       </View>
     );

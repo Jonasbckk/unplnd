@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { useEffect, useState, type ComponentProps } from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp, ZoomIn, useReducedMotion } from 'react-native-reanimated';
@@ -291,7 +291,12 @@ export default function RouteScreen() {
                         accessibilityState={{ selected: favorites.includes(stop.title) }}
                         onPress={() => {
                           haptics.light();
-                          void toggleFavorite(stop.title);
+                          void toggleFavorite(stop.title).then((r) => {
+                            if (r === 'limit') {
+                              toast(tr('paywall.favoritesLimit'));
+                              router.push('/paywall' as Href);
+                            }
+                          });
                         }}
                       >
                         <Ionicons

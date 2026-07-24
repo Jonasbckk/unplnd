@@ -12,6 +12,7 @@ import { haptics } from '@/lib/haptics';
 import { useT } from '@/lib/i18n';
 import { requestLocationPermission } from '@/lib/location';
 import { openInMaps } from '@/lib/maps';
+import { toast } from '@/store/toast-store';
 import { useTheme } from '@/theme';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
@@ -30,9 +31,18 @@ const CATEGORIES: { key?: string; labelKey: string; icon: IoniconName }[] = [
 function DiscoverCard({ place }: { place: DiscoverPlace }) {
   const t = useTheme();
   const { t: tr, locale } = useT();
+  const router = useRouter();
   const favorites = useFavoritesStore((s) => s.places);
   const toggleFavorite = useFavoritesStore((s) => s.toggleFavorite);
   const saved = favorites.includes(place.name);
+
+  const onHeart = async () => {
+    haptics.light();
+    if ((await toggleFavorite(place.name)) === 'limit') {
+      toast(tr('paywall.favoritesLimit'));
+      router.push('/paywall' as Href);
+    }
+  };
 
   const distance =
     place.distanceM < 1000
@@ -61,13 +71,7 @@ function DiscoverCard({ place }: { place: DiscoverPlace }) {
           <Text variant="h3" style={{ flex: 1 }} numberOfLines={1}>
             {place.name}
           </Text>
-          <Pressable
-            hitSlop={8}
-            onPress={() => {
-              haptics.light();
-              void toggleFavorite(place.name);
-            }}
-          >
+          <Pressable hitSlop={8} onPress={() => void onHeart()}>
             <Ionicons
               name={saved ? 'heart' : 'heart-outline'}
               size={20}
