@@ -12,12 +12,19 @@ import Svg, { Circle, G, Path, Rect, Text as SvgText } from 'react-native-svg';
 import { clusterPins, type MapPin, type PinCluster, type Project } from './pins';
 import world from './world.json';
 
-/** How close two pins must be on screen to become one bubble. */
+/** How close two pins must be ON SCREEN to become one bubble — zooming in splits clusters. */
 const CLUSTER_RADIUS = 22;
 /** Delay between pins appearing — 09_ANIMATIONS: "Pins appear progressively." */
 const REVEAL_STEP_MS = 90;
 /** Tap tolerance around a pin/friend dot — comfortably beyond the drawn radius (≥44pt targets). */
 const TAP_RADIUS = 26;
+/**
+ * geoNaturalEarth1's raw output half-extents. d3 multiplies raw coordinates by scale() directly,
+ * so the projected world half-width is RAW_HALF_X · scale px (adversarial review: an earlier /π
+ * here made the pan bound 3.14× too tight and flung the map on the first release).
+ */
+const RAW_HALF_X = 2.7354;
+const RAW_HALF_Y = 1.4223;
 
 /** A connection sharing their live location (phase 2) — drawn as a ringed dot with their initial. */
 export interface FriendDot {
@@ -41,15 +48,16 @@ interface WorldMapProps {
   onPressFriend?: (friend: FriendDot) => void;
 }
 
+/** Camera as an affine map over the base (world-fit) projection: q → k·q + (gx, gy). */
 interface Camera {
-  scale: number;
-  tx: number;
-  ty: number;
+  k: number;
+  gx: number;
+  gy: number;
 }
 
 /**
- * The country silhouettes never change while panning — memoised so the reveal ticks and camera
- * commits don't push the ~150 KB path to native again.
+ * Country silhouettes — memoised so a camera commit only changes the cheap G matrix around them
+ * and the stroke width, never the ~150 KB path string itself.
  */
 const Countries = memo(function Countries({
   d,
@@ -66,22 +74,19 @@ const Countries = memo(function Countries({
 });
 
 /**
- * The Memory Map — a vector world drawn from bundled country geometry (22_PROFILE: "Memory Map.
- * Interactive map. Shows visited locations. Clusters nearby memories.").
+ * The Memory Map — a vector world from bundled geometry (22_PROFILE). No provider, no key, offline.
  *
- * No maps provider and no client key: the geometry ships with the app, so it works offline and no
- * third party learns where anyone has been. The trade-off, chosen deliberately: a world overview,
- * never street level.
- *
- * Performance model (the founder hit real jank here):
- * - The SVG is pure display — pointerEvents="none", NO onPress inside it. Touch handlers on SVG
- *   elements made every pan movement hit-test the giant world path; taps are now a Tap gesture
- *   with a manual distance check against the known pin positions (bigger targets, too).
- * - While panning/pinching only the rendered SVG is transformed (UI thread). On release the
- *   transform folds into the projection — screen = translate + scale × unit(lng,lat), so view ∘
- *   projection composes to scale' = s·scale, translate' = s·t + pan — and the map re-renders crisp.
- * - The pin reveal drips ONCE per pin set, not after every camera commit — otherwise each pan end
- *   re-rendered the whole map every 90 ms straight into the next swipe.
+ * Rendering/gesture model (v4 — shaped by an adversarial review of v3):
+ * - CRISPNESS: the camera is applied INSIDE the Svg as a <G matrix> — react-native-svg re-rasters
+ *   vectors under the true CTM, so coastlines and labels stay sharp at every zoom. (v3 put the
+ *   camera on the Android/iOS view layer, which magnified a low-res bitmap: permanently blurry,
+ *   and vectorEffect can't see layer transforms, so hairlines fattened by k.)
+ * - SMOOTHNESS: the LIVE gesture is a view-layer transform driven by worklets — nothing re-renders
+ *   while a finger is down. On release the fold is computed in the worklet and committed once via
+ *   a tiny React state update (a G-matrix string + a handful of circle props; the path is memoised).
+ * - RN scales views about their CENTRE; the live-gesture style compensates with t − c·(1−s), which
+ *   also fixed the old "pinch lands with a small jump" bug.
+ * - The Svg is pure display (pointerEvents="none"); taps are resolved by distance in JS.
  */
 export function WorldMap({
   pins,
@@ -95,75 +100,90 @@ export function WorldMap({
   onPressFriend,
 }: WorldMapProps) {
   const reduced = useReducedMotion();
-  const [camera, setCamera] = useState<Camera | null>(null);
 
-  // The world-fit scale is the zoom floor (you can always zoom back out to the whole world).
-  const worldFit = useMemo(() => {
+  // ---- Base space: the world-fit projection. All geometry below is expressed in it. ----
+  const base = useMemo(() => {
     const p = geoNaturalEarth1().fitSize([width, height], world as never);
     return { scale: p.scale(), tx: p.translate()[0], ty: p.translate()[1] };
   }, [width, height]);
 
-  // Initial camera: framed on the pins, or the whole world.
-  useEffect(() => {
-    const projection = geoNaturalEarth1();
-    if (fitToPins && pins.length > 0) {
-      projection.fitExtent(
-        [
-          [width * 0.16, height * 0.18],
-          [width * 0.84, height * 0.82],
-        ],
-        {
-          type: 'FeatureCollection',
-          features: pins.map((p) => ({
-            type: 'Feature' as const,
-            properties: {},
-            geometry: { type: 'Point' as const, coordinates: [p.lng, p.lat] },
-          })),
-        } as never,
-      );
-      // A single pin (or one city) has no extent, so fitExtent scales toward infinity — clamp to a
-      // readable regional view instead of a blank green field.
-      const maxScale = Math.max(width, height) * 1.6;
-      if (!Number.isFinite(projection.scale()) || projection.scale() > maxScale) {
-        projection.scale(maxScale).translate([width / 2, height / 2]);
-        const centre = projection([pins[0].lng, pins[0].lat]);
-        if (centre) projection.translate([width - centre[0], height - centre[1]]);
-      }
-      setCamera({ scale: projection.scale(), tx: projection.translate()[0], ty: projection.translate()[1] });
-    } else {
-      setCamera(worldFit);
-    }
-    // Deliberately NOT keyed on `pins`: re-fitting under the user's fingers would throw their view away.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [width, height, fitToPins, worldFit]);
-
-  // The ~150 KB world path is built ONCE per size, at the base (world-fit) projection. Every camera
-  // is an affine transform of that base — p_cam = k·p_base + (cam.t − k·base.t) with k =
-  // cam.scale/base.scale — so moving the camera is a <G transform> the vector renderer applies
-  // natively. Rebuilding the path per camera (trig over 176 countries + native re-parse) was the
-  // remaining hitch on every gesture end.
   const countries = useMemo(() => {
-    const projection = geoNaturalEarth1().scale(worldFit.scale).translate([worldFit.tx, worldFit.ty]);
+    const projection = geoNaturalEarth1().scale(base.scale).translate([base.tx, base.ty]);
     const path = geoPath(projection);
     return (world as never as { features: unknown[] }).features
       .map((f) => path(f as never))
       .filter(Boolean)
       .join(' ');
-  }, [worldFit]);
+  }, [base]);
 
+  // ---- Camera state (React) + a mirror for the fold worklet. ----
+  const [cam, setCam] = useState<Camera>({ k: 1, gx: 0, gy: 0 });
+  const camK = useSharedValue(1);
+  const camGx = useSharedValue(0);
+  const camGy = useSharedValue(0);
+
+  const applyCamera = (k: number, gx: number, gy: number) => {
+    camK.value = k;
+    camGx.value = gx;
+    camGy.value = gy;
+    setCam({ k, gx, gy });
+  };
+
+  // Initial camera: framed on the pins, or the whole world.
+  useEffect(() => {
+    if (!(fitToPins && pins.length > 0)) {
+      applyCamera(1, 0, 0);
+      return;
+    }
+    const projection = geoNaturalEarth1();
+    projection.fitExtent(
+      [
+        [width * 0.16, height * 0.18],
+        [width * 0.84, height * 0.82],
+      ],
+      {
+        type: 'FeatureCollection',
+        features: pins.map((p) => ({
+          type: 'Feature' as const,
+          properties: {},
+          geometry: { type: 'Point' as const, coordinates: [p.lng, p.lat] },
+        })),
+      } as never,
+    );
+    // A single pin has no extent → fitExtent runs toward infinity; clamp to a regional view.
+    const maxScale = Math.max(width, height) * 1.6;
+    if (!Number.isFinite(projection.scale()) || projection.scale() > maxScale) {
+      projection.scale(maxScale).translate([width / 2, height / 2]);
+      const centre = projection([pins[0].lng, pins[0].lat]);
+      if (centre) projection.translate([width - centre[0], height - centre[1]]);
+    }
+    let k = projection.scale() / base.scale;
+    let gx = projection.translate()[0] - k * base.tx;
+    let gy = projection.translate()[1] - k * base.ty;
+    // Pins spanning most of the world fit BELOW world scale (k < 1) — but the fold enforces k ≥ 1,
+    // so an unclamped start would snap-zoom ~30% on the first release. Clamp here with the same
+    // centre re-anchoring the fold uses (adversarial review, finding 3).
+    if (k < 1) {
+      const r = 1 / k;
+      k = 1;
+      gx = width / 2 + r * (gx - width / 2);
+      gy = height / 2 + r * (gy - height / 2);
+    }
+    applyCamera(k, gx, gy);
+    // Deliberately NOT keyed on `pins`: re-fitting under the user's fingers would discard their view.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [width, height, fitToPins, base]);
+
+  // ---- Screen-space projection at the current camera (for pins, clusters, taps). ----
   const project = useMemo<Project>(() => {
-    const cam = camera ?? worldFit;
-    const projection = geoNaturalEarth1().scale(cam.scale).translate([cam.tx, cam.ty]);
+    const projection = geoNaturalEarth1()
+      .scale(cam.k * base.scale)
+      .translate([cam.k * base.tx + cam.gx, cam.k * base.ty + cam.gy]);
     return (lng, lat) => {
       const p = projection([lng, lat]);
       return p ? [p[0], p[1]] : null;
     };
-  }, [camera, worldFit]);
-
-  const cam = camera ?? worldFit;
-  const camK = cam.scale / worldFit.scale;
-  const camGx = cam.tx - camK * worldFit.tx;
-  const camGy = cam.ty - camK * worldFit.ty;
+  }, [cam, base]);
 
   const clusters = useMemo(() => clusterPins(pins, project, CLUSTER_RADIUS), [pins, project]);
 
@@ -201,45 +221,60 @@ export function WorldMap({
     return () => clearInterval(id);
   }, [clusters, reduced, pins.length]);
 
-  // ---- Gestures: transform live on the UI thread, fold into the projection on release. ----
+  // ---- Gestures: live transform on the UI thread; fold computed in the worklet, committed once. ----
   const panX = useSharedValue(0);
   const panY = useSharedValue(0);
   const zoom = useSharedValue(1);
   const focalX = useSharedValue(width / 2);
   const focalY = useSharedValue(height / 2);
 
-  const commit = (s: number, px: number, py: number, fx: number, fy: number) => {
-    setCamera((cam0) => {
-      const cam = cam0 ?? worldFit;
-      // Zoom about the pinch focal point, then apply the pan.
-      let scale = cam.scale * s;
-      let tx = fx + s * (cam.tx - fx) + px;
-      let ty = fy + s * (cam.ty - fy) + py;
-      // Floor: never smaller than the world; re-anchor so the shrink doesn't fling the map away.
-      if (scale < worldFit.scale) {
-        const k = worldFit.scale / scale;
-        scale = worldFit.scale;
-        tx = width / 2 + k * (tx - width / 2);
-        ty = height / 2 + k * (ty - height / 2);
-      }
-      // Ceiling: 110m geometry turns blocky past a regional view.
-      const maxScale = worldFit.scale * 40;
-      if (scale > maxScale) {
-        const k = maxScale / scale;
-        scale = maxScale;
-        tx = fx + k * (tx - fx);
-        ty = fy + k * (ty - fy);
-      }
-      // Keep some world on screen — the projected world spans ~[tx ± 2.73·scale/π] horizontally.
-      const halfW = (2.7327 * scale) / Math.PI;
-      const halfH = halfW * 0.505;
-      tx = Math.min(Math.max(tx, width * 0.2 - halfW), width * 0.8 + halfW);
-      ty = Math.min(Math.max(ty, height * 0.2 - halfH), height * 0.8 + halfH);
-      return { scale, tx, ty };
-    });
+  const commitCamera = (k: number, gx: number, gy: number) => {
+    // Same JS tick: camera state moves to where the gesture left the view, gesture resets. The
+    // residual is a ≤1-frame overlap — the price of crisp SVG-internal rendering.
+    applyCamera(k, gx, gy);
     panX.value = 0;
     panY.value = 0;
     zoom.value = 1;
+  };
+
+  const baseScale = base.scale;
+  const baseTx = base.tx;
+  const baseTy = base.ty;
+  const fold = () => {
+    'worklet';
+    const s = zoom.value;
+    const fx = focalX.value;
+    const fy = focalY.value;
+    let k = camK.value * s;
+    let gx = fx + s * (camGx.value - fx) + panX.value;
+    let gy = fy + s * (camGy.value - fy) + panY.value;
+    // Floor: never smaller than the world; re-anchor so the shrink doesn't fling the map away.
+    if (k < 1) {
+      const r = 1 / k;
+      k = 1;
+      gx = width / 2 + r * (gx - width / 2);
+      gy = height / 2 + r * (gy - height / 2);
+    }
+    // Ceiling: 110m geometry turns blocky past a regional view.
+    if (k > 40) {
+      const r = 40 / k;
+      k = 40;
+      gx = fx + r * (gx - fx);
+      gy = fy + r * (gy - fy);
+    }
+    // Keep part of the world on screen. Projected half-extents are RAW_HALF · k · baseScale.
+    const halfW = RAW_HALF_X * k * baseScale;
+    const halfH = RAW_HALF_Y * k * baseScale;
+    const cx = k * baseTx + gx; // world centre on screen
+    const cy = k * baseTy + gy;
+    const nx = Math.min(Math.max(cx, width * 0.2 - halfW), width * 0.8 + halfW);
+    const ny = Math.min(Math.max(cy, height * 0.2 - halfH), height * 0.8 + halfH);
+    gx += nx - cx;
+    gy += ny - cy;
+    camK.value = k;
+    camGx.value = gx;
+    camGy.value = gy;
+    runOnJS(commitCamera)(k, gx, gy);
   };
 
   // Taps resolve in JS against the projected positions — friends first (drawn on top).
@@ -252,7 +287,6 @@ export function WorldMap({
       }
     }
     if (onPressCluster) {
-      // Search back to front: busier clusters are drawn last, so they win overlapping taps.
       for (let i = clusters.length - 1; i >= 0; i--) {
         if (Math.hypot(clusters[i].x - x, clusters[i].y - y) <= TAP_RADIUS) {
           onPressCluster(clusters[i]);
@@ -270,7 +304,7 @@ export function WorldMap({
       panY.value += e.changeY;
     })
     .onEnd(() => {
-      runOnJS(commit)(zoom.value, panX.value, panY.value, focalX.value, focalY.value);
+      fold();
     });
 
   const pinch = Gesture.Pinch()
@@ -283,7 +317,7 @@ export function WorldMap({
       zoom.value *= e.scaleChange;
     })
     .onEnd(() => {
-      runOnJS(commit)(zoom.value, panX.value, panY.value, focalX.value, focalY.value);
+      fold();
     });
 
   const tap = Gesture.Tap()
@@ -296,30 +330,35 @@ export function WorldMap({
   // Pan/pinch take priority; a tap only lands when the finger didn't travel.
   const gesture = Gesture.Exclusive(Gesture.Simultaneous(pan, pinch), tap);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: panX.value + focalX.value * (1 - zoom.value) },
-      { translateY: panY.value + focalY.value * (1 - zoom.value) },
-      { scale: zoom.value },
-    ],
-  }));
+  // Live-gesture-only view transform (identity at rest). RN scales about the view centre — the
+  // desired origin-space q → z·q + t therefore renders as translate(t − c·(1−z)) scale(z).
+  const animatedStyle = useAnimatedStyle(() => {
+    const z = zoom.value;
+    const tx = panX.value + focalX.value * (1 - z);
+    const ty = panY.value + focalY.value * (1 - z);
+    return {
+      transform: [
+        { translateX: tx - (width / 2) * (1 - z) },
+        { translateY: ty - (height / 2) * (1 - z) },
+        { scale: z },
+      ],
+    };
+  });
 
   const svg = (
-    // Pure display: touch handling lives on the gesture layer, never inside the SVG.
     <Svg width={width} height={height} pointerEvents="none">
-      <Rect width={width} height={height} fill={colors.water} />
-      {/* Border thickness counter-scales so zooming never fattens the hairlines. */}
-      <G transform={`translate(${camGx} ${camGy}) scale(${camK})`}>
-        <Countries d={countries} land={colors.land} border={colors.border} strokeWidth={0.4 / camK} />
+      <Rect x={-width} y={-height} width={width * 3} height={height * 3} fill={colors.water} />
+      {/* Camera INSIDE the Svg: vectors re-raster crisp at every zoom; hairline counter-scales. */}
+      <G transform={`translate(${cam.gx} ${cam.gy}) scale(${cam.k})`}>
+        <Countries d={countries} land={colors.land} border={colors.border} strokeWidth={0.4 / cam.k} />
       </G>
 
       {clusters.slice(0, shown).map((c) => {
         const many = c.pins.length > 1;
-        const r = many ? 9 : 3.6;
         return (
           <G key={c.pins[0].albumId}>
             <Circle cx={c.x} cy={c.y} r={many ? 16 : 10} fill={colors.pin} opacity={0.16} />
-            <Circle cx={c.x} cy={c.y} r={r} fill={colors.pin} />
+            <Circle cx={c.x} cy={c.y} r={many ? 9 : 3.6} fill={colors.pin} />
             {many ? (
               <SvgText x={c.x} y={c.y + 3.4} fontSize={10} fontWeight="500" fill={colors.pinText} textAnchor="middle">
                 {String(c.pins.length)}
