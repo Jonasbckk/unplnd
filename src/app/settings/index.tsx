@@ -12,6 +12,7 @@ import { currentIconName } from '@/features/appicon/icon';
 import { useAuthStore } from '@/features/auth/auth-store';
 import { clearLiveLocation, publishLiveLocation } from '@/features/map/live';
 import { maybeShowUpsell } from '@/features/premium/upsell';
+import { usePremium } from '@/features/profile/use-premium';
 import { confirmDialog } from '@/lib/confirm';
 import { haptics } from '@/lib/haptics';
 import { useT } from '@/lib/i18n';
@@ -31,18 +32,17 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
       <Text variant="small" color="textSecondary" style={{ letterSpacing: 0.5 }}>
         {title.toUpperCase()}
       </Text>
-      <View
-        style={[
-          { backgroundColor: t.colors.card, borderRadius: t.radius.card, paddingHorizontal: t.spacing.base },
-          t.shadows.sm,
-        ]}
-      >
-        {rows.map((row, i) => (
-          <View key={i}>
-            {i > 0 && <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: t.colors.border }} />}
-            {row}
-          </View>
-        ))}
+      {/* Shadow on the outer node, clipping on the inner — overflow:'hidden' next to a shadow
+          silently kills it on iOS, and without clipping a pressed row pokes past the corners. */}
+      <View style={[{ backgroundColor: t.colors.card, borderRadius: t.radius.card }, t.shadows.sm]}>
+        <View style={{ borderRadius: t.radius.card, overflow: 'hidden', paddingHorizontal: t.spacing.base }}>
+          {rows.map((row, i) => (
+            <View key={i}>
+              {i > 0 && <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: t.colors.border }} />}
+              {row}
+            </View>
+          ))}
+        </View>
       </View>
     </View>
   );
@@ -59,7 +59,24 @@ function Row({ label, right, onPress }: { label: string; right?: ReactNode; onPr
       <View style={{ justifyContent: 'center' }}>{right}</View>
     </View>
   );
-  return onPress ? <Pressable onPress={onPress}>{content}</Pressable> : content;
+  return onPress ? (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      // The section card clips its children, so a plain background works as the pressed state
+      // (margin trick pushes the highlight to the card's edges, past the section's padding).
+      style={({ pressed }) => ({
+        backgroundColor: pressed ? t.colors.surfaceSecondary : 'transparent',
+        marginHorizontal: -t.spacing.base,
+        paddingHorizontal: t.spacing.base,
+      })}
+    >
+      {content}
+    </Pressable>
+  ) : (
+    content
+  );
 }
 
 export default function SettingsScreen() {
@@ -89,6 +106,7 @@ export default function SettingsScreen() {
   const setNotificationPref = useAppStore((s) => s.setNotificationPref);
   const resetOnboarding = useAppStore((s) => s.resetOnboarding);
   const email = useAuthStore((s) => s.user?.email);
+  const isPremium = usePremium();
   const signOut = useAuthStore((s) => s.signOut);
   const deleteAccount = useAuthStore((s) => s.deleteAccount);
   const [deleting, setDeleting] = useState(false);
@@ -154,17 +172,40 @@ export default function SettingsScreen() {
           contentContainerStyle={{ padding: t.spacing.lg, paddingTop: 0, gap: t.spacing.xl }}
           showsVerticalScrollIndicator={false}
         >
+          {/* 25_MONETIZATION: never hide subscription management — for members the row
+              says so and opens the store's own management page instead of the paywall. */}
           <Section title="UNPLND Premium">
-            <Row
-              label={tr('settings.getPremium')}
-              onPress={() => router.push('/paywall' as Href)}
-              right={
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}>
-                  <Ionicons name={'sparkles' as IoniconName} size={18} color={t.colors.primary} />
-                  <Ionicons name={'chevron-forward' as IoniconName} size={18} color={t.colors.textSecondary} />
-                </View>
-              }
-            />
+            {isPremium ? (
+              <Row
+                label={tr('settings.premiumActive')}
+                onPress={() =>
+                  void Linking.openURL(
+                    Platform.OS === 'android'
+                      ? 'https://play.google.com/store/account/subscriptions'
+                      : 'https://apps.apple.com/account/subscriptions',
+                  )
+                }
+                right={
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}>
+                    <Text variant="small" color="textSecondary">
+                      {tr('settings.manageSub')}
+                    </Text>
+                    <Ionicons name={'chevron-forward' as IoniconName} size={18} color={t.colors.textSecondary} />
+                  </View>
+                }
+              />
+            ) : (
+              <Row
+                label={tr('settings.getPremium')}
+                onPress={() => router.push('/paywall' as Href)}
+                right={
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}>
+                    <Ionicons name={'sparkles' as IoniconName} size={18} color={t.colors.primary} />
+                    <Ionicons name={'chevron-forward' as IoniconName} size={18} color={t.colors.textSecondary} />
+                  </View>
+                }
+              />
+            )}
           </Section>
 
           <Section title={tr('settings.appearance')}>
@@ -273,6 +314,11 @@ export default function SettingsScreen() {
               label={tr('settings.contactSupport')}
               onPress={contactSupport}
               right={<Ionicons name={'mail-outline' as IoniconName} size={18} color={t.colors.textSecondary} />}
+            />
+            <Row
+              label={tr('creator.settingsRow')}
+              onPress={() => router.push('/creator' as Href)}
+              right={<Ionicons name={'sparkles-outline' as IoniconName} size={18} color={t.colors.textSecondary} />}
             />
           </Section>
 

@@ -186,6 +186,7 @@ export default function ProfileScreen() {
 
   const [pending, setPending] = useState(0);
   const [isFounder, setIsFounder] = useState(false);
+  const [isCreator, setIsCreator] = useState(false);
   const [dbAvatar, setDbAvatar] = useState<string | null>(null);
   const [verifyLevel, setVerifyLevel] = useState(0);
   const [metrics, setMetrics] = useState<VerifyMetrics | null>(null);
@@ -213,6 +214,7 @@ export default function ProfileScreen() {
       void getPublicProfile(userId).then((p) => {
         if (!active) return;
         setIsFounder(Boolean(p?.isFounder));
+        setIsCreator(Boolean(p?.isCreator));
         setDbAvatar(p?.avatar ?? null);
         if (!p?.avatar) console.warn('[profile] server returned no avatar for', userId);
         // Self-heal: older builds could leave '' or a local file path in the auth meta,
@@ -389,6 +391,27 @@ export default function ProfileScreen() {
                   <Ionicons name="ribbon" size={12} color={style.onGradient} />
                   <Text variant="caption" style={{ color: style.onGradient, fontWeight: '700' }}>
                     {tr('profile.founderBadge')}
+                  </Text>
+                </View>
+              )}
+              {/* Founder wins — the CEO ribbon and the creator sparkles never stack. */}
+              {!isFounder && isCreator && (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 4,
+                    alignSelf: 'flex-start',
+                    backgroundColor: 'rgba(255,255,255,0.22)',
+                    paddingHorizontal: 8,
+                    paddingVertical: 3,
+                    borderRadius: t.radius.pill,
+                    marginTop: 3,
+                  }}
+                >
+                  <Ionicons name="sparkles" size={12} color={style.onGradient} />
+                  <Text variant="caption" style={{ color: style.onGradient, fontWeight: '700' }}>
+                    {tr('profile.creatorBadge')}
                   </Text>
                 </View>
               )}

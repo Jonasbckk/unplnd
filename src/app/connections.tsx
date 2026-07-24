@@ -59,7 +59,12 @@ function PersonRow({ entry, onPress, right }: { entry: ConnectionEntry; onPress?
           <Text variant="body" style={{ fontWeight: '600' }} numberOfLines={1}>
             {name}
           </Text>
-          {entry.profile.isFounder && <Ionicons name="ribbon" size={14} color={t.colors.primary} />}
+          {/* Founder wins — never both badges at once. */}
+          {entry.profile.isFounder ? (
+            <Ionicons name="ribbon" size={14} color={t.colors.primary} />
+          ) : entry.profile.isCreator ? (
+            <Ionicons name="sparkles" size={14} color={t.colors.primary} />
+          ) : null}
         </View>
         {entry.profile.homeCity ? (
           <Text variant="small" color="textSecondary" numberOfLines={1}>
@@ -86,7 +91,12 @@ function ResultRow({ result, onPress }: { result: UserResult; onPress: () => voi
         <Text variant="body" style={{ fontWeight: '600' }} numberOfLines={1}>
           {name}
         </Text>
-        {result.isFounder && <Ionicons name="ribbon" size={14} color={t.colors.primary} />}
+        {/* Founder wins — never both badges at once. */}
+        {result.isFounder ? (
+          <Ionicons name="ribbon" size={14} color={t.colors.primary} />
+        ) : result.isCreator ? (
+          <Ionicons name="sparkles" size={14} color={t.colors.primary} />
+        ) : null}
       </View>
       <Ionicons name="chevron-forward" size={18} color={t.colors.textSecondary} />
     </Pressable>

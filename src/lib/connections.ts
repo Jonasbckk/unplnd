@@ -106,6 +106,7 @@ export interface UserResult {
   name: string | null;
   avatar: string | null;
   isFounder: boolean;
+  isCreator: boolean;
 }
 
 /** Search people by name (to connect without needing a published plan). */
@@ -119,6 +120,8 @@ export async function searchUsers(query: string): Promise<UserResult[]> {
     name: (r.display_name as string | null) ?? null,
     avatar: (r.photo_url as string | null) ?? null,
     isFounder: Boolean(r.is_founder),
+    // Boolean() also covers a deployed DB that predates migration 0040 (column undefined).
+    isCreator: Boolean(r.is_creator),
   }));
 }
 

@@ -307,6 +307,25 @@ export default function PublicProfileScreen() {
                   </Text>
                 </View>
               )}
+              {/* Founder wins — the CEO ribbon and the creator sparkles never stack. */}
+              {!profile.isFounder && profile.isCreator && (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 4,
+                    backgroundColor: 'rgba(255,255,255,0.22)',
+                    paddingHorizontal: 10,
+                    paddingVertical: 4,
+                    borderRadius: t.radius.pill,
+                  }}
+                >
+                  <Ionicons name="sparkles" size={13} color={style.onGradient} />
+                  <Text variant="caption" style={{ color: style.onGradient, fontWeight: '700', letterSpacing: 0.3 }}>
+                    {tr('profile.creatorBadge')}
+                  </Text>
+                </View>
+              )}
               {profile.homeCity ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                   <Ionicons name="location" size={12} color={style.onGradient} />
