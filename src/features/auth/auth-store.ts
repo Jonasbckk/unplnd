@@ -4,6 +4,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { create } from 'zustand';
 
 import { identifyUser, resetAnalytics } from '@/lib/analytics';
+import { requestAppleCredential } from '@/lib/apple-auth';
 import { supabase } from '@/lib/supabase';
 
 // Finish any pending auth session (web popups). No-op on native.
@@ -26,6 +27,8 @@ interface AuthState {
   signOut: () => Promise<void>;
   /** Google OAuth via the system browser (works in Expo Go; 15_AUTH). */
   signInWithGoogle: () => Promise<AuthResult>;
+  /** Native Sign in with Apple (iOS) → Supabase id-token login. Cancelling is not an error. */
+  signInWithApple: () => Promise<AuthResult>;
   /** GDPR Art. 17: erase the account + all owned data server-side, then sign out. */
   deleteAccount: () => Promise<AuthResult>;
 }
@@ -67,10 +70,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
   signInWithGoogle: async () => {
     try {
+      // Dev builds/TestFlight: unplnd://… (scheme in app.json). It must be listed under
+      // Supabase → Auth → URL Configuration → Redirect URLs, or the login bounces back.
       const redirectTo = makeRedirectUri();
-      // In Expo Go this is dynamic (exp://<LAN-ip>:8081/--/...). Add the printed URL to
-      // Supabase → Auth → URL Configuration → Redirect URLs if the login bounces back.
-      console.log('[UNPLND] OAuth redirect URL:', redirectTo);
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo, skipBrowserRedirect: true },
@@ -100,6 +102,28 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch (e) {
       return { error: (e as Error).message };
     }
+  },
+  signInWithApple: async () => {
+    const credential = await requestAppleCredential();
+    if (credential.kind === 'cancelled') return {};
+    if (credential.kind === 'error') return { error: credential.error };
+
+    const { data, error } = await supabase.auth.signInWithIdToken({
+      provider: 'apple',
+      token: credential.identityToken,
+      nonce: credential.rawNonce,
+    });
+    if (error) return { error: error.message };
+
+    // Apple shares the name only on the very first sign-in. Without it the profile would show the
+    // local part of an anonymous relay address (…@privaterelay.appleid.com) — so keep it once.
+    const userId = data.user?.id;
+    if (userId && credential.fullName && !data.user?.user_metadata?.display_name) {
+      const { data: updated } = await supabase.auth.updateUser({ data: { display_name: credential.fullName } });
+      await supabase.from('profiles').update({ display_name: credential.fullName }).eq('id', userId);
+      if (updated.user) set({ user: updated.user });
+    }
+    return {};
   },
   deleteAccount: async () => {
     const { error } = await supabase.functions.invoke('delete-account');

@@ -12,7 +12,8 @@
       "bundleIdentifier": "com.unplnd.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "usesAppleSignIn": true
     },
     "android": {
       "package": "com.unplnd.app",
@@ -84,7 +85,8 @@
       "expo-notifications",
       "expo-audio",
       "expo-asset",
-      "expo-video"
+      "expo-video",
+      "expo-apple-authentication"
     ],
     "experiments": {
       "typedRoutes": true,
