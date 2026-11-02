@@ -17,7 +17,8 @@ export type AnalyticsEvent =
   | 'custom_plan_published'
   | 'connection_requested'
   | 'tier_reached'
-  | 'paywall_auto_shown';
+  | 'paywall_auto_shown'
+  | 'ai_notice_acknowledged';
 
 export type AnalyticsProps = Record<string, string | number | boolean>;
 

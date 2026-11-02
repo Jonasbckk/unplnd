@@ -62,6 +62,7 @@ Never add a technology not implied here without approval.
 - Planner step order: **Mood → Group → Budget → Transport → Time → Preferences** (Planner doc wins over PRD).
 - Nav: 5 tabs (Home·Discover·Planner·Albums·Profile), keep ≤3 visible levels + sheets as overlays.
 - Route/Stop persistence: **jsonb on `plans` for MVP** (mirrors AI JSON), normalize later if needed.
+- **AI disclosure (EU AI Act Art. 50, in force since 2026-08-02) overrides "never mention AI"** (owner decision 2026-11-02). Exactly three places name the technology: the one-time card at the top of the Planner tab (`features/planner/AiNotice`), the permanent caption in the voice concierge (replies + synthetic voice), and Settings → Privacy. Never remove them; everywhere else the "technology is invisible" tone still applies.
 - **Location: NO silent city fallback** (founder decision 2026-07-03). If permission is denied/unavailable, planning is blocked with a friendly explain+enable state — never plan for a default city.
 
 ## 5. Definition of Done (every feature)

@@ -50,6 +50,11 @@ interface AppState {
   /** Premium upsell counters + cooldown. Persisted. */
   upsell: UpsellState;
   /**
+   * The one-time disclosure that plans and concierge replies are AI-generated has been
+   * acknowledged (EU AI Act Art. 50 — legal duty, overrides the docs' "never mention AI"). Persisted.
+   */
+  aiNoticeSeen: boolean;
+  /**
    * Counts an upsell event and answers "show the paywall now?" — true on every Nth
    * occurrence of that trigger, unless another upsell fired within the cooldown.
    * Premium users must be filtered by the CALLER (this store knows nothing about purchases).
@@ -68,6 +73,7 @@ interface AppState {
   setLastSeenTier: (level: number) => void;
   setNotificationPref: (key: keyof NotificationPrefs, value: boolean) => void;
   setHasHydrated: (value: boolean) => void;
+  acknowledgeAiNotice: () => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -83,6 +89,7 @@ export const useAppStore = create<AppState>()(
       lastSeenTier: 0,
       notificationPrefs: { eveningReminders: true, albumReady: true, weatherChanges: true, streakReminders: true },
       upsell: { appOpen: 0, settingsOpen: 0, styleChange: 0, lastShownAt: 0 },
+      aiNoticeSeen: false,
       registerUpsellEvent: (kind) => {
         let show = false;
         set((s) => {
@@ -113,6 +120,10 @@ export const useAppStore = create<AppState>()(
       setNotificationPref: (key, value) =>
         set((s) => ({ notificationPrefs: { ...s.notificationPrefs, [key]: value } })),
       setHasHydrated: (value) => set({ hasHydrated: value }),
+      acknowledgeAiNotice: () => {
+        set({ aiNoticeSeen: true });
+        track('ai_notice_acknowledged');
+      },
     }),
     {
       name: 'unplnd-app',
@@ -128,6 +139,7 @@ export const useAppStore = create<AppState>()(
         lastSeenTier: state.lastSeenTier,
         notificationPrefs: state.notificationPrefs,
         upsell: state.upsell,
+        aiNoticeSeen: state.aiNoticeSeen,
       }),
       // Deep-merge persisted prefs onto current defaults, so newly-added keys (e.g. a new
       // notification pref) get their default instead of being dropped by the flat overwrite.
