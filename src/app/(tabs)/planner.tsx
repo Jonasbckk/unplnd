@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { Button, Card, FadeInUp, Input, Screen, StatementTitle, Text } from '@/components/ui';
 import { LocationChip } from '@/features/location/LocationChip';
+import { AiNotice } from '@/features/planner/AiNotice';
 import { AnswerRow } from '@/features/planner/AnswerRow';
 import { QuestionCard } from '@/features/planner/QuestionCard';
 import { QUESTIONS, type Question } from '@/features/planner/questions';
@@ -88,6 +89,9 @@ export default function PlannerScreen() {
   return (
     <Screen scroll contentStyle={{ gap: t.spacing.lg }}>
       <LocationChip />
+
+      {/* One-time AI disclosure (EU AI Act Art. 50) — above every entry that reaches the model. */}
+      <AiNotice />
 
       <StatementTitle text={tr('planner.title')} />
 

@@ -109,6 +109,11 @@ export const de = {
       storm: 'Ein dramatischer Abend — bleib gemütlich drinnen.',
     },
   },
+  aiNotice: {
+    title: 'Kurz, bevor es losgeht',
+    body: 'Deine Abende plant UNPLND mit Hilfe von künstlicher Intelligenz (KI): Sie schlägt Orte, Reihenfolge und die Gründe dafür vor. Öffnungszeiten und Budget prüfen wir zusätzlich — trotzdem kann mal etwas nicht stimmen. Schau im Zweifel kurz nach.',
+    ack: 'Verstanden',
+  },
   planner: {
     voiceTitle: 'Erzähl uns deinen Abend',
     voiceSub: 'Sprich einfach — wir fragen nach, dann steht der Plan',
@@ -415,6 +420,7 @@ export const de = {
     unavailable: 'Aktualisiere die App auf die neueste Version, um das Tutorial zu sehen.',
   },
   voice: {
+    aiNote: 'Der Concierge ist eine KI — seine Antworten und seine Stimme werden automatisch erzeugt.',
     title: 'Concierge',
     emptyTitle: 'Erzähl uns deinen Abend.',
     emptyBody: 'Sag einfach, worauf ihr Lust habt — zum Beispiel: „Wir wollen Essen und Getränke holen, dann einen ruhigen Spot abseits und chillen mit Musik.“ Wir fragen nach, was noch fehlt.',
@@ -913,6 +919,8 @@ export const de = {
     empty: 'Deine Statistik beginnt mit deinem ersten Abend.',
   },
   settings: {
+    aiTitle: 'Planung mit KI',
+    aiSub: 'Vorschläge im Planer und die Antworten des Concierge (auch seine Stimme) werden von einer künstlichen Intelligenz erzeugt. Orte, Öffnungszeiten und Budget prüfen wir zusätzlich, trotzdem können einzelne Angaben abweichen.',
     tutorial: 'Tutorial',
     privacy: 'Privatsphäre',
     liveLocation: 'Live-Standort teilen',

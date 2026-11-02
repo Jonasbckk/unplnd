@@ -255,6 +255,10 @@ export default function VoicePlannerScreen() {
           <Text variant="caption" color="textSecondary" center>
             {recording ? tr('voice.listening') : tr('voice.hint')}
           </Text>
+          {/* Always visible: replies AND the voice are synthetic (EU AI Act Art. 50). */}
+          <Text variant="caption" color="textSecondary" center>
+            {tr('voice.aiNote')}
+          </Text>
 
           {/* Typed fallback — also what makes the flow testable in the simulator. */}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm }}>

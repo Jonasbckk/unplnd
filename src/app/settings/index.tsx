@@ -298,6 +298,13 @@ export default function SettingsScreen() {
                 {tr('settings.liveLocationSub')}
               </Text>
             </View>
+            {/* Permanent AI transparency (EU AI Act Art. 50) — the one-time card in the Planner points here. */}
+            <View accessible style={{ paddingVertical: t.spacing.md, gap: t.spacing.xs }}>
+              <Text variant="body">{tr('settings.aiTitle')}</Text>
+              <Text variant="caption" color="textSecondary">
+                {tr('settings.aiSub')}
+              </Text>
+            </View>
           </Section>
 
           <Section title={tr('settings.account')}>
