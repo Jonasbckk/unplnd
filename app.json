@@ -52,7 +52,9 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "UNPLND nutzt deinen Standort, um großartige Orte in deiner Nähe zu finden."
+          "locationWhenInUsePermission": "UNPLND nutzt deinen Standort, um großartige Orte in deiner Nähe zu finden.",
+          "locationAlwaysAndWhenInUsePermission": "UNPLND nutzt deinen Standort nur, während du die App verwendest – um Orte in deiner Nähe zu finden und dich durch deinen Abend zu führen.",
+          "locationAlwaysPermission": "UNPLND nutzt deinen Standort nur, während du die App verwendest – um Orte in deiner Nähe zu finden und dich durch deinen Abend zu führen."
         }
       ],
       [
@@ -83,7 +85,12 @@
         ]
       ],
       "expo-notifications",
-      "expo-audio",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "UNPLND braucht das Mikrofon, damit du deinen Abend dem Concierge einfach erzählen und Sprachnachrichten im Chat aufnehmen kannst."
+        }
+      ],
       "expo-asset",
       "expo-video",
       "expo-apple-authentication"
