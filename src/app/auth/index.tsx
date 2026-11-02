@@ -1,21 +1,23 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 
 import { Button, Input, Logo, Screen, StatementTitle, Text } from '@/components/ui';
 import { isStrongPassword, useAuthStore } from '@/features/auth/auth-store';
+import { AppleSignInButton, isAppleSignInAvailable } from '@/lib/apple-auth';
 import { useT } from '@/lib/i18n';
 import { useTheme } from '@/theme';
 
 type Mode = 'signup' | 'signin';
 
-/** Email + Google auth (15_AUTH). Apple sign-in follows with the native build. */
+/** Email + Apple (iOS) + Google auth (15_AUTH). */
 export default function AuthScreen() {
   const t = useTheme();
   const { t: tr } = useT();
   const signUp = useAuthStore((s) => s.signUpWithEmail);
   const signIn = useAuthStore((s) => s.signInWithEmail);
   const signInWithGoogle = useAuthStore((s) => s.signInWithGoogle);
+  const signInWithApple = useAuthStore((s) => s.signInWithApple);
 
   const [mode, setMode] = useState<Mode>('signup');
   const [name, setName] = useState('');
@@ -23,8 +25,25 @@ export default function AuthScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [appleAvailable, setAppleAvailable] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
   const [info, setInfo] = useState<string | undefined>();
+
+  useEffect(() => {
+    void isAppleSignInAvailable().then(setAppleAvailable);
+  }, []);
+
+  const onApple = async () => {
+    if (appleLoading) return;
+    setError(undefined);
+    setInfo(undefined);
+    setAppleLoading(true);
+    const result = await signInWithApple();
+    setAppleLoading(false);
+    if (result.error) setError(result.error);
+    // On success, the auth listener flips the root navigator to the app.
+  };
 
   const onGoogle = async () => {
     setError(undefined);
@@ -124,6 +143,22 @@ export default function AuthScreen() {
         </Text>
         <View style={{ flex: 1, height: 1, backgroundColor: t.colors.divider }} />
       </View>
+
+      {/* Apple — iOS only, Apple's official button, listed first (App Review guideline 4.8). */}
+      {appleAvailable && (
+        <View
+          pointerEvents={appleLoading ? 'none' : 'auto'}
+          style={{ opacity: appleLoading ? 0.5 : 1, justifyContent: 'center' }}
+        >
+          <AppleSignInButton
+            onPress={() => void onApple()}
+            dark={t.scheme === 'dark'}
+            cornerRadius={t.radius.buttonSecondary}
+            signUp={mode === 'signup'}
+          />
+          {appleLoading && <ActivityIndicator style={{ position: 'absolute', alignSelf: 'center' }} color={t.colors.primary} />}
+        </View>
+      )}
 
       {/* Google */}
       <Pressable

@@ -27,7 +27,7 @@ Claude Code liest die `CLAUDE.md` beim Start automatisch mit.
 > Du bekommst eine E-Mail → **Einladung annehmen**, sonst schlägt `git clone` fehl.
 
 ```bash
-git clone https://github.com/Jonasbckk/unplnd.git
+git clone https://github.com/flaviociraci-boop/unplnd.git
 cd unplnd
 npm install --legacy-peer-deps
 ```
