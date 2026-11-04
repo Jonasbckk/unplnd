@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { useAuthStore } from '@/features/auth/auth-store';
+import { MONETIZATION_ENABLED } from '@/lib/monetization';
 import { supabase } from '@/lib/supabase';
 import { useRevenueCatStore } from '@/store/revenuecat-store';
 
@@ -12,6 +13,8 @@ import { useRevenueCatStore } from '@/store/revenuecat-store';
  */
 /** One-shot premium check for imperative flows (e.g. upsell triggers) — same truth as usePremium. */
 export async function fetchIsPremium(): Promise<boolean> {
+  // Free launch: nothing is for sale, so everything is unlocked for everyone.
+  if (!MONETIZATION_ENABLED) return true;
   if (useRevenueCatStore.getState().isPremium) return true;
   const userId = useAuthStore.getState().user?.id;
   if (!userId) return false;
@@ -43,5 +46,5 @@ export function usePremium(): boolean {
     };
   }, [userId]);
 
-  return rcPremium || premium;
+  return !MONETIZATION_ENABLED || rcPremium || premium;
 }

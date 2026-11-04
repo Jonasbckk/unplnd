@@ -15,6 +15,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const GEMINI_MODEL = Deno.env.get('UNPLND_GEMINI_MODEL') ?? 'gemini-2.5-flash';
 const GEMINI_TTS_MODEL = Deno.env.get('UNPLND_GEMINI_TTS_MODEL') ?? 'gemini-2.5-flash-preview-tts';
+const PREMIUM_ENABLED = Deno.env.get('UNPLND_PREMIUM_ENABLED') === 'true';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -212,7 +213,9 @@ Deno.serve(async (req) => {
     if (!userId) {
       return Response.json({ error: { code: 'UNAUTHORIZED', message: 'Sign in required.' } }, { status: 401, headers: CORS });
     }
-    try {
+    // Free launch (2026-11-04): the concierge is open to every signed-in user until Premium is
+    // switched on with the secret UNPLND_PREMIUM_ENABLED=true (same release as the RevenueCat key).
+    if (PREMIUM_ENABLED) try {
       const admin = createClient(supaUrl, serviceKey);
       const { data: profile } = await admin.from('profiles').select('premium, is_founder').eq('id', userId).single();
       if (profile && !profile.premium && !profile.is_founder && !(await hasActiveEntitlement(userId))) {

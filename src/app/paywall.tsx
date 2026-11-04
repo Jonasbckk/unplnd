@@ -9,6 +9,7 @@ import { Button, Logo, Text } from '@/components/ui';
 import { PremiumMascot } from '@/features/premium/PremiumMascot';
 import { haptics } from '@/lib/haptics';
 import { useT } from '@/lib/i18n';
+import { MONETIZATION_ENABLED } from '@/lib/monetization';
 import { purchase, restore, type PurchasesPackage } from '@/lib/revenuecat';
 import { toast } from '@/store/toast-store';
 import { useRevenueCatStore } from '@/store/revenuecat-store';
@@ -25,7 +26,18 @@ const BENEFITS: { icon: keyof typeof Ionicons.glyphMap; key: string }[] = [
   { icon: 'apps-outline', key: 'benefitIcons' },
 ];
 
-export default function PaywallScreen() {
+/** Free launch: nothing is for sale, so a stray link to the paywall just closes it again. */
+export default function PaywallRoute() {
+  const router = useRouter();
+  useEffect(() => {
+    if (MONETIZATION_ENABLED) return;
+    if (router.canGoBack()) router.back();
+    else router.replace('/');
+  }, [router]);
+  return MONETIZATION_ENABLED ? <PaywallScreen /> : null;
+}
+
+function PaywallScreen() {
   const t = useTheme();
   const { t: tr } = useT();
   const router = useRouter();
