@@ -7,6 +7,7 @@ import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Input, StatementTitle, Text } from '@/components/ui';
+import { ensureAiConsent } from '@/features/planner/ai-consent';
 import { usePlannerStore } from '@/features/planner/planner-store';
 import { canSpeak, speak, stopSpeaking, voiceStep, type VoiceTurn } from '@/features/planner/voice-service';
 import { fetchIsPremium } from '@/features/profile/use-premium';
@@ -52,14 +53,20 @@ export default function VoicePlannerScreen() {
 
   // Premium gate — the founder wants this to be a premium feature (founders always pass).
   useEffect(() => {
-    void fetchIsPremium().then((premium) => {
+    void (async () => {
+      // Consent first — the recording and the conversation go to the third-party model.
+      if (!(await ensureAiConsent())) {
+        router.back();
+        return;
+      }
+      const premium = await fetchIsPremium();
       if (premium) {
         setAllowed(true);
       } else {
         setAllowed(false);
         router.replace('/paywall' as Href);
       }
-    });
+    })();
   }, [router]);
 
   // Stop talking when the screen goes away — nothing is worse than a ghost voice.

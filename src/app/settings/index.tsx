@@ -21,6 +21,11 @@ import { useAppStore } from '@/store/app-store';
 import { useTheme } from '@/theme';
 
 const SUPPORT_EMAIL = 'info@unplnd.com';
+// Legal pages (App Review 5.1.1: the privacy policy must be reachable inside the app). Terms use
+// Apple's standard EULA until UNPLND has its own.
+const PRIVACY_URL = 'https://unplnd.com/#/datenschutz';
+const IMPRINT_URL = 'https://unplnd.com/#/impressum';
+const TERMS_URL = 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -331,6 +336,23 @@ export default function SettingsScreen() {
               onPress={() => router.push('/creator' as Href)}
               right={<Ionicons name={'sparkles-outline' as IoniconName} size={18} color={t.colors.textSecondary} />}
             />
+          </Section>
+
+          <Section title={tr('settings.legal')}>
+            {(
+              [
+                ['settings.privacyPolicy', PRIVACY_URL],
+                ['settings.terms', TERMS_URL],
+                ['settings.imprint', IMPRINT_URL],
+              ] as const
+            ).map(([label, url]) => (
+              <Row
+                key={label}
+                label={tr(label)}
+                onPress={() => void Linking.openURL(url)}
+                right={<Ionicons name={'open-outline' as IoniconName} size={18} color={t.colors.textSecondary} />}
+              />
+            ))}
           </Section>
 
           <Section title={tr('settings.about')}>
