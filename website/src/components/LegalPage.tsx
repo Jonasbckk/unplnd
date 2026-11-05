@@ -3,11 +3,10 @@ import { ArrowLeftIcon } from '@phosphor-icons/react';
 import { CONTACT_EMAIL } from '../config';
 
 /*
- * Legal texts based on the operator's existing Impressum/Datenschutz
- * (Einzelunternehmen Jonas Becker), adapted for unplnd.com:
- * site reference + contact mail, RStV→MStV / TMG→DDG updates, hosting kept
- * provider-neutral (TODO below), analytics/FontAwesome sections removed
- * (not used here), early-access form + Supabase added.
+ * Legal texts for unplnd.com and the UNPLND app. Operator since 2026-11-02:
+ * Bodensee-Spiele GmbH (Kreuzlingen, CH). Swiss DSG + EU GDPR where applicable.
+ * The early-access raffle terms below are the previous operator's (Jonas Becker)
+ * and stay as published for that past raffle.
  */
 
 export type LegalKind = 'impressum' | 'datenschutz' | 'teilnahmebedingungen';
@@ -142,83 +141,76 @@ function Address({ lines }: { lines: string[] }) {
   );
 }
 
+const OPERATOR = [
+  'Bodensee-Spiele GmbH',
+  'Hauptstrasse 4',
+  '8280 Kreuzlingen',
+  'Schweiz',
+];
+
+function Ext({ href }: { href: string }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="font-medium text-terra-ink underline decoration-terra/40 underline-offset-2 hover:text-heading"
+    >
+      {href}
+    </a>
+  );
+}
+
 function Impressum() {
   return (
     <>
       <H1>Impressum</H1>
 
-      <H2>Angaben gemäß § 5 DDG</H2>
-      <P>Betreiber der Website unplnd.com:</P>
-      <Address
-        lines={[
-          'Sides4you – Jonas Becker – Digital Services',
-          'Jonas Becker',
-          'Grüningerweg 17A',
-          '35415 Pohlheim',
-          'Deutschland',
-        ]}
-      />
+      <H2>Betreiberin</H2>
+      <P>Betreiberin der Website unplnd.com und der App UNPLND:</P>
+      <Address lines={OPERATOR} />
+
+      <H3>Vertretungsberechtigte Person</H3>
+      <P>Flavio Ciraci, Geschäftsführer</P>
 
       <H3>Kontakt</H3>
+      <Address lines={[`E-Mail: ${CONTACT_EMAIL}`]} />
+
+      <H3>Unternehmens-Identifikation</H3>
       <Address
         lines={[
-          'Telefon (Privat): +49 1590 6161050',
-          'Telefon (Geschäftlich): +49 15679 784318',
-          `E-Mail: ${CONTACT_EMAIL}`,
+          'Rechtsform: Gesellschaft mit beschränkter Haftung (GmbH)',
+          'UID: CHE-485.417.497',
+          'Mehrwertsteuernummer: CHE-485.417.497 MWST',
+          'Eingetragen im Handelsregister des Kantons Thurgau',
         ]}
       />
-
-      <H3>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</H3>
-      <Address lines={['Jonas Becker', 'Grüningerweg 17A', '35415 Pohlheim', 'Deutschland']} />
-
-      <H3>Unternehmensform</H3>
-      <P>Einzelunternehmen</P>
-
-      <H3>Hinweis zum Projekt UNPLND</H3>
-      <P>
-        UNPLND wird von Jonas Becker und Flavio Ciraci als Mitgründern entwickelt.
-        Betreiber dieser Website ist ausschließlich das oben genannte Einzelunternehmen von
-        Jonas Becker; Flavio Ciraci ist daran nicht beteiligt. Die UNPLND App wird nach
-        Veröffentlichung über eine eigene Gesellschaft betrieben; dieses Impressum wird
-        dann entsprechend aktualisiert.
-      </P>
-
-      <H3>Hinweis gemäß § 19 UStG</H3>
-      <P>
-        Es wird keine Umsatzsteuer berechnet, da das Unternehmen die Kleinunternehmerregelung
-        gemäß § 19 UStG in Anspruch nimmt.
-      </P>
 
       <H2>Haftungsausschluss</H2>
 
       <H3>Haftung für Inhalte</H3>
       <P>
-        Die Inhalte unserer Seiten wurden mit größter Sorgfalt erstellt. Für die Richtigkeit,
-        Vollständigkeit und Aktualität der Inhalte können wir jedoch keine Gewähr übernehmen.
-        Als Diensteanbieter sind wir gemäß § 7 Abs. 1 DDG für eigene Inhalte auf diesen Seiten
-        nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 DDG sind wir als
-        Diensteanbieter jedoch nicht verpflichtet, übermittelte oder gespeicherte fremde
-        Informationen zu überwachen oder nach Umständen zu forschen, die auf eine
-        rechtswidrige Tätigkeit hinweisen.
+        Die Inhalte dieser Website und der App wurden mit grösster Sorgfalt erstellt. Für die
+        Richtigkeit, Vollständigkeit und Aktualität der Inhalte übernehmen wir jedoch keine
+        Gewähr. Vorschläge in der App (zum Beispiel Orte, Öffnungszeiten oder Preise) beruhen
+        zum Teil auf Angaben Dritter und werden automatisch erstellt; bitte prüfen Sie wichtige
+        Angaben vor Ort.
       </P>
 
       <H3>Haftung für Links</H3>
       <P>
-        Unser Angebot enthält Links zu externen Webseiten Dritter, auf deren Inhalte wir
-        keinen Einfluss haben. Deshalb können wir für diese fremden Inhalte auch keine Gewähr
-        übernehmen. Für die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter
-        oder Betreiber der Seiten verantwortlich. Die verlinkten Seiten wurden zum Zeitpunkt
-        der Verlinkung auf mögliche Rechtsverstöße überprüft. Rechtswidrige Inhalte waren zum
-        Zeitpunkt der Verlinkung nicht erkennbar.
+        Unser Angebot enthält Links zu externen Websites Dritter, auf deren Inhalte wir keinen
+        Einfluss haben. Für die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter
+        oder Betreiber verantwortlich. Zum Zeitpunkt der Verlinkung waren keine rechtswidrigen
+        Inhalte erkennbar.
       </P>
 
       <H3>Urheberrecht</H3>
       <P>
-        Die durch die Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten
-        unterliegen dem deutschen Urheberrecht. Die Vervielfältigung, Bearbeitung, Verbreitung
-        und jede Art der Verwertung außerhalb der Grenzen des Urheberrechtes bedürfen der
-        schriftlichen Zustimmung des jeweiligen Autors bzw. Erstellers. Downloads und Kopien
-        dieser Seite sind nur für den privaten, nicht kommerziellen Gebrauch gestattet.
+        Die von uns erstellten Inhalte und Werke auf dieser Website und in der App unterliegen
+        dem Urheberrecht. Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art der
+        Verwertung ausserhalb der Grenzen des Urheberrechts bedürfen unserer schriftlichen
+        Zustimmung.
       </P>
     </>
   );
@@ -228,393 +220,170 @@ function Datenschutz() {
   return (
     <>
       <H1>Datenschutzerklärung</H1>
-
-      <H2>1. Datenschutz auf einen Blick</H2>
-
-      <H3>Allgemeine Hinweise</H3>
       <P>
-        Die folgenden Hinweise geben einen einfachen Überblick darüber, was mit Ihren
-        personenbezogenen Daten passiert, wenn Sie diese Website besuchen. Personenbezogene
-        Daten sind alle Daten, mit denen Sie persönlich identifiziert werden können.
-        Ausführliche Informationen zum Thema Datenschutz entnehmen Sie unserer unter diesem
-        Text aufgeführten Datenschutzerklärung.
+        Diese Datenschutzerklärung gilt für die Website unplnd.com und für die App UNPLND
+        (iOS). Sie erklärt, welche personenbezogenen Daten wir bearbeiten, wofür und an wen
+        wir sie weitergeben. Wir richten uns nach dem Schweizer Datenschutzgesetz (DSG) und,
+        soweit anwendbar, nach der EU-Datenschutz-Grundverordnung (DSGVO).
       </P>
 
-      <H3>Datenerfassung auf dieser Website</H3>
+      <H2>1. Verantwortliche Stelle</H2>
+      <Address lines={OPERATOR} />
+      <Address lines={['Geschäftsführer: Flavio Ciraci', `E-Mail: ${CONTACT_EMAIL}`]} />
       <P>
-        <strong className="text-ink">
-          Wer ist verantwortlich für die Datenerfassung auf dieser Website?
-        </strong>
-      </P>
-      <P>
-        Die Datenverarbeitung auf dieser Website erfolgt durch den Websitebetreiber. Dessen
-        Kontaktdaten können Sie dem Abschnitt „Hinweis zur verantwortlichen Stelle" in dieser
-        Datenschutzerklärung entnehmen.
-      </P>
-      <P>
-        <strong className="text-ink">Wie erfassen wir Ihre Daten?</strong>
-      </P>
-      <P>
-        Ihre Daten werden zum einen dadurch erhoben, dass Sie uns diese mitteilen. Hierbei
-        kann es sich z.&nbsp;B. um Daten handeln, die Sie in das Early-Access-Formular
-        eingeben.
-      </P>
-      <P>
-        Andere Daten werden automatisch oder nach Ihrer Einwilligung beim Besuch der Website
-        durch unsere IT-Systeme erfasst. Das sind vor allem technische Daten (z.&nbsp;B.
-        Internetbrowser, Betriebssystem oder Uhrzeit des Seitenaufrufs). Die Erfassung dieser
-        Daten erfolgt automatisch, sobald Sie diese Website betreten.
-      </P>
-      <P>
-        <strong className="text-ink">Wofür nutzen wir Ihre Daten?</strong>
-      </P>
-      <P>
-        Ein Teil der Daten wird erhoben, um eine fehlerfreie Bereitstellung der Website zu
-        gewährleisten. Daten, die Sie in das Early-Access-Formular eintragen, verwenden wir
-        ausschließlich, um Sie über den Start der UNPLND App zu informieren.
-      </P>
-      <P>
-        <strong className="text-ink">Welche Rechte haben Sie bezüglich Ihrer Daten?</strong>
-      </P>
-      <P>
-        Sie haben jederzeit das Recht, unentgeltlich Auskunft über Herkunft, Empfänger und
-        Zweck Ihrer gespeicherten personenbezogenen Daten zu erhalten. Sie haben außerdem ein
-        Recht, die Berichtigung oder Löschung dieser Daten zu verlangen. Wenn Sie eine
-        Einwilligung zur Datenverarbeitung erteilt haben, können Sie diese Einwilligung
-        jederzeit für die Zukunft widerrufen. Außerdem haben Sie das Recht, unter bestimmten
-        Umständen die Einschränkung der Verarbeitung Ihrer personenbezogenen Daten zu
-        verlangen. Des Weiteren steht Ihnen ein Beschwerderecht bei der zuständigen
-        Aufsichtsbehörde zu.
-      </P>
-      <P>
-        Hierzu sowie zu weiteren Fragen zum Thema Datenschutz können Sie sich jederzeit an
-        uns wenden.
+        Für alle Fragen zum Datenschutz und zur Ausübung Ihrer Rechte erreichen Sie uns unter
+        der oben genannten E-Mail-Adresse.
       </P>
 
-      <H3>Analyse-Tools und Tools von Drittanbietern</H3>
+      <H2>2. Die App UNPLND</H2>
+
+      <H3>Benutzerkonto</H3>
       <P>
-        Beim Besuch dieser Website kann Ihr Surf-Verhalten statistisch ausgewertet werden.
-        Das geschieht mit Vercel Web Analytics (siehe Abschnitt 5). Die Auswertung erfolgt
-        ohne Cookies und ohne geräteübergreifende Identifikation.
+        Für die Nutzung der App legen Sie ein Konto an, per E-Mail und Passwort oder über
+        „Mit Apple anmelden" bzw. „Mit Google anmelden". Wir speichern dabei Ihre
+        E-Mail-Adresse, Ihren Anzeigenamen und die Angaben, die Sie in Ihrem Profil machen
+        (zum Beispiel Profilbild, Interessen). Bei der Anmeldung über Apple oder Google
+        erhalten wir von diesen Anbietern nur Ihre E-Mail-Adresse (bei Apple auf Wunsch eine
+        anonyme Weiterleitungsadresse) und gegebenenfalls Ihren Namen. Rechtsgrundlage ist die
+        Erfüllung des Nutzungsvertrags (Art. 6 Abs. 1 lit. b DSGVO).
+      </P>
+      <P>
+        Sie können Ihr Konto jederzeit in der App unter Einstellungen löschen. Dabei werden
+        Ihr Profil und Ihre Inhalte gelöscht, soweit keine gesetzlichen Aufbewahrungspflichten
+        bestehen.
       </P>
 
-      <H2>2. Hosting</H2>
-      <P>Wir hosten die Inhalte unserer Website bei folgendem Anbieter:</P>
-      <H3>Vercel</H3>
+      <H3>Standort</H3>
       <P>
-        Anbieter ist die Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, USA
-        (nachfolgend „Vercel"). Wenn Sie unsere Website besuchen, werden Ihre
-        personenbezogenen Daten auf den Servern von Vercel verarbeitet. Hierbei kann es sich
-        v.&nbsp;a. um IP-Adressen, Meta- und Kommunikationsdaten, Websitezugriffe und
-        sonstige Daten, die über eine Website generiert werden, handeln. Details entnehmen
-        Sie der Datenschutzerklärung von Vercel:{' '}
-        <a
-          href="https://vercel.com/legal/privacy-policy"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-medium text-terra-ink underline decoration-terra/40 underline-offset-2 hover:text-heading"
-        >
-          https://vercel.com/legal/privacy-policy
-        </a>
-      </P>
-      <P>
-        Das externe Hosting erfolgt im Interesse einer sicheren, schnellen und effizienten
-        Bereitstellung unseres Online-Angebots durch einen professionellen Anbieter (Art. 6
-        Abs. 1 lit. f DSGVO). Sofern eine entsprechende Einwilligung abgefragt wurde, erfolgt
-        die Verarbeitung ausschließlich auf Grundlage von Art. 6 Abs. 1 lit. a DSGVO und
-        §&nbsp;25 Abs. 1 TDDDG, soweit die Einwilligung die Speicherung von Cookies oder den
-        Zugriff auf Informationen im Endgerät des Nutzers (z.&nbsp;B. Device-Fingerprinting)
-        im Sinne des TDDDG umfasst. Die Einwilligung ist jederzeit widerrufbar.
-      </P>
-      <P>
-        Unser Hoster wird Ihre Daten nur insoweit verarbeiten, wie dies zur Erfüllung seiner
-        Leistungspflichten erforderlich ist und unsere Weisungen in Bezug auf diese Daten
-        befolgen.
+        Um Orte in Ihrer Nähe zu finden und Sie durch Ihren Abend zu führen, nutzt die App
+        Ihren Standort, aber nur während Sie die App verwenden und nur, wenn Sie dies in den
+        iOS-Einstellungen erlauben. Wenn Sie die Live-Standortfreigabe für Freunde aktivieren,
+        sehen Ihre bestätigten Kontakte Ihren ungefähren Standort, bis Sie die Freigabe wieder
+        ausschalten. Rechtsgrundlage ist Ihre Einwilligung (Art. 6 Abs. 1 lit. a DSGVO), die
+        Sie jederzeit in den Einstellungen widerrufen können.
       </P>
 
-      <H2>3. Allgemeine Hinweise und Pflichtinformationen</H2>
-
-      <H3>Datenschutz</H3>
+      <H3>Abendplanung mit künstlicher Intelligenz (Google Gemini)</H3>
       <P>
-        Die Betreiber dieser Seiten nehmen den Schutz Ihrer persönlichen Daten sehr ernst.
-        Wir behandeln Ihre personenbezogenen Daten vertraulich und entsprechend den
-        gesetzlichen Datenschutzvorschriften sowie dieser Datenschutzerklärung.
-      </P>
-      <P>
-        Wenn Sie diese Website benutzen, werden verschiedene personenbezogene Daten erhoben.
-        Personenbezogene Daten sind Daten, mit denen Sie persönlich identifiziert werden
-        können. Die vorliegende Datenschutzerklärung erläutert, welche Daten wir erheben und
-        wofür wir sie nutzen. Sie erläutert auch, wie und zu welchem Zweck das geschieht.
-      </P>
-      <P>
-        Wir weisen darauf hin, dass die Datenübertragung im Internet (z.&nbsp;B. bei der
-        Kommunikation per E-Mail) Sicherheitslücken aufweisen kann. Ein lückenloser Schutz
-        der Daten vor dem Zugriff durch Dritte ist nicht möglich.
+        Vorschläge im Planer sowie die Antworten und die Stimme des Sprach-Concierge werden mit
+        Hilfe künstlicher Intelligenz erzeugt. Dafür übermitteln wir Ihre Planungswünsche
+        (zum Beispiel Stimmung, Budget, Uhrzeit, freier Text), Ihren ungefähren Standort bzw.
+        Ihre Stadt und, wenn Sie den Sprach-Concierge nutzen, Ihre Sprachaufnahmen an die
+        Gemini API von Google. Die Übermittlung erfolgt erst, nachdem Sie in der App
+        ausdrücklich eingewilligt haben (Art. 6 Abs. 1 lit. a DSGVO). Wir nutzen den
+        kostenpflichtigen Dienst, bei dem Google die Eingaben nach eigenen Angaben nicht zum
+        Training seiner Modelle verwendet. Weitere Informationen:{' '}
+        <Ext href="https://ai.google.dev/gemini-api/terms" />
       </P>
 
-      <H3>Hinweis zur verantwortlichen Stelle</H3>
-      <P>Die verantwortliche Stelle für die Datenverarbeitung auf dieser Website ist:</P>
-      <Address lines={['Jonas Becker', 'Grüningerweg 17A', '35415 Pohlheim']} />
-      <Address lines={['Telefon: +49 1590 6161050', `E-Mail: ${CONTACT_EMAIL}`]} />
+      <H3>Ortsdaten (Google Places)</H3>
       <P>
-        Verantwortliche Stelle ist die natürliche oder juristische Person, die allein oder
-        gemeinsam mit anderen über die Zwecke und Mittel der Verarbeitung von
-        personenbezogenen Daten (z.&nbsp;B. Namen, E-Mail-Adressen o.&nbsp;Ä.) entscheidet.
+        Orte, Öffnungszeiten, Bewertungen und Fotos beziehen wir über die Google Places API.
+        Dafür werden Ihr ungefährer Standort bzw. Ihre Suchanfrage von unseren Servern an
+        Google übermittelt, nicht direkt von Ihrem Gerät. Rechtsgrundlage ist die Erfüllung
+        des Nutzungsvertrags (Art. 6 Abs. 1 lit. b DSGVO). Datenschutzerklärung von Google:{' '}
+        <Ext href="https://policies.google.com/privacy" />
       </P>
 
-      <H3>Speicherdauer</H3>
+      <H3>Erinnerungen, Fotos und Community</H3>
       <P>
-        Soweit innerhalb dieser Datenschutzerklärung keine speziellere Speicherdauer genannt
-        wurde, verbleiben Ihre personenbezogenen Daten bei uns, bis der Zweck für die
-        Datenverarbeitung entfällt. Wenn Sie ein berechtigtes Löschersuchen geltend machen
-        oder eine Einwilligung zur Datenverarbeitung widerrufen, werden Ihre Daten gelöscht,
-        sofern wir keine anderen rechtlich zulässigen Gründe für die Speicherung Ihrer
-        personenbezogenen Daten haben (z.&nbsp;B. steuer- oder handelsrechtliche
-        Aufbewahrungsfristen); im letztgenannten Fall erfolgt die Löschung nach Fortfall
-        dieser Gründe.
+        Fotos und Notizen, die Sie in Alben speichern, werden in Ihrem Konto gespeichert und
+        sind nur für Sie sichtbar, sofern Sie sie nicht teilen. Wenn Sie einen Abend in der
+        Community veröffentlichen, Nachrichten senden oder Kontakte hinzufügen, sind diese
+        Inhalte für die jeweiligen Empfänger bzw. andere Nutzer sichtbar. Inhalte können
+        gemeldet und Nutzer blockiert werden; gemeldete Inhalte prüfen wir.
       </P>
 
-      <H3>Allgemeine Hinweise zu den Rechtsgrundlagen der Datenverarbeitung auf dieser Website</H3>
+      <H3>Keine Werbung, kein Tracking</H3>
       <P>
-        Sofern Sie in die Datenverarbeitung eingewilligt haben, verarbeiten wir Ihre
-        personenbezogenen Daten auf Grundlage von Art. 6 Abs. 1 lit. a DSGVO bzw. Art. 9 Abs.
-        2 lit. a DSGVO, sofern besondere Datenkategorien nach Art. 9 Abs. 1 DSGVO verarbeitet
-        werden. Im Falle einer ausdrücklichen Einwilligung in die Übertragung
-        personenbezogener Daten in Drittstaaten erfolgt die Datenverarbeitung außerdem auf
-        Grundlage von Art. 49 Abs. 1 lit. a DSGVO. Sofern Sie in die Speicherung von Cookies
-        oder in den Zugriff auf Informationen in Ihr Endgerät (z.&nbsp;B. via
-        Device-Fingerprinting) eingewilligt haben, erfolgt die Datenverarbeitung zusätzlich
-        auf Grundlage von § 25 Abs. 1 TDDDG. Die Einwilligung ist jederzeit widerrufbar. Sind
-        Ihre Daten zur Vertragserfüllung oder zur Durchführung vorvertraglicher Maßnahmen
-        erforderlich, verarbeiten wir Ihre Daten auf Grundlage des Art. 6 Abs. 1 lit. b
-        DSGVO. Des Weiteren verarbeiten wir Ihre Daten, sofern diese zur Erfüllung einer
-        rechtlichen Verpflichtung erforderlich sind, auf Grundlage von Art. 6 Abs. 1 lit. c
-        DSGVO. Die Datenverarbeitung kann ferner auf Grundlage unseres berechtigten
-        Interesses nach Art. 6 Abs. 1 lit. f DSGVO erfolgen. Über die jeweils im Einzelfall
-        einschlägigen Rechtsgrundlagen wird in den folgenden Absätzen dieser
-        Datenschutzerklärung informiert.
+        Die App zeigt keine Werbung, verkauft keine Daten und nutzt keine Tracking- oder
+        Werbedienste von Drittanbietern.
       </P>
 
-      <H3>Empfänger von personenbezogenen Daten</H3>
-      <P>
-        Im Rahmen unserer Geschäftstätigkeit arbeiten wir mit verschiedenen externen Stellen
-        zusammen. Dabei ist teilweise auch eine Übermittlung von personenbezogenen Daten an
-        diese externen Stellen erforderlich. Wir geben personenbezogene Daten nur dann an
-        externe Stellen weiter, wenn dies im Rahmen einer Vertragserfüllung erforderlich ist,
-        wenn wir gesetzlich hierzu verpflichtet sind (z.&nbsp;B. Weitergabe von Daten an
-        Steuerbehörden), wenn wir ein berechtigtes Interesse nach Art. 6 Abs. 1 lit. f DSGVO
-        an der Weitergabe haben oder wenn eine sonstige Rechtsgrundlage die Datenweitergabe
-        erlaubt. Beim Einsatz von Auftragsverarbeitern geben wir personenbezogene Daten
-        unserer Kunden nur auf Grundlage eines gültigen Vertrags über Auftragsverarbeitung
-        weiter.
-      </P>
+      <H2>3. Die Website unplnd.com</H2>
 
-      <H3>Widerruf Ihrer Einwilligung zur Datenverarbeitung</H3>
+      <H3>Hosting (Vercel)</H3>
       <P>
-        Viele Datenverarbeitungsvorgänge sind nur mit Ihrer ausdrücklichen Einwilligung
-        möglich. Sie können eine bereits erteilte Einwilligung jederzeit widerrufen. Die
-        Rechtmäßigkeit der bis zum Widerruf erfolgten Datenverarbeitung bleibt vom Widerruf
-        unberührt.
+        Die Website wird bei der Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, USA
+        gehostet. Beim Aufruf werden technische Daten wie IP-Adresse, Browsertyp und Uhrzeit
+        verarbeitet, um die Website sicher und schnell bereitzustellen (Art. 6 Abs. 1 lit. f
+        DSGVO). Datenschutzerklärung: <Ext href="https://vercel.com/legal/privacy-policy" />
       </P>
-
-      <H3>
-        Widerspruchsrecht gegen die Datenerhebung in besonderen Fällen sowie gegen
-        Direktwerbung (Art. 21 DSGVO)
-      </H3>
-      <P>
-        Wenn die Datenverarbeitung auf Grundlage von Art. 6 Abs. 1 lit. e oder f DSGVO
-        erfolgt, haben Sie jederzeit das Recht, aus Gründen, die sich aus Ihrer besonderen
-        Situation ergeben, gegen die Verarbeitung Ihrer personenbezogenen Daten Widerspruch
-        einzulegen; dies gilt auch für ein auf diese Bestimmungen gestütztes Profiling. Die
-        jeweilige Rechtsgrundlage, auf denen eine Verarbeitung beruht, entnehmen Sie dieser
-        Datenschutzerklärung. Wenn Sie Widerspruch einlegen, werden wir Ihre betroffenen
-        personenbezogenen Daten nicht mehr verarbeiten, es sei denn, wir können zwingende
-        schutzwürdige Gründe für die Verarbeitung nachweisen, die Ihre Interessen, Rechte und
-        Freiheiten überwiegen oder die Verarbeitung dient der Geltendmachung, Ausübung oder
-        Verteidigung von Rechtsansprüchen (Widerspruch nach Art. 21 Abs. 1 DSGVO).
-      </P>
-      <P>
-        Werden Ihre personenbezogenen Daten verarbeitet, um Direktwerbung zu betreiben, so
-        haben Sie das Recht, jederzeit Widerspruch gegen die Verarbeitung Sie betreffender
-        personenbezogener Daten zum Zwecke derartiger Werbung einzulegen; dies gilt auch für
-        das Profiling, soweit es mit solcher Direktwerbung in Verbindung steht. Wenn Sie
-        widersprechen, werden Ihre personenbezogenen Daten anschließend nicht mehr zum Zwecke
-        der Direktwerbung verwendet (Widerspruch nach Art. 21 Abs. 2 DSGVO).
-      </P>
-
-      <H3>Beschwerderecht bei der zuständigen Aufsichtsbehörde</H3>
-      <P>
-        Im Falle von Verstößen gegen die DSGVO steht den Betroffenen ein Beschwerderecht bei
-        einer Aufsichtsbehörde, insbesondere in dem Mitgliedstaat ihres gewöhnlichen
-        Aufenthalts, ihres Arbeitsplatzes oder des Orts des mutmaßlichen Verstoßes zu. Das
-        Beschwerderecht besteht unbeschadet anderweitiger verwaltungsrechtlicher oder
-        gerichtlicher Rechtsbehelfe.
-      </P>
-
-      <H3>Recht auf Datenübertragbarkeit</H3>
-      <P>
-        Sie haben das Recht, Daten, die wir auf Grundlage Ihrer Einwilligung oder in
-        Erfüllung eines Vertrags automatisiert verarbeiten, an sich oder an einen Dritten in
-        einem gängigen, maschinenlesbaren Format aushändigen zu lassen. Sofern Sie die
-        direkte Übertragung der Daten an einen anderen Verantwortlichen verlangen, erfolgt
-        dies nur, soweit es technisch machbar ist.
-      </P>
-
-      <H3>Auskunft, Berichtigung und Löschung</H3>
-      <P>
-        Sie haben im Rahmen der geltenden gesetzlichen Bestimmungen jederzeit das Recht auf
-        unentgeltliche Auskunft über Ihre gespeicherten personenbezogenen Daten, deren
-        Herkunft und Empfänger und den Zweck der Datenverarbeitung und ggf. ein Recht auf
-        Berichtigung oder Löschung dieser Daten. Hierzu sowie zu weiteren Fragen zum Thema
-        personenbezogene Daten können Sie sich jederzeit an uns wenden.
-      </P>
-
-      <H3>Recht auf Einschränkung der Verarbeitung</H3>
-      <P>
-        Sie haben das Recht, die Einschränkung der Verarbeitung Ihrer personenbezogenen
-        Daten zu verlangen. Hierzu können Sie sich jederzeit an uns wenden. Das Recht auf
-        Einschränkung der Verarbeitung besteht in folgenden Fällen:
-      </P>
-      <ul className="mt-3 list-disc space-y-2 pl-5 text-[15px] leading-relaxed text-ink-2">
-        <li>
-          Wenn Sie die Richtigkeit Ihrer bei uns gespeicherten personenbezogenen Daten
-          bestreiten, benötigen wir in der Regel Zeit, um dies zu überprüfen. Für die Dauer
-          der Prüfung haben Sie das Recht, die Einschränkung der Verarbeitung Ihrer
-          personenbezogenen Daten zu verlangen.
-        </li>
-        <li>
-          Wenn die Verarbeitung Ihrer personenbezogenen Daten unrechtmäßig geschah/geschieht,
-          können Sie statt der Löschung die Einschränkung der Datenverarbeitung verlangen.
-        </li>
-        <li>
-          Wenn wir Ihre personenbezogenen Daten nicht mehr benötigen, Sie sie jedoch zur
-          Ausübung, Verteidigung oder Geltendmachung von Rechtsansprüchen benötigen, haben
-          Sie das Recht, statt der Löschung die Einschränkung der Verarbeitung Ihrer
-          personenbezogenen Daten zu verlangen.
-        </li>
-        <li>
-          Wenn Sie einen Widerspruch nach Art. 21 Abs. 1 DSGVO eingelegt haben, muss eine
-          Abwägung zwischen Ihren und unseren Interessen vorgenommen werden. Solange noch
-          nicht feststeht, wessen Interessen überwiegen, haben Sie das Recht, die
-          Einschränkung der Verarbeitung Ihrer personenbezogenen Daten zu verlangen.
-        </li>
-      </ul>
-      <P>
-        Wenn Sie die Verarbeitung Ihrer personenbezogenen Daten eingeschränkt haben, dürfen
-        diese Daten – von ihrer Speicherung abgesehen – nur mit Ihrer Einwilligung oder zur
-        Geltendmachung, Ausübung oder Verteidigung von Rechtsansprüchen oder zum Schutz der
-        Rechte einer anderen natürlichen oder juristischen Person oder aus Gründen eines
-        wichtigen öffentlichen Interesses der Europäischen Union oder eines Mitgliedstaats
-        verarbeitet werden.
-      </P>
-
-      <H3>SSL- bzw. TLS-Verschlüsselung</H3>
-      <P>
-        Diese Seite nutzt aus Sicherheitsgründen und zum Schutz der Übertragung
-        vertraulicher Inhalte, wie zum Beispiel Anfragen, die Sie an uns als Seitenbetreiber
-        senden, eine SSL- bzw. TLS-Verschlüsselung. Eine verschlüsselte Verbindung erkennen
-        Sie daran, dass die Adresszeile des Browsers von „http://" auf „https://" wechselt
-        und an dem Schloss-Symbol in Ihrer Browserzeile.
-      </P>
-      <P>
-        Wenn die SSL- bzw. TLS-Verschlüsselung aktiviert ist, können die Daten, die Sie an
-        uns übermitteln, nicht von Dritten mitgelesen werden.
-      </P>
-
-      <H2>4. Datenerfassung auf dieser Website</H2>
-
-      <H3>Early-Access-Formular</H3>
-      <P>
-        Wenn Sie sich über das Early-Access-Formular eintragen, werden die von Ihnen
-        angegebenen Daten (Name und E-Mail-Adresse) bei uns gespeichert, um Sie über den
-        Start der UNPLND App zu informieren. Diese Daten geben wir nicht ohne Ihre
-        Einwilligung weiter.
-      </P>
-      <P>
-        Die Verarbeitung dieser Daten erfolgt auf Grundlage Ihrer Einwilligung (Art. 6 Abs. 1
-        lit. a DSGVO); die Einwilligung ist jederzeit widerrufbar. Die Daten verbleiben bei
-        uns, bis Sie uns zur Löschung auffordern, Ihre Einwilligung zur Speicherung
-        widerrufen oder der Zweck für die Datenspeicherung entfällt (z.&nbsp;B. nach
-        erfolgter Launch-Benachrichtigung). Zwingende gesetzliche Bestimmungen bleiben
-        unberührt.
-      </P>
-      <P>
-        Für die Speicherung der Einträge setzen wir Supabase als Auftragsverarbeiter ein
-        (Anbieter: Supabase, Inc.). Weitere Informationen finden Sie in der
-        Datenschutzerklärung von Supabase unter:{' '}
-        <a
-          href="https://supabase.com/privacy"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-medium text-terra-ink underline decoration-terra/40 underline-offset-2 hover:text-heading"
-        >
-          https://supabase.com/privacy
-        </a>
-      </P>
-
-      <H3>Anfrage per E-Mail oder Telefon</H3>
-      <P>
-        Wenn Sie uns per E-Mail oder Telefon kontaktieren, wird Ihre Anfrage inklusive aller
-        daraus hervorgehenden personenbezogenen Daten (Name, Anfrage) zum Zwecke der
-        Bearbeitung Ihres Anliegens bei uns gespeichert und verarbeitet. Diese Daten geben
-        wir nicht ohne Ihre Einwilligung weiter.
-      </P>
-      <P>
-        Die Verarbeitung dieser Daten erfolgt auf Grundlage von Art. 6 Abs. 1 lit. b DSGVO,
-        sofern Ihre Anfrage mit der Erfüllung eines Vertrags zusammenhängt oder zur
-        Durchführung vorvertraglicher Maßnahmen erforderlich ist. In allen übrigen Fällen
-        beruht die Verarbeitung auf unserem berechtigten Interesse an der effektiven
-        Bearbeitung der an uns gerichteten Anfragen (Art. 6 Abs. 1 lit. f DSGVO) oder auf
-        Ihrer Einwilligung (Art. 6 Abs. 1 lit. a DSGVO), sofern diese abgefragt wurde; die
-        Einwilligung ist jederzeit widerrufbar.
-      </P>
-      <P>
-        Die von Ihnen an uns per Kontaktanfragen übersandten Daten verbleiben bei uns, bis
-        Sie uns zur Löschung auffordern, Ihre Einwilligung zur Speicherung widerrufen oder
-        der Zweck für die Datenspeicherung entfällt (z.&nbsp;B. nach abgeschlossener
-        Bearbeitung Ihres Anliegens). Zwingende gesetzliche Bestimmungen – insbesondere
-        gesetzliche Aufbewahrungsfristen – bleiben unberührt.
-      </P>
-
-      <H2>5. Analyse-Tools, Plugins und Tools</H2>
 
       <H3>Vercel Web Analytics</H3>
       <P>
-        Diese Website nutzt Vercel Web Analytics, einen Analysedienst der Vercel Inc., 440 N
-        Barranca Ave #4133, Covina, CA 91723, USA. Erfasst werden aggregierte Informationen
-        wie aufgerufene Seiten, Referrer, Land, Browser- und Gerätetyp. Vercel Web Analytics
-        verwendet keine Cookies und speichert keine personenbezogenen Identifikatoren; die
-        Zuordnung von Seitenaufrufen erfolgt über einen kurzlebigen Hash, der keine
-        geräteübergreifende Wiedererkennung erlaubt. Die Verarbeitung erfolgt auf Grundlage
-        unseres berechtigten Interesses an der statistischen Analyse und Verbesserung
-        unseres Online-Angebots (Art. 6 Abs. 1 lit. f DSGVO). Weitere Informationen:{' '}
-        <a
-          href="https://vercel.com/docs/analytics/privacy-policy"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-medium text-terra-ink underline decoration-terra/40 underline-offset-2 hover:text-heading"
-        >
-          https://vercel.com/docs/analytics/privacy-policy
-        </a>
+        Die Website nutzt Vercel Web Analytics. Erfasst werden aggregierte Informationen wie
+        aufgerufene Seiten, Referrer, Land, Browser- und Gerätetyp, ohne Cookies und ohne
+        geräteübergreifende Wiedererkennung (Art. 6 Abs. 1 lit. f DSGVO). Weitere
+        Informationen: <Ext href="https://vercel.com/docs/analytics/privacy-policy" />
       </P>
 
-      <H3>Schriftarten (lokales Hosting)</H3>
+      <H3>Early-Access-Liste</H3>
       <P>
-        Diese Seite nutzt zur einheitlichen Darstellung von Schriftarten die Schriftart
-        Inter. Die Schriftart ist lokal installiert. Eine Verbindung zu Servern von
-        Drittanbietern findet dabei nicht statt.
+        Wenn Sie sich in die Early-Access-Liste eintragen, speichern wir Ihren Namen und Ihre
+        E-Mail-Adresse, um Sie über den Start der App zu informieren (Art. 6 Abs. 1 lit. a
+        DSGVO). Sie können Ihre Einwilligung jederzeit per E-Mail widerrufen.
       </P>
 
-      <H3>Externe Verlinkungen</H3>
+      <H3>Schriftarten und externe Links</H3>
       <P>
-        Unsere Website enthält Links zu unseren Profilen auf TikTok und Instagram. Beim
-        bloßen Aufruf unserer Website werden keine Daten an diese Anbieter übertragen. Erst
-        wenn Sie einen dieser Links anklicken, gelangen Sie auf die jeweilige Plattform; es
-        gelten dann die Datenschutzbestimmungen des jeweiligen Anbieters.
+        Die Schriftart Inter ist lokal eingebunden; es wird keine Verbindung zu Drittanbietern
+        hergestellt. Links zu unseren Profilen auf TikTok und Instagram übertragen erst beim
+        Anklicken Daten an diese Anbieter.
+      </P>
+
+      <H2>4. Dienstleister und Speicherort</H2>
+      <P>
+        Wir arbeiten mit folgenden Dienstleistern zusammen, die Daten in unserem Auftrag
+        bearbeiten:
+      </P>
+      <ul className="mt-3 list-disc space-y-2 pl-5 text-[15px] leading-relaxed text-ink-2">
+        <li>
+          Supabase Inc. (Datenbank, Anmeldung, Dateispeicher und Server-Funktionen); die Daten
+          werden in einem Rechenzentrum in Frankfurt am Main (EU) gespeichert.{' '}
+          <Ext href="https://supabase.com/privacy" />
+        </li>
+        <li>Google LLC (Gemini API, Places API, Anmeldung mit Google)</li>
+        <li>Apple Inc. (App Store, Anmeldung mit Apple)</li>
+        <li>Vercel Inc. (Hosting der Website)</li>
+      </ul>
+      <P>
+        Einige dieser Anbieter haben ihren Sitz in den USA. Eine Übermittlung dorthin erfolgt
+        auf Grundlage des EU-US- bzw. Swiss-US Data Privacy Framework, soweit der Anbieter
+        zertifiziert ist, oder auf Grundlage von Standardvertragsklauseln.
+      </P>
+
+      <H2>5. Speicherdauer</H2>
+      <P>
+        Wir speichern personenbezogene Daten nur so lange, wie es für den jeweiligen Zweck
+        nötig ist. Kontodaten und Inhalte speichern wir, bis Sie Ihr Konto löschen.
+        Gesetzliche Aufbewahrungspflichten bleiben unberührt.
+      </P>
+
+      <H2>6. Ihre Rechte</H2>
+      <P>
+        Sie haben das Recht auf Auskunft über Ihre gespeicherten Daten, auf Berichtigung,
+        Löschung und Einschränkung der Bearbeitung, auf Datenübertragbarkeit sowie das Recht,
+        der Bearbeitung zu widersprechen (Art. 21 DSGVO). Erteilte Einwilligungen können Sie
+        jederzeit für die Zukunft widerrufen. Schreiben Sie uns dazu einfach an{' '}
+        {CONTACT_EMAIL}.
+      </P>
+      <P>
+        Sie haben ausserdem das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu
+        beschweren, in der Schweiz beim Eidgenössischen Datenschutz- und
+        Öffentlichkeitsbeauftragten (EDÖB), in der EU bei der Aufsichtsbehörde Ihres
+        Wohnsitzes.
+      </P>
+
+      <H2>7. Datensicherheit</H2>
+      <P>
+        Alle Verbindungen zwischen App, Website und unseren Servern sind verschlüsselt
+        (TLS). Der Zugriff auf Ihre Daten ist technisch so eingeschränkt, dass jeder Nutzer
+        nur seine eigenen bzw. für ihn freigegebenen Daten sehen kann.
       </P>
 
       <P>
-        <span className="mt-8 block text-[13.5px] text-ink-2">Stand: Juli 2026</span>
+        <span className="mt-8 block text-[13.5px] text-ink-2">Stand: November 2026</span>
       </P>
     </>
   );
