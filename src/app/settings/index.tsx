@@ -16,6 +16,7 @@ import { usePremium } from '@/features/profile/use-premium';
 import { confirmDialog } from '@/lib/confirm';
 import { haptics } from '@/lib/haptics';
 import { useT } from '@/lib/i18n';
+import { MONETIZATION_ENABLED } from '@/lib/monetization';
 import { useAppStore } from '@/store/app-store';
 import { useTheme } from '@/theme';
 
@@ -174,6 +175,8 @@ export default function SettingsScreen() {
         >
           {/* 25_MONETIZATION: never hide subscription management — for members the row
               says so and opens the store's own management page instead of the paywall. */}
+          {/* Free launch: no Premium section until monetization is switched on. */}
+          {MONETIZATION_ENABLED ? (
           <Section title="UNPLND Premium">
             {isPremium ? (
               <Row
@@ -207,6 +210,7 @@ export default function SettingsScreen() {
               />
             )}
           </Section>
+          ) : null}
 
           <Section title={tr('settings.appearance')}>
             <View style={{ paddingVertical: t.spacing.base, gap: t.spacing.md }}>

@@ -20,6 +20,7 @@ import { track } from '@/lib/analytics';
 import { generateEvening } from '@/features/planner/generate-service';
 import { usePlannerStore } from '@/features/planner/planner-store';
 import { useT } from '@/lib/i18n';
+import { MONETIZATION_ENABLED } from '@/lib/monetization';
 import { openLocationSettings, requestLocationPermission } from '@/lib/location';
 import { getPlanningLocation } from '@/store/location-store';
 import { useTheme } from '@/theme';
@@ -280,12 +281,14 @@ export default function GeneratingScreen() {
         >
           {/* The one honest upsell moment: the user just demonstrated they want MORE plans
               (25_MONETIZATION: paywall only after value is demonstrated — this is that). */}
-          <Button
-            title={tr('generating.limitUpgrade')}
-            gradient
-            iconRight="arrow-forward"
-            onPress={() => router.push('/paywall')}
-          />
+          {MONETIZATION_ENABLED ? (
+            <Button
+              title={tr('generating.limitUpgrade')}
+              gradient
+              iconRight="arrow-forward"
+              onPress={() => router.push('/paywall')}
+            />
+          ) : null}
           <Button title={tr('generating.limitButton')} variant="secondary" onPress={() => router.back()} />
         </Animated.View>
       </View>
