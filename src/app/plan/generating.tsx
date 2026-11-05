@@ -17,6 +17,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 
 import { Button, Logo, Text } from '@/components/ui';
 import { track } from '@/lib/analytics';
+import { ensureAiConsent } from '@/features/planner/ai-consent';
 import { generateEvening } from '@/features/planner/generate-service';
 import { usePlannerStore } from '@/features/planner/planner-store';
 import { useT } from '@/lib/i18n';
@@ -112,6 +113,13 @@ export default function GeneratingScreen() {
     setPhase('generating');
     setMessageIndex(0);
     track('planner_started');
+
+    // Consent before anything reaches the model (App Review 5.1.2(i)) — declining just goes back.
+    if (!(await ensureAiConsent())) {
+      if (!cancelled.current) router.back();
+      return;
+    }
+    if (cancelled.current) return;
 
     // No location → no plan. Never fall back to a default city (Constitution Rule 5: trust).
     // Uses the user's chosen location if they picked one, else their GPS.

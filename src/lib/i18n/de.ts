@@ -111,8 +111,9 @@ export const de = {
   },
   aiNotice: {
     title: 'Kurz, bevor es losgeht',
-    body: 'Deine Abende plant UNPLND mit Hilfe von künstlicher Intelligenz (KI): Sie schlägt Orte, Reihenfolge und die Gründe dafür vor. Öffnungszeiten und Budget prüfen wir zusätzlich — trotzdem kann mal etwas nicht stimmen. Schau im Zweifel kurz nach.',
-    ack: 'Verstanden',
+    body: 'Deine Abende plant UNPLND mit Hilfe von künstlicher Intelligenz (KI) von Google (Gemini): Sie schlägt Orte, Reihenfolge und die Gründe dafür vor. Dafür übermitteln wir deine Planungswünsche, deinen ungefähren Standort und – beim Concierge – deine Sprachaufnahmen an Google. Öffnungszeiten und Budget prüfen wir zusätzlich, trotzdem kann mal etwas nicht stimmen.',
+    ack: 'Einverstanden',
+    decline: 'Nicht jetzt',
   },
   planner: {
     voiceTitle: 'Erzähl uns deinen Abend',
@@ -920,7 +921,11 @@ export const de = {
   },
   settings: {
     aiTitle: 'Planung mit KI',
-    aiSub: 'Vorschläge im Planer und die Antworten des Concierge (auch seine Stimme) werden von einer künstlichen Intelligenz erzeugt. Orte, Öffnungszeiten und Budget prüfen wir zusätzlich, trotzdem können einzelne Angaben abweichen.',
+    aiSub: 'Vorschläge im Planer und die Antworten des Concierge (auch seine Stimme) werden von einer künstlichen Intelligenz von Google (Gemini) erzeugt. Dafür gehen deine Planungswünsche, dein ungefährer Standort und deine Sprachaufnahmen an Google. Orte, Öffnungszeiten und Budget prüfen wir zusätzlich, trotzdem können einzelne Angaben abweichen.',
+    legal: 'Rechtliches',
+    privacyPolicy: 'Datenschutzerklärung',
+    terms: 'Nutzungsbedingungen',
+    imprint: 'Impressum',
     tutorial: 'Tutorial',
     privacy: 'Privatsphäre',
     liveLocation: 'Live-Standort teilen',
